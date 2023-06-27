@@ -15,7 +15,3 @@ Read more about it [here](https://rmakara.github.io/Shape-Up-How-to-do-a-Project
   - TDD: The projects I've been in haven't been heavy on tests. I need a playground to practice in
   - Publishing an npm package: I want to learn how to do this effectitely, with minimal cognitive overhead. I intend on using this http-client in my own apps.
   - Typescript
-
-## What's being built
-- [spotify-web-api-ts](https://github.com/adamgrieger/spotify-web-api-ts), but written using [Effect-ts](https://www.effect.website/)
-- Intended for server & browser
