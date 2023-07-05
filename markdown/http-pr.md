@@ -8,3 +8,10 @@
 - can also continue to scour the discord for any http resources
 - check out `Effect/io/Request`
 - For learning async stuff, [this crash course](https://github.com/pigoz/effect-crashcourse) has some handy stuff too.
+- introduced myself to [Effect schema](https://github.com/Effect-TS/schema)
+
+# Todo
+- [ ] Fix pipeline
+- [ ] interface refactor in `http.test.ts`, move the effect code out of tests.
+- [ ] Find some examples of unit tests in an effect codebase. anything different about how they're structured?
+- [ ] pay a bit more attention to schema & types in general, and what's returned by `http.get`
