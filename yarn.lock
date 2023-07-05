@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@effect/data@^0.12.10", "@effect/data@~0.12.10":
+  version "0.12.10"
+  resolved "https://registry.yarnpkg.com/@effect/data/-/data-0.12.10.tgz#6eb788d3a860db42f138561160189196380372db"
+  integrity sha512-zIz/DgumH2LgGdr1Wc9ChET5JSG0k/G5kDc8rn4a6yIJ0v2d5rfnbRWIJO2fWmdFvc+128JyaBvYguIyz9JaAQ==
+
 "@effect/data@^0.12.9", "@effect/data@~0.12.6":
   version "0.12.9"
   resolved "https://registry.yarnpkg.com/@effect/data/-/data-0.12.9.tgz#c9748d0312e4d521caf30b860cd03b1a45dfe652"
@@ -13,6 +18,22 @@
   integrity sha512-8GQnVrarX5LSJL+WzNabpf/VTnEbwIg+9Bb4f4WxGvGJTReClJk9dJU8LnpGExn1AjfaWzQxwicuBLwcccORlQ==
   dependencies:
     "@effect/data" "~0.12.6"
+
+"@effect/io@^0.29.0":
+  version "0.29.4"
+  resolved "https://registry.yarnpkg.com/@effect/io/-/io-0.29.4.tgz#5e451897913c3d4128293e75f6c6f7194d5aeb06"
+  integrity sha512-hZzSCS16kD4M31oalHPbp/9wdnsRYse1qqdMy7LKPD0ry8fnGvwsbm04goEuj4ceqwDF5z69yIaFf16J9xyX2A==
+  dependencies:
+    "@effect/data" "~0.12.10"
+
+"@effect/schema@^0.23.0":
+  version "0.23.0"
+  resolved "https://registry.yarnpkg.com/@effect/schema/-/schema-0.23.0.tgz#4dc66b7a67cfd347d483fc955896e7748627de57"
+  integrity sha512-34mTncodXJq0WzBjUT5rEl1sOO3KOjzqkSRf39xEc01Bwk9BLrgS61Os8aMko6mvB41XAHQCFFBzyh5wKOtmAA==
+  dependencies:
+    "@effect/data" "^0.12.10"
+    "@effect/io" "^0.29.0"
+    fast-check "^3.10.0"
 
 "@esbuild/android-arm64@0.17.19":
   version "0.17.19"
@@ -316,6 +337,13 @@ esutils@^2.0.3:
   resolved "https://registry.yarnpkg.com/esutils/-/esutils-2.0.3.tgz#74d2eb4de0b8da1293711910d50775b9b710ef64"
   integrity sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==
 
+fast-check@^3.10.0:
+  version "3.10.0"
+  resolved "https://registry.yarnpkg.com/fast-check/-/fast-check-3.10.0.tgz#dccdf925c123f65910754454118ff3d6461b1733"
+  integrity sha512-I2FldZwnCbcY6iL+H0rp9m4D+O3PotuFu9FasWjMCzUedYHMP89/37JbSt6/n7Yq/IZmJDW0B2h30sPYdzrfzw==
+  dependencies:
+    pure-rand "^6.0.0"
+
 fast-diff@^1.2.0:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/fast-diff/-/fast-diff-1.3.0.tgz#ece407fa550a64d638536cd727e129c61616e0f0"
@@ -447,6 +475,11 @@ pretty-format@^27.5.1:
     ansi-regex "^5.0.1"
     ansi-styles "^5.0.0"
     react-is "^17.0.1"
+
+pure-rand@^6.0.0:
+  version "6.0.2"
+  resolved "https://registry.yarnpkg.com/pure-rand/-/pure-rand-6.0.2.tgz#a9c2ddcae9b68d736a8163036f088a2781c8b306"
+  integrity sha512-6Yg0ekpKICSjPswYOuC5sku/TSWaRYlA0qsXqJgM/d/4pLPHPuTxK7Nbf7jFKzAeedUhR8C7K9Uv63FBsSo8xQ==
 
 react-is@^17.0.1:
   version "17.0.2"
