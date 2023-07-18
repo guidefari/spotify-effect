@@ -1,13 +1,14 @@
 import { test, expect } from "vitest";
 import * as http from './http'
 import * as Effect from "@effect/io/Effect"
-import { identity, pipe } from "@effect/data/Function"
+import * as Schema from "@effect/schema/Schema"
 
-type TodoItem = {
-  
-}
 
-test('http get request returns valid JSON', async () => { 
-  const Todo1 = await Effect.runPromise(http.get<TodoItem>('https://jsonplaceholder.typicode.com/todos/1a'))
-  console.log('Todo1:', Todo1)
+const TodoSchema = Schema.struct({ userId: Schema.number, id: Schema.number, title: Schema.string, completed: Schema.boolean })
+export interface TodoItem extends Schema.To<typeof TodoSchema> {}
+
+test('http get request returns valid TODO item', async () => { 
+  const Todo1 = await Effect.runPromise(http.get<TodoItem>('https://jsonplaceholder.typicode.com/todos/1'))
+  const valid = Schema.is(TodoSchema)
+  expect(valid(Todo1)).toBeTruthy()
  })
