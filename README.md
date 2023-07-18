@@ -1,1 +1,3 @@
 - See notes in `/markdown`
+- [Intro To Effect, Part 1: What Is Effect?](https://ybogomolov.me/01-effect-intro)
+- [Effect Introduction](https://github.com/antoine-coulon/effect-introduction)
