@@ -1,6 +1,6 @@
 import { test, expect } from "vitest";
-import yo from './index'
+import {re10} from './index'
 
-test('mic check', () => {
-  expect(yo).toEqual(10)
+test('re10 sync', () => {
+  expect(re10).toEqual(10)
 })
