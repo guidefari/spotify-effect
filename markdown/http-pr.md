@@ -10,8 +10,7 @@
 - For learning async stuff, [this crash course](https://github.com/pigoz/effect-crashcourse) has some handy stuff too.
 - introduced myself to [Effect schema](https://github.com/Effect-TS/schema)
 
-# Todo
-- [ ] Fix pipeline
-- [ ] interface refactor in `http.test.ts`, move the effect code out of tests.
-- [ ] Find some examples of unit tests in an effect codebase. anything different about how they're structured?
-- [ ] pay a bit more attention to schema & types in general, and what's returned by `http.get`
+# Notes
+  - remember to test for expected behaviour/outcome, and not the implementation. By this logic, there's no need to adapt my testing to effectful ways.
+- [x] pay a bit more attention to schema & types in general, and what's returned by `http.get`
+  - Played with Schema a bit, also implemented some assertion. For now, I decided to do this on the consumer's side
