@@ -1,4 +1,6 @@
 {
+  "name": "spotify-effect",
+  "private": true,
   "scripts": {
     "test": "vitest"
   },
