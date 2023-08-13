@@ -1,5 +1,11 @@
 # spotify-effect
 
+## 0.0.4
+
+### Patch Changes
+
+- 2f7427f: Make package public. wonder if that helps?
+
 ## 0.0.3
 
 ### Patch Changes

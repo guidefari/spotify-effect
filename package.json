@@ -1,11 +1,11 @@
 {
   "name": "spotify-effect",
   "license": "MIT",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-  "private":"false",
+  "private": "false",
   "scripts": {
     "test": "tsc && vitest run",
     "test:watch": "vitest",
