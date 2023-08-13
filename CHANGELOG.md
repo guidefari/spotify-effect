@@ -1,5 +1,11 @@
 # spotify-effect
 
+## 0.0.5
+
+### Patch Changes
+
+- fcb53ad: mic check
+
 ## 0.0.4
 
 ### Patch Changes
