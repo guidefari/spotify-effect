@@ -6,7 +6,10 @@
     "allowSyntheticDefaultImports": true,
     "lib": ["ES2022"],
     "strict": true,
-    "exactOptionalPropertyTypes": true
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true
   },
   "include": ["vite.config.ts"]
 }
