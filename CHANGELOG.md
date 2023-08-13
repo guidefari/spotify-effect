@@ -1,5 +1,11 @@
 # spotify-effect
 
+## 0.0.3
+
+### Patch Changes
+
+- 890176e: Still trying to figure out the workflow
+
 ## 0.0.2
 
 ### Patch Changes
