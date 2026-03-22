@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
 import { HttpClient, HttpClientRequest } from "effect/unstable/http";
 import { TOKEN_URL } from "../constants";
 import {
@@ -12,6 +13,11 @@ import type {
   GetRefreshedAccessTokenResponse,
   GetTemporaryAppTokensResponse,
 } from "../model/SpotifyAuthorization";
+import {
+  GetRefreshableUserTokensResponseSchema,
+  GetRefreshedAccessTokenResponseSchema,
+  GetTemporaryAppTokensResponseSchema,
+} from "../model/SpotifyAuthorizationSchema";
 
 interface SpotifyApiErrorBody {
   readonly error?: string;
@@ -138,6 +144,7 @@ const getRefreshConfig = (options: {
 const requestToken = <A>(options: {
   readonly body: Readonly<Record<string, string>>
   readonly authorization?: string
+  readonly schema: Schema.Top & { readonly Type: A; readonly DecodingServices: never }
 }): Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient> =>
   Effect.gen(function* () {
     const response = yield* HttpClient.post(TOKEN_URL, {
@@ -166,7 +173,15 @@ const requestToken = <A>(options: {
 
     return yield* response.json.pipe(
       Effect.mapError(mapHttpClientError),
-      Effect.map((body) => body as A),
+      Effect.flatMap((body) =>
+        Effect.try({
+          try: () => Schema.decodeUnknownSync(options.schema)(body),
+          catch: (cause) =>
+            new SpotifyConfigurationError({
+              message: cause instanceof Error ? cause.message : "Failed to decode token response",
+            }),
+        }),
+      ),
     )
   })
 
@@ -189,6 +204,7 @@ export const makeSpotifyAuth = (options: {
 
       return yield* requestToken<GetRefreshableUserTokensResponse>({
         authorization: config.authorization,
+        schema: GetRefreshableUserTokensResponseSchema,
         body: {
           code,
           grant_type: "authorization_code",
@@ -207,6 +223,7 @@ export const makeSpotifyAuth = (options: {
       }
 
       return yield* requestToken<GetRefreshableUserTokensResponse>({
+        schema: GetRefreshableUserTokensResponseSchema,
         body: {
           client_id: clientId,
           code,
@@ -221,6 +238,7 @@ export const makeSpotifyAuth = (options: {
       const config = yield* getRefreshConfig(options)
 
       return yield* requestToken<GetRefreshedAccessTokenResponse>({
+        schema: GetRefreshedAccessTokenResponseSchema,
         body: {
           grant_type: "refresh_token",
           refresh_token: refreshToken,
@@ -235,6 +253,7 @@ export const makeSpotifyAuth = (options: {
 
       return yield* requestToken<GetTemporaryAppTokensResponse>({
         authorization: config.authorization,
+        schema: GetTemporaryAppTokensResponseSchema,
         body: {
           grant_type: "client_credentials",
         },

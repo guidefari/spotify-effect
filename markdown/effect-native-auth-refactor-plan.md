@@ -26,6 +26,12 @@ That makes the library harder to reason about, harder to test under concurrency,
 - prepare the codebase for `effect/Schema` at the API boundary
 - reduce custom auth/session plumbing in examples by pushing shared logic into the library
 
+## Current status
+
+- Phase 1 is underway: `SpotifySession` now owns the core token/session state that used to live directly on `SpotifyWebApi`.
+- Phase 2 is underway: `SpotifyRequest` now supports auth invalidation and a single retry path for unauthorized responses.
+- Phase 3 is underway: token responses and the current-user profile path are starting to move to `effect/Schema` decoding at the boundary.
+
 ## Phase 1: Extract auth session service
 
 ### Purpose
