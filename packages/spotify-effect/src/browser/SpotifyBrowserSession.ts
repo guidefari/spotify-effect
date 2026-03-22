@@ -160,6 +160,6 @@ export const makeSpotifyBrowserSession = (options: {
     options.localStorage.setItem(defaultStorageKeys.tokens, JSON.stringify(tokens))
   },
   clearCallbackParams: (url) => {
-    options.history.replaceState({}, document.title, `${url.origin}${url.pathname}`)
+    options.history.replaceState({}, "", `${url.origin}${url.pathname}`)
   },
 })

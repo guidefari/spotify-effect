@@ -8,6 +8,7 @@ import {
   mapHttpClientError,
   type SpotifyRequestError,
 } from "../errors/SpotifyError";
+import { decodeSpotifyAccountsErrorBody } from "../model/SpotifyErrorSchemas";
 import type {
   GetRefreshableUserTokensResponse,
   GetRefreshedAccessTokenResponse,
@@ -18,11 +19,6 @@ import {
   GetRefreshedAccessTokenResponseSchema,
   GetTemporaryAppTokensResponseSchema,
 } from "../model/SpotifyAuthorizationSchema";
-
-interface SpotifyApiErrorBody {
-  readonly error?: string;
-  readonly error_description?: string;
-}
 
 export interface SpotifyAuth {
   getRefreshableUserTokens(
@@ -73,16 +69,6 @@ const parseJson = (value: string): unknown => {
   } catch {
     return undefined;
   }
-};
-
-const getApiMessage = (body: unknown): string | undefined => {
-  if (typeof body !== "object" || body === null) {
-    return undefined;
-  }
-
-  const record = body as SpotifyApiErrorBody;
-
-  return record.error_description ?? record.error;
 };
 
 const getRequiredConfig = (options: {
@@ -158,15 +144,15 @@ const requestToken = <A>(options: {
     if (response.status < 200 || response.status >= 300) {
       const text = yield* response.text.pipe(Effect.mapError(mapHttpClientError))
       const body = parseJson(text)
-      const apiMessage = getApiMessage(body)
+      const decodedError = decodeSpotifyAccountsErrorBody(body)
 
       return yield* Effect.fail(
         makeSpotifyHttpError({
           status: response.status,
           method: response.request.method,
           url: response.request.url,
-          ...(body === undefined ? null : { body }),
-          ...(apiMessage === undefined ? null : { apiMessage }),
+          ...(decodedError.body === undefined ? null : { body: decodedError.body }),
+          ...(decodedError.message === undefined ? null : { apiMessage: decodedError.message }),
         }),
       )
     }

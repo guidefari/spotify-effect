@@ -2,6 +2,7 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { HttpClient, type HttpClientResponse } from "effect/unstable/http";
 import { SpotifyParseError, makeSpotifyHttpError, mapHttpClientError, type SpotifyRequestError } from "../errors/SpotifyError";
+import { decodeSpotifyApiErrorBody } from "../model/SpotifyErrorSchemas";
 
 const spotifyApiBaseUrl = "https://api.spotify.com/v1";
 
@@ -44,29 +45,6 @@ const parseJson = (value: string): unknown => {
   }
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
-const getApiMessage = (body: unknown): string | undefined => {
-  if (!isRecord(body)) {
-    return undefined;
-  }
-
-  const directMessage = body.message;
-
-  if (typeof directMessage === "string") {
-    return directMessage;
-  }
-
-  const nestedError = body.error;
-
-  if (!isRecord(nestedError)) {
-    return undefined;
-  }
-
-  return typeof nestedError.message === "string" ? nestedError.message : undefined;
-};
-
 const decodeSuccessResponse = <A>(
   response: HttpClientResponse.HttpClientResponse,
 ): Effect.Effect<A, SpotifyRequestError> =>
@@ -101,15 +79,15 @@ const decodeFailureResponse = (
   Effect.gen(function* () {
     const text = yield* response.text.pipe(Effect.mapError(mapHttpClientError));
     const body = parseJson(text);
-    const apiMessage = getApiMessage(body);
+    const decodedError = decodeSpotifyApiErrorBody(body)
 
     return yield* Effect.fail(
       makeSpotifyHttpError({
         status: response.status,
         method: response.request.method,
         url: response.request.url,
-        ...(body === undefined ? null : { body }),
-        ...(apiMessage === undefined ? null : { apiMessage }),
+        ...(decodedError.body === undefined ? null : { body: decodedError.body }),
+        ...(decodedError.message === undefined ? null : { apiMessage: decodedError.message }),
       }),
     );
   });
