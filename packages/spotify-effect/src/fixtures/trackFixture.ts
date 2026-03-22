@@ -1,4 +1,4 @@
-import type { Track } from "../model/SpotifyObjects"
+import type { Track } from "../model/SpotifyObjects";
 
 export const trackFixture: Track = {
   album: {
@@ -64,4 +64,4 @@ export const trackFixture: Track = {
   track_number: 1,
   type: "track",
   uri: "spotify:track:3n3Ppam7vgaVa1iaRUc9Lp",
-}
+};

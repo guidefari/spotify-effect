@@ -17,26 +17,26 @@ export type AuthorizationScope =
   | "user-read-playback-position"
   | "user-read-recently-played"
   | "user-follow-read"
-  | "user-follow-modify"
+  | "user-follow-modify";
 
 export type GetRefreshableUserTokensResponse = {
-  access_token: string
-  token_type: "Bearer"
-  scope: string
-  expires_in: number
-  refresh_token: string
-}
+  access_token: string;
+  token_type: "Bearer";
+  scope: string;
+  expires_in: number;
+  refresh_token: string;
+};
 
 export type GetRefreshedAccessTokenResponse = {
-  access_token: string
-  token_type: "Bearer"
-  expires_in: number
-  scope: string
-}
+  access_token: string;
+  token_type: "Bearer";
+  expires_in: number;
+  scope: string;
+};
 
 export type GetTemporaryAppTokensResponse = {
-  access_token: string
-  token_type: "Bearer"
-  expires_in: number
-  scope: string
-}
+  access_token: string;
+  token_type: "Bearer";
+  expires_in: number;
+  scope: string;
+};

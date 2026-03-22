@@ -1,4 +1,4 @@
-import { trackFixture } from "./trackFixture"
+import { trackFixture } from "./trackFixture";
 
 export const getTracksFixture = {
   tracks: [
@@ -14,4 +14,4 @@ export const getTracksFixture = {
       },
     },
   ],
-}
+};

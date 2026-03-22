@@ -1,5 +1,5 @@
-import { Console, Effect } from "effect"
-import { SpotifyWebApi } from "spotify-effect"
+import { Console, Effect } from "effect";
+import { SpotifyWebApi } from "spotify-effect";
 
 const usage = [
   "spotify-effect basic example",
@@ -8,20 +8,20 @@ const usage = [
   "  bun run example:basic -- --access-token <token> <track-id>",
   "",
   "If you omit either value, the script will prompt for it.",
-].join("\n")
+].join("\n");
 
 interface Inputs {
-  accessToken: string
-  trackId: string
+  accessToken: string;
+  trackId: string;
 }
 
 const formatError = (error: unknown): string => {
   if (typeof error === "string") {
-    return error
+    return error;
   }
 
   if (error instanceof Error && error.message.length > 0) {
-    const record = error as Error & Record<string, unknown>
+    const record = error as Error & Record<string, unknown>;
 
     if (record._tag === "SpotifyHttpError") {
       const details = {
@@ -31,9 +31,9 @@ const formatError = (error: unknown): string => {
         url: record.url,
         apiMessage: record.apiMessage,
         body: record.body,
-      }
+      };
 
-      return JSON.stringify(details, null, 2)
+      return JSON.stringify(details, null, 2);
     }
 
     if (record._tag === "SpotifyTransportError" || record._tag === "SpotifyParseError") {
@@ -47,81 +47,80 @@ const formatError = (error: unknown): string => {
         },
         null,
         2,
-      )
+      );
     }
 
-    return error.message
+    return error.message;
   }
 
   if (typeof error === "object" && error !== null) {
-    return JSON.stringify(error, null, 2)
+    return JSON.stringify(error, null, 2);
   }
 
-  return String(error)
-}
+  return String(error);
+};
 
 const parseInputs = (args: ReadonlyArray<string>): Partial<Inputs> => {
-  let accessToken: string | undefined
-  let trackId: string | undefined
+  let accessToken: string | undefined;
+  let trackId: string | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
-    const current = args[index]
+    const current = args[index];
 
     if (current === "--access-token") {
-      accessToken = args[index + 1]
-      index += 1
-      continue
+      accessToken = args[index + 1];
+      index += 1;
+      continue;
     }
 
     if (current === "--help" || current === "-h") {
-      continue
+      continue;
     }
 
     if (trackId === undefined) {
-      trackId = current
+      trackId = current;
     }
   }
 
-  const result: Partial<Inputs> = {}
+  const result: Partial<Inputs> = {};
 
   if (accessToken !== undefined) {
-    result.accessToken = accessToken
+    result.accessToken = accessToken;
   }
 
   if (trackId !== undefined) {
-    result.trackId = trackId
+    result.trackId = trackId;
   }
 
-  return result
-}
+  return result;
+};
 
 const promptForValue = (label: string): Effect.Effect<string, Error> =>
   Effect.try({
     try: () => {
-      const promptFn = Reflect.get(globalThis, "prompt")
+      const promptFn = Reflect.get(globalThis, "prompt");
 
       if (typeof promptFn !== "function") {
-        throw new Error("Interactive prompts are not available in this runtime")
+        throw new Error("Interactive prompts are not available in this runtime");
       }
 
-      const value = promptFn(`${label}:`)
+      const value = promptFn(`${label}:`);
 
       if (value === null || value.trim().length === 0) {
-        throw new Error(`${label} is required`)
+        throw new Error(`${label} is required`);
       }
 
-      return value.trim()
+      return value.trim();
     },
-    catch: (cause) =>
-      cause instanceof Error ? cause : new Error(`Failed to read ${label}`),
-  })
+    catch: (cause) => (cause instanceof Error ? cause : new Error(`Failed to read ${label}`)),
+  });
 
 const resolveInputs = (args: ReadonlyArray<string>): Effect.Effect<Inputs, Error> => {
   if (args.includes("--help") || args.includes("-h")) {
-    return Effect.fail(new Error(usage))
+    return Effect.fail(new Error(usage));
   }
 
-  const parsed = parseInputs(args)
+  const parsed = parseInputs(args);
 
   return Effect.all({
     accessToken:
@@ -132,21 +131,21 @@ const resolveInputs = (args: ReadonlyArray<string>): Effect.Effect<Inputs, Error
       parsed.trackId === undefined
         ? promptForValue("Spotify track id")
         : Effect.succeed(parsed.trackId),
-  })
-}
+  });
+};
 
 const program = resolveInputs(process.argv.slice(2)).pipe(
   Effect.flatMap((inputs) => {
-    const spotify = new SpotifyWebApi({}, { accessToken: inputs.accessToken })
+    const spotify = new SpotifyWebApi({}, { accessToken: inputs.accessToken });
 
-    return spotify.tracks.getTrack(inputs.trackId).pipe(
-      Effect.flatMap((track) => Console.log(JSON.stringify(track, null, 2))),
-    )
+    return spotify.tracks
+      .getTrack(inputs.trackId)
+      .pipe(Effect.flatMap((track) => Console.log(JSON.stringify(track, null, 2))));
   }),
   Effect.matchEffect({
     onFailure: (error: unknown) => Console.error(formatError(error)),
     onSuccess: () => Effect.void,
   }),
-)
+);
 
-Effect.runPromise(program)
+Effect.runPromise(program);
