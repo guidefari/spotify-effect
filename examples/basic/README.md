@@ -1,3 +1,15 @@
 # Basic Example
 
-Workspace placeholder for future example apps built against the published package.
+Interactive Effect-based CLI for testing `spotify-effect` manually.
+
+Run it from the workspace root with:
+
+```sh
+bun run example:basic
+```
+
+You can also pass values directly:
+
+```sh
+bun run example:basic -- --access-token <spotify-token> <track-id>
+```

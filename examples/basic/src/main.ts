@@ -1,0 +1,107 @@
+import { Console, Effect } from "effect"
+import { SpotifyWebApi } from "spotify-effect"
+
+const usage = [
+  "spotify-effect basic example",
+  "",
+  "Usage:",
+  "  bun run example:basic -- --access-token <token> <track-id>",
+  "",
+  "If you omit either value, the script will prompt for it.",
+].join("\n")
+
+interface Inputs {
+  accessToken: string
+  trackId: string
+}
+
+const parseInputs = (args: ReadonlyArray<string>): Partial<Inputs> => {
+  let accessToken: string | undefined
+  let trackId: string | undefined
+
+  for (let index = 0; index < args.length; index += 1) {
+    const current = args[index]
+
+    if (current === "--access-token") {
+      accessToken = args[index + 1]
+      index += 1
+      continue
+    }
+
+    if (current === "--help" || current === "-h") {
+      continue
+    }
+
+    if (trackId === undefined) {
+      trackId = current
+    }
+  }
+
+  const result: Partial<Inputs> = {}
+
+  if (accessToken !== undefined) {
+    result.accessToken = accessToken
+  }
+
+  if (trackId !== undefined) {
+    result.trackId = trackId
+  }
+
+  return result
+}
+
+const promptForValue = (label: string): Effect.Effect<string, Error> =>
+  Effect.try({
+    try: () => {
+      const promptFn = Reflect.get(globalThis, "prompt")
+
+      if (typeof promptFn !== "function") {
+        throw new Error("Interactive prompts are not available in this runtime")
+      }
+
+      const value = promptFn(`${label}:`)
+
+      if (value === null || value.trim().length === 0) {
+        throw new Error(`${label} is required`)
+      }
+
+      return value.trim()
+    },
+    catch: (cause) =>
+      cause instanceof Error ? cause : new Error(`Failed to read ${label}`),
+  })
+
+const resolveInputs = (args: ReadonlyArray<string>): Effect.Effect<Inputs, Error> => {
+  if (args.includes("--help") || args.includes("-h")) {
+    return Effect.fail(new Error(usage))
+  }
+
+  const parsed = parseInputs(args)
+
+  return Effect.all({
+    accessToken:
+      parsed.accessToken === undefined
+        ? promptForValue("Spotify access token")
+        : Effect.succeed(parsed.accessToken),
+    trackId:
+      parsed.trackId === undefined
+        ? promptForValue("Spotify track id")
+        : Effect.succeed(parsed.trackId),
+  })
+}
+
+const program = resolveInputs(process.argv.slice(2)).pipe(
+  Effect.flatMap((inputs) => {
+    const spotify = new SpotifyWebApi({}, { accessToken: inputs.accessToken })
+
+    return spotify.tracks.getTrack(inputs.trackId).pipe(
+      Effect.flatMap((track) => Console.log(JSON.stringify(track, null, 2))),
+    )
+  }),
+  Effect.matchEffect({
+    onFailure: (error: unknown) => Console.error(String(error)),
+    onSuccess: () => Effect.void,
+  }),
+)
+
+Effect.runPromise(program)

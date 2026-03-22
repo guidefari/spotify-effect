@@ -9,6 +9,7 @@
     "test": "bun run --filter spotify-effect test",
     "test:watch": "bun run --filter spotify-effect test:watch",
     "build": "bun run --filter spotify-effect build",
+    "example:basic": "bun run --filter spotify-effect build && bun run --filter @examples/basic dev",
     "release": "bun run build && changeset publish"
   },
   "devDependencies": {
