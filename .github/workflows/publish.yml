@@ -21,6 +21,9 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
+      - name: Typecheck Workspace
+        run: bun run typecheck
+
       - name: Build Workspace
         run: bun run build
 

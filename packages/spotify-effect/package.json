@@ -9,6 +9,7 @@
     "access": "public"
   },
   "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "tsc -p tsconfig.json && vitest run --config vite.config.ts",
     "test:watch": "vitest --config vite.config.ts",
     "build": "tsup src/index.ts --format cjs,esm --dts"

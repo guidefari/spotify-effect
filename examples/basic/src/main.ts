@@ -15,6 +15,51 @@ interface Inputs {
   trackId: string
 }
 
+const formatError = (error: unknown): string => {
+  if (typeof error === "string") {
+    return error
+  }
+
+  if (error instanceof Error && error.message.length > 0) {
+    const record = error as Error & Record<string, unknown>
+
+    if (record._tag === "SpotifyHttpError") {
+      const details = {
+        _tag: record._tag,
+        status: record.status,
+        method: record.method,
+        url: record.url,
+        apiMessage: record.apiMessage,
+        body: record.body,
+      }
+
+      return JSON.stringify(details, null, 2)
+    }
+
+    if (record._tag === "SpotifyTransportError" || record._tag === "SpotifyParseError") {
+      return JSON.stringify(
+        {
+          _tag: record._tag,
+          method: record.method,
+          url: record.url,
+          description: record.description,
+          cause: record.cause,
+        },
+        null,
+        2,
+      )
+    }
+
+    return error.message
+  }
+
+  if (typeof error === "object" && error !== null) {
+    return JSON.stringify(error, null, 2)
+  }
+
+  return String(error)
+}
+
 const parseInputs = (args: ReadonlyArray<string>): Partial<Inputs> => {
   let accessToken: string | undefined
   let trackId: string | undefined
@@ -99,7 +144,7 @@ const program = resolveInputs(process.argv.slice(2)).pipe(
     )
   }),
   Effect.matchEffect({
-    onFailure: (error: unknown) => Console.error(String(error)),
+    onFailure: (error: unknown) => Console.error(formatError(error)),
     onSuccess: () => Effect.void,
   }),
 )
