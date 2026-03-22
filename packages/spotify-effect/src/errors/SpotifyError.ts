@@ -12,6 +12,8 @@ export class SpotifyHttpError extends Data.TaggedError("SpotifyHttpError")<{
   readonly status: number
   readonly method: string
   readonly url: string
+  readonly apiMessage?: string
+  readonly body?: unknown
   readonly description?: string
 }> {}
 
@@ -27,6 +29,27 @@ export type SpotifyRequestError =
   | SpotifyHttpError
   | SpotifyParseError
 
+export interface SpotifyHttpErrorDetails {
+  readonly status: number
+  readonly method: string
+  readonly url: string
+  readonly apiMessage?: string
+  readonly body?: unknown
+  readonly description?: string
+}
+
+export const makeSpotifyHttpError = (
+  details: SpotifyHttpErrorDetails,
+): SpotifyHttpError =>
+  new SpotifyHttpError({
+    status: details.status,
+    method: details.method,
+    url: details.url,
+    ...(details.apiMessage === undefined ? null : { apiMessage: details.apiMessage }),
+    ...(details.body === undefined ? null : { body: details.body }),
+    ...(details.description === undefined ? null : { description: details.description }),
+  })
+
 export const mapHttpClientError = (
   error: HttpClientError.HttpClientError,
 ): SpotifyRequestError => {
@@ -34,7 +57,7 @@ export const mapHttpClientError = (
 
   switch (reason._tag) {
     case "StatusCodeError":
-      return new SpotifyHttpError({
+      return makeSpotifyHttpError({
         status: reason.response.status,
         method: reason.request.method,
         url: reason.request.url,

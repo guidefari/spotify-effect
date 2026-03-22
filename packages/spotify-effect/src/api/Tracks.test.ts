@@ -1,5 +1,6 @@
 import * as Effect from "effect/Effect"
 import { afterEach, describe, expect, it, vi } from "vitest"
+import { getTracksFixture } from "../fixtures/getTracksFixture"
 import { makeSpotifyRequest } from "../services/SpotifyRequest"
 import { trackFixture } from "../fixtures/trackFixture"
 import { TracksApi } from "./Tracks"
@@ -79,6 +80,73 @@ describe("TracksApi", () => {
 
     const [url, options] = firstCall
     expect(String(url)).toBe("https://api.spotify.com/v1/tracks/foo?market=bar")
+    expect(options.headers.authorization).toBe("Bearer token")
+  })
+
+  it("should get several tracks without options", async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(getTracksFixture), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+          },
+        }),
+      ),
+    )
+
+    const tracks = new TracksApi(
+      makeSpotifyRequest({
+        getAccessToken: () => "token",
+      }),
+    )
+
+    const response = await Effect.runPromise(tracks.getTracks(["foo", "bar"]))
+
+    expect(response).toEqual(getTracksFixture.tracks)
+
+    const firstCall = fetchMock.mock.calls[0]
+
+    if (firstCall === undefined) {
+      throw new Error("Expected fetch to be called")
+    }
+
+    const [url] = firstCall
+    expect(String(url)).toBe("https://api.spotify.com/v1/tracks?ids=foo%2Cbar")
+  })
+
+  it("should get several tracks with options", async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify(getTracksFixture), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+          },
+        }),
+      ),
+    )
+
+    const tracks = new TracksApi(
+      makeSpotifyRequest({
+        getAccessToken: () => "token",
+      }),
+    )
+
+    const response = await Effect.runPromise(
+      tracks.getTracks(["foo", "bar"], { market: "baz" }),
+    )
+
+    expect(response).toEqual(getTracksFixture.tracks)
+
+    const firstCall = fetchMock.mock.calls[0]
+
+    if (firstCall === undefined) {
+      throw new Error("Expected fetch to be called")
+    }
+
+    const [url, options] = firstCall
+    expect(String(url)).toBe("https://api.spotify.com/v1/tracks?ids=foo%2Cbar&market=baz")
     expect(options.headers.authorization).toBe("Bearer token")
   })
 })

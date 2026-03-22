@@ -12,7 +12,7 @@ describe("makeSpotifyRequest", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ error: { status: 404 } }), {
+        new Response(JSON.stringify({ error: { status: 404, message: "Track not found" } }), {
           status: 404,
           headers: {
             "content-type": "application/json",
@@ -35,6 +35,8 @@ describe("makeSpotifyRequest", () => {
       expect(error.status).toBe(404)
       expect(error.method).toBe("GET")
       expect(error.url).toBe("https://api.spotify.com/v1/tracks/missing")
+      expect(error.apiMessage).toBe("Track not found")
+      expect(error.body).toEqual({ error: { status: 404, message: "Track not found" } })
     }
   })
 })
