@@ -15,6 +15,7 @@ import type { GetTracksResponse } from "./model/SpotifyResponses";
 import { makeSpotifyAuth } from "./services/SpotifyAuth";
 import type { SpotifyAuth } from "./services/SpotifyAuth";
 import { makeSpotifyRequest } from "./services/SpotifyRequest";
+import { makeSpotifySession, type SpotifySession } from "./services/SpotifySession";
 import {
   getAuthorizationUrl,
   type GetAuthorizationUrlOptions,
@@ -58,12 +59,9 @@ export class SpotifyWebApi {
   private readonly _clientId: string;
   private readonly _clientSecret: string;
   private readonly _redirectUri: string;
-  private accessToken: string;
-  private accessTokenExpiresAt: number | undefined;
-  private refreshToken: string | undefined;
   private readonly provideHttpClient: <A, E>(effect: Effect.Effect<A, E, HttpClient.HttpClient>) => Effect.Effect<A, E>;
   private readonly appAuth: SpotifyAuth;
-  private temporaryAppTokens: GetTemporaryAppTokensResponse | undefined;
+  private readonly session: SpotifySession;
 
   public readonly tracks: ProvidedTracksApi;
   public readonly users: ProvidedUsersApi;
@@ -72,14 +70,12 @@ export class SpotifyWebApi {
     this._clientId = options.clientId ?? "";
     this._clientSecret = options.clientSecret ?? "";
     this._redirectUri = options.redirectUri ?? "";
-    this.accessToken = credentials?.accessToken ?? "";
-    this.accessTokenExpiresAt = credentials?.accessTokenExpiresAt;
-    this.refreshToken = credentials?.refreshToken;
     this.appAuth = makeSpotifyAuth({
       clientId: this._clientId,
       clientSecret: this._clientSecret,
       redirectUri: this._redirectUri,
     });
+    this.session = makeSpotifySession(credentials)
 
     const layer = options.httpClientLayer ?? FetchHttpClient.layer;
     this.provideHttpClient = <A, E>(
@@ -88,12 +84,20 @@ export class SpotifyWebApi {
 
     const rawTracks = new TracksApi(
       makeSpotifyRequest({
-        getAccessToken: () => this.resolveAccessToken(),
+        getAccessToken: () =>
+          this.session.getAccessToken({
+            auth: this.appAuth,
+            canUseClientCredentials: isConfigured(this._clientId) && isConfigured(this._clientSecret),
+          }),
       }),
     );
     const rawUsers = new UsersApi(
       makeSpotifyRequest({
-        getAccessToken: () => this.resolveAccessToken(),
+        getAccessToken: () =>
+          this.session.getAccessToken({
+            auth: this.appAuth,
+            canUseClientCredentials: isConfigured(this._clientId) && isConfigured(this._clientSecret),
+          }),
       }),
     )
 
@@ -107,7 +111,7 @@ export class SpotifyWebApi {
   }
 
   public getTemporaryAppTokens(): Effect.Effect<GetTemporaryAppTokensResponse, SpotifyRequestError> {
-    return this.provideHttpClient(this.getOrCreateTemporaryAppTokens());
+    return this.provideHttpClient(this.session.getTemporaryAppTokens(this.appAuth));
   }
 
   public getAuthorizationCodeUrl(options?: GetAuthorizationUrlOptions): string {
@@ -130,7 +134,7 @@ export class SpotifyWebApi {
   ): Effect.Effect<GetRefreshableUserTokensResponse, SpotifyRequestError> {
     return this.provideHttpClient(
       this.appAuth.getRefreshableUserTokens(code).pipe(
-        Effect.tap((tokens) => this.storeRefreshableTokens(tokens)),
+        Effect.tap((tokens) => this.session.setRefreshableUserTokens(tokens)),
       ),
     )
   }
@@ -145,7 +149,7 @@ export class SpotifyWebApi {
         clientId,
         code,
         codeVerifier,
-      }).pipe(Effect.tap((tokens) => this.storeRefreshableTokens(tokens))),
+      }).pipe(Effect.tap((tokens) => this.session.setRefreshableUserTokens(tokens))),
     )
   }
 
@@ -154,111 +158,29 @@ export class SpotifyWebApi {
   ): Effect.Effect<GetRefreshedAccessTokenResponse, SpotifyRequestError> {
     return this.provideHttpClient(
       this.appAuth.getRefreshedAccessToken(refreshToken).pipe(
-        Effect.tap((tokens) =>
-          Effect.sync(() => {
-            this.accessToken = tokens.access_token;
-            this.accessTokenExpiresAt = Date.now() + tokens.expires_in * 1000;
-            this.refreshToken = refreshToken;
-          }),
-        ),
+        Effect.tap((tokens) => this.session.updateRefreshedAccessToken(refreshToken, tokens)),
       ),
     )
   }
 
   public getAccessToken(): string {
-    return this.accessToken;
+    return this.session.getStoredAccessToken();
   }
 
   public setAccessToken(accessToken: string): void {
-    this.accessToken = accessToken;
-    this.accessTokenExpiresAt = undefined;
+    Effect.runSync(this.session.setAccessToken(accessToken));
   }
 
   public setRefreshableUserTokens(tokens: GetRefreshableUserTokensResponse): void {
-    this.accessToken = tokens.access_token;
-    this.accessTokenExpiresAt = Date.now() + tokens.expires_in * 1000;
-    this.refreshToken = tokens.refresh_token;
+    Effect.runSync(this.session.setRefreshableUserTokens(tokens));
   }
 
   public getAccessTokenExpiresAt(): number | undefined {
-    return this.accessTokenExpiresAt
+    return this.session.getStoredAccessTokenExpiresAt()
   }
 
   public getRefreshToken(): string | undefined {
-    return this.refreshToken
-  }
-
-  private resolveAccessToken(): Effect.Effect<string, SpotifyRequestError, HttpClient.HttpClient> {
-    if (isConfigured(this.accessToken) && !this.hasExpiredAccessToken()) {
-      return Effect.succeed(this.accessToken);
-    }
-
-    if (isConfigured(this.refreshToken ?? "")) {
-      return this.refreshAccessToken().pipe(Effect.map((tokens) => tokens.access_token));
-    }
-
-    if (isConfigured(this._clientId) && isConfigured(this._clientSecret)) {
-      return this.getOrCreateTemporaryAppTokens().pipe(Effect.map((tokens) => tokens.access_token));
-    }
-
-    return Effect.fail(
-      new SpotifyConfigurationError({
-        message: "Provide an access token or configure clientId and clientSecret",
-      }),
-    );
-  }
-
-  private hasExpiredAccessToken(): boolean {
-    return this.accessTokenExpiresAt !== undefined && Date.now() >= this.accessTokenExpiresAt
-  }
-
-  private refreshAccessToken(): Effect.Effect<
-    GetRefreshedAccessTokenResponse,
-    SpotifyRequestError,
-    HttpClient.HttpClient
-  > {
-    const refreshToken = this.refreshToken
-
-    if (refreshToken === undefined || refreshToken.length === 0) {
-      return Effect.fail(
-        new SpotifyConfigurationError({
-          message: "refreshToken is required to refresh a user access token",
-        }),
-      )
-    }
-
-    return this.appAuth.getRefreshedAccessToken(refreshToken).pipe(
-      Effect.tap((tokens) =>
-        Effect.sync(() => {
-          this.accessToken = tokens.access_token;
-          this.accessTokenExpiresAt = Date.now() + tokens.expires_in * 1000;
-        }),
-      ),
-    )
-  }
-
-  private storeRefreshableTokens(tokens: GetRefreshableUserTokensResponse): Effect.Effect<void> {
-    return Effect.sync(() => {
-      this.accessToken = tokens.access_token;
-      this.accessTokenExpiresAt = Date.now() + tokens.expires_in * 1000;
-      this.refreshToken = tokens.refresh_token;
-    })
-  }
-
-  private getOrCreateTemporaryAppTokens(): Effect.Effect<
-    GetTemporaryAppTokensResponse,
-    SpotifyRequestError,
-    HttpClient.HttpClient
-  > {
-    if (this.temporaryAppTokens !== undefined) {
-      return Effect.succeed(this.temporaryAppTokens);
-    }
-
-    return this.appAuth.getTemporaryAppTokens().pipe(
-      Effect.tap((tokens) => Effect.sync(() => {
-        this.temporaryAppTokens = tokens;
-      })),
-    );
+    return this.session.getStoredRefreshToken()
   }
 
   public get clientId(): string {
