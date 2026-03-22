@@ -6,6 +6,9 @@
     "examples/*"
   ],
   "scripts": {
+    "fmt": "oxfmt --write .",
+    "fmt:check": "oxfmt --check .",
+    "lint": "oxlint -c oxlintrc.json --jest-plugin",
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun run --filter spotify-effect test",
     "test:watch": "bun run --filter spotify-effect test:watch",
@@ -16,6 +19,8 @@
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
     "@types/node": "^25.5.0",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"

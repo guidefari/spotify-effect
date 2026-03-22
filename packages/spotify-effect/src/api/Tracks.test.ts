@@ -1,152 +1,73 @@
-import * as Effect from "effect/Effect"
-import { afterEach, describe, expect, it, vi } from "vitest"
-import { getTracksFixture } from "../fixtures/getTracksFixture"
-import { makeSpotifyRequest } from "../services/SpotifyRequest"
-import { trackFixture } from "../fixtures/trackFixture"
-import { TracksApi } from "./Tracks"
+import * as Effect from "effect/Effect";
+import { describe, expect, it } from "vitest";
+import { getTracksFixture } from "../fixtures/getTracksFixture";
+import { makeSpotifyRequest } from "../services/SpotifyRequest";
+import { makeTestHttpClient } from "../test/TestHttpClient";
+import { trackFixture } from "../fixtures/trackFixture";
+import { TracksApi } from "./Tracks";
 
-const fetchMock = vi.fn()
+const makeTracksWithTestClient = (response: Response) => {
+  const testClient = makeTestHttpClient(() => response);
 
-vi.stubGlobal("fetch", fetchMock)
+  const tracks = new TracksApi(
+    makeSpotifyRequest({
+      getAccessToken: () => "token",
+    }),
+  );
+
+  return { tracks, ...testClient };
+};
+
+const jsonResponse = (body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
 
 describe("TracksApi", () => {
-  afterEach(() => {
-    fetchMock.mockReset()
-  })
-
   it("should get a track without options", async () => {
-    fetchMock.mockImplementation(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(trackFixture), {
-          status: 200,
-          headers: {
-            "content-type": "application/json",
-          },
-        }),
-      ),
-    )
+    const { tracks, layer, requests } = makeTracksWithTestClient(jsonResponse(trackFixture));
 
-    const tracks = new TracksApi(
-      makeSpotifyRequest({
-        getAccessToken: () => "token",
-      }),
-    )
+    const response = await Effect.runPromise(tracks.getTrack("foo").pipe(Effect.provide(layer)));
 
-    const response = await Effect.runPromise(tracks.getTrack("foo"))
-
-    expect(response).toEqual(trackFixture)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-
-    const firstCall = fetchMock.mock.calls[0]
-
-    if (firstCall === undefined) {
-      throw new Error("Expected fetch to be called")
-    }
-
-    const [url] = firstCall
-    expect(String(url)).toBe("https://api.spotify.com/v1/tracks/foo")
-  })
+    expect(response).toEqual(trackFixture);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.url).toBe("https://api.spotify.com/v1/tracks/foo");
+  });
 
   it("should get a track with options", async () => {
-    fetchMock.mockImplementation(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(trackFixture), {
-          status: 200,
-          headers: {
-            "content-type": "application/json",
-          },
-        }),
-      ),
-    )
-
-    const tracks = new TracksApi(
-      makeSpotifyRequest({
-        getAccessToken: () => "token",
-      }),
-    )
+    const { tracks, layer, requests } = makeTracksWithTestClient(jsonResponse(trackFixture));
 
     const response = await Effect.runPromise(
-      tracks.getTrack("foo", { market: "bar" }),
-    )
+      tracks.getTrack("foo", { market: "bar" }).pipe(Effect.provide(layer)),
+    );
 
-    expect(response).toEqual(trackFixture)
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-
-    const firstCall = fetchMock.mock.calls[0]
-
-    if (firstCall === undefined) {
-      throw new Error("Expected fetch to be called")
-    }
-
-    const [url, options] = firstCall
-    expect(String(url)).toBe("https://api.spotify.com/v1/tracks/foo?market=bar")
-    expect(options.headers.authorization).toBe("Bearer token")
-  })
+    expect(response).toEqual(trackFixture);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.url).toBe("https://api.spotify.com/v1/tracks/foo?market=bar");
+    expect(requests[0]?.headers.authorization).toBe("Bearer token");
+  });
 
   it("should get several tracks without options", async () => {
-    fetchMock.mockImplementation(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(getTracksFixture), {
-          status: 200,
-          headers: {
-            "content-type": "application/json",
-          },
-        }),
-      ),
-    )
-
-    const tracks = new TracksApi(
-      makeSpotifyRequest({
-        getAccessToken: () => "token",
-      }),
-    )
-
-    const response = await Effect.runPromise(tracks.getTracks(["foo", "bar"]))
-
-    expect(response).toEqual(getTracksFixture.tracks)
-
-    const firstCall = fetchMock.mock.calls[0]
-
-    if (firstCall === undefined) {
-      throw new Error("Expected fetch to be called")
-    }
-
-    const [url] = firstCall
-    expect(String(url)).toBe("https://api.spotify.com/v1/tracks?ids=foo%2Cbar")
-  })
-
-  it("should get several tracks with options", async () => {
-    fetchMock.mockImplementation(() =>
-      Promise.resolve(
-        new Response(JSON.stringify(getTracksFixture), {
-          status: 200,
-          headers: {
-            "content-type": "application/json",
-          },
-        }),
-      ),
-    )
-
-    const tracks = new TracksApi(
-      makeSpotifyRequest({
-        getAccessToken: () => "token",
-      }),
-    )
+    const { tracks, layer, requests } = makeTracksWithTestClient(jsonResponse(getTracksFixture));
 
     const response = await Effect.runPromise(
-      tracks.getTracks(["foo", "bar"], { market: "baz" }),
-    )
+      tracks.getTracks(["foo", "bar"]).pipe(Effect.provide(layer)),
+    );
 
-    expect(response).toEqual(getTracksFixture.tracks)
+    expect(response).toEqual(getTracksFixture.tracks);
+    expect(requests[0]?.url).toBe("https://api.spotify.com/v1/tracks?ids=foo%2Cbar");
+  });
 
-    const firstCall = fetchMock.mock.calls[0]
+  it("should get several tracks with options", async () => {
+    const { tracks, layer, requests } = makeTracksWithTestClient(jsonResponse(getTracksFixture));
 
-    if (firstCall === undefined) {
-      throw new Error("Expected fetch to be called")
-    }
+    const response = await Effect.runPromise(
+      tracks.getTracks(["foo", "bar"], { market: "baz" }).pipe(Effect.provide(layer)),
+    );
 
-    const [url, options] = firstCall
-    expect(String(url)).toBe("https://api.spotify.com/v1/tracks?ids=foo%2Cbar&market=baz")
-    expect(options.headers.authorization).toBe("Bearer token")
-  })
-})
+    expect(response).toEqual(getTracksFixture.tracks);
+    expect(requests[0]?.url).toBe("https://api.spotify.com/v1/tracks?ids=foo%2Cbar&market=baz");
+    expect(requests[0]?.headers.authorization).toBe("Bearer token");
+  });
+});

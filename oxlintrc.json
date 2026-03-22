@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["jest"],
+  "rules": {
+    "jest/no-restricted-jest-methods": [
+      "error",
+      {
+        "mock": "vi.mock() is banned. Use Effect layers for dependency injection instead.",
+        "stubGlobal": "vi.stubGlobal() is banned. Use Effect layers for dependency injection instead.",
+        "spyOn": "vi.spyOn() is banned. Use Effect layers for dependency injection instead.",
+        "fn": "vi.fn() is banned. Use Effect layers for dependency injection instead."
+      }
+    ]
+  }
+}
