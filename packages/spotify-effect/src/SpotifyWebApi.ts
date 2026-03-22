@@ -89,6 +89,7 @@ export class SpotifyWebApi {
             auth: this.appAuth,
             canUseClientCredentials: isConfigured(this._clientId) && isConfigured(this._clientSecret),
           }),
+        invalidateAccessToken: () => this.session.invalidateAccessToken(),
       }),
     );
     const rawUsers = new UsersApi(
@@ -98,6 +99,7 @@ export class SpotifyWebApi {
             auth: this.appAuth,
             canUseClientCredentials: isConfigured(this._clientId) && isConfigured(this._clientSecret),
           }),
+        invalidateAccessToken: () => this.session.invalidateAccessToken(),
       }),
     )
 

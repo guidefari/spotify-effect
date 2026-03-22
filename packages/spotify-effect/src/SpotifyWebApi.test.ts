@@ -174,6 +174,65 @@ describe("SpotifyWebApi", () => {
     expect(requests[1]?.headers.authorization).toBe("Bearer refreshed-user-token")
   })
 
+  it("refreshes and retries after an unauthorized user request", async () => {
+    let meAttempts = 0
+    const { layer, requests } = makeTestHttpClient((request) => {
+      if (request.url === "https://accounts.spotify.com/api/token") {
+        return new Response(
+          JSON.stringify({
+            access_token: "fresh-user-token",
+            token_type: "Bearer",
+            expires_in: 3600,
+            scope: "user-read-private",
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        )
+      }
+
+      if (request.url === "https://api.spotify.com/v1/me") {
+        meAttempts += 1
+
+        if (meAttempts === 1) {
+          return new Response(JSON.stringify({ error: { status: 401, message: "Unauthorized" } }), {
+            status: 401,
+            headers: { "content-type": "application/json" },
+          })
+        }
+
+        return new Response(JSON.stringify(currentUserProfileFixture), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        })
+      }
+
+      return new Response(null, { status: 500 })
+    })
+
+    const spotify = new SpotifyWebApi(
+      {
+        clientId: "foo",
+        clientSecret: "bar",
+        redirectUri: "baz",
+        httpClientLayer: layer,
+      },
+      {
+        accessToken: "bad-token",
+        refreshToken: "refresh-token",
+      },
+    )
+
+    const profile = await Effect.runPromise(spotify.users.getCurrentUserProfile())
+
+    expect(profile).toEqual(currentUserProfileFixture)
+    expect(meAttempts).toBe(2)
+    expect(requests[0]?.url).toBe("https://api.spotify.com/v1/me")
+    expect(requests[1]?.url).toBe("https://accounts.spotify.com/api/token")
+    expect(requests[2]?.headers.authorization).toBe("Bearer fresh-user-token")
+  })
+
   it("gets the current user profile with refreshable user tokens", async () => {
     const { layer, requests } = makeTestHttpClient((request) => {
       if (request.url === "https://accounts.spotify.com/api/token") {

@@ -12,6 +12,7 @@ const makeTracksWithTestClient = (response: Response) => {
   const tracks = new TracksApi(
     makeSpotifyRequest({
       getAccessToken: () => Effect.succeed("token"),
+      invalidateAccessToken: () => Effect.void,
     }),
   );
 

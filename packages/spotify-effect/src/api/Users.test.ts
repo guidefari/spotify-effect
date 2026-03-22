@@ -18,6 +18,7 @@ describe("UsersApi", () => {
     const users = new UsersApi(
       makeSpotifyRequest({
         getAccessToken: () => Effect.succeed("token"),
+        invalidateAccessToken: () => Effect.void,
       }),
     )
 

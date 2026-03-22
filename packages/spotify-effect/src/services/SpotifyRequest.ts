@@ -23,6 +23,7 @@ export interface SpotifyRequest {
 
 export interface AccessTokenResolver {
   getAccessToken(): Effect.Effect<string, SpotifyRequestError, HttpClient.HttpClient>;
+  invalidateAccessToken(): Effect.Effect<void>;
 }
 
 const buildUrl = (path: string): string =>
@@ -91,20 +92,40 @@ const decodeFailureResponse = (
     );
   });
 
+const sendRequest = (
+  accessToken: string,
+  path: string,
+  options?: SpotifyRequestOptions,
+): Effect.Effect<HttpClientResponse.HttpClientResponse, SpotifyRequestError, HttpClient.HttpClient> =>
+  HttpClient.get(buildUrl(path), {
+    acceptJson: true,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    urlParams: options?.query,
+  }).pipe(Effect.mapError(mapHttpClientError));
+
 export const makeSpotifyRequest = (accessTokenResolver: AccessTokenResolver): SpotifyRequest => ({
   getJson: <A>(path: string, options?: SpotifyRequestOptions) =>
     Effect.gen(function* () {
       const accessToken = yield* accessTokenResolver.getAccessToken();
-      const response = yield* HttpClient.get(buildUrl(path), {
-        acceptJson: true,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        urlParams: options?.query,
-      }).pipe(Effect.mapError(mapHttpClientError));
+      const response = yield* sendRequest(accessToken, path, options);
 
       if (response.status >= 200 && response.status < 300) {
         return yield* decodeSuccessResponse<A>(response);
+      }
+
+      if (response.status === 401) {
+        yield* accessTokenResolver.invalidateAccessToken();
+
+        const retriedAccessToken = yield* accessTokenResolver.getAccessToken();
+        const retriedResponse = yield* sendRequest(retriedAccessToken, path, options);
+
+        if (retriedResponse.status >= 200 && retriedResponse.status < 300) {
+          return yield* decodeSuccessResponse<A>(retriedResponse);
+        }
+
+        return yield* decodeFailureResponse(retriedResponse);
       }
 
       return yield* decodeFailureResponse(response);

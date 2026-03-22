@@ -35,6 +35,7 @@ export interface SpotifySession {
     HttpClient.HttpClient
   >
   readonly setAccessToken: (accessToken: string) => Effect.Effect<void>
+  readonly invalidateAccessToken: () => Effect.Effect<void>
   readonly setRefreshableUserTokens: (
     tokens: GetRefreshableUserTokensResponse,
   ) => Effect.Effect<void>
@@ -79,6 +80,21 @@ export const makeSpotifySession = (options: SpotifySessionOptions = {}): Spotify
         ...(state.temporaryAppTokenExpiresAt === undefined
           ? null
           : { temporaryAppTokenExpiresAt: state.temporaryAppTokenExpiresAt }),
+      },
+    ])
+
+  const invalidateAccessToken = (): Effect.Effect<void> =>
+    SynchronizedRef.modify(stateRef, (state) => [
+      undefined,
+      {
+        ...(state.refreshToken === undefined ? null : { refreshToken: state.refreshToken }),
+        ...(state.temporaryAppTokens === undefined
+          ? null
+          : { temporaryAppTokens: state.temporaryAppTokens }),
+        ...(state.temporaryAppTokenExpiresAt === undefined
+          ? null
+          : { temporaryAppTokenExpiresAt: state.temporaryAppTokenExpiresAt }),
+        accessToken: "",
       },
     ])
 
@@ -151,6 +167,7 @@ export const makeSpotifySession = (options: SpotifySessionOptions = {}): Spotify
         }),
       ),
     setAccessToken: setAccessTokenState,
+    invalidateAccessToken,
     setRefreshableUserTokens: (tokens) =>
       Effect.gen(function* () {
         const now = yield* getCurrentTimeMillis()
