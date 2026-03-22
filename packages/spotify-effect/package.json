@@ -1,0 +1,19 @@
+{
+  "name": "spotify-effect",
+  "license": "MIT",
+  "version": "0.0.6",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "tsc -p tsconfig.json && vitest run --config vite.config.ts",
+    "test:watch": "vitest --config vite.config.ts",
+    "build": "tsup src/index.ts --format cjs,esm --dts"
+  },
+  "dependencies": {
+    "effect": "4.0.0-beta.36"
+  }
+}

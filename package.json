@@ -1,17 +1,14 @@
 {
-  "name": "spotify-effect",
-  "license": "MIT",
-  "version": "0.0.6",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "publishConfig": {
-    "access": "public"
-  },
+  "name": "spotify-effect-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
   "scripts": {
-    "test": "tsc && vitest run",
-    "test:watch": "vitest",
-    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "test": "bun run --filter spotify-effect test",
+    "test:watch": "bun run --filter spotify-effect test:watch",
+    "build": "bun run --filter spotify-effect build",
     "release": "bun run build && changeset publish"
   },
   "devDependencies": {
@@ -19,8 +16,5 @@
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"
-  },
-  "dependencies": {
-    "effect": "4.0.0-beta.36"
   }
 }

@@ -1,11 +1,11 @@
-import * as Effect from "effect/Effect";
-import * as Schema from "effect/Schema";
+import * as Effect from "effect/Effect"
+import * as Schema from "effect/Schema"
 
 const HttpErrorSchema = Schema.Struct({
   _tag: Schema.Literal("HttpError"),
   message: Schema.String,
-});
-export type HttpError = typeof HttpErrorSchema.Type;
+})
+export type HttpError = typeof HttpErrorSchema.Type
 
 export const get = <T>(url: string) =>
   Effect.tryPromise({
@@ -17,4 +17,4 @@ export const get = <T>(url: string) =>
       _tag: "HttpError",
       message: `Failed to fetch${url}`,
     }),
-  });
+  })
