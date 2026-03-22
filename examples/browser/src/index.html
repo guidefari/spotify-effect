@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>spotify-effect browser example</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f1e8;
+        --card: #fffdf8;
+        --ink: #1f1a17;
+        --muted: #675f59;
+        --line: #d9cfc2;
+        --accent: #1db954;
+        --accent-ink: #083b17;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Iowan Old Style", "Palatino Linotype", serif;
+        background: radial-gradient(circle at top, #fff8e9, var(--bg) 55%);
+        color: var(--ink);
+      }
+
+      main {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 48px 20px 64px;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+      }
+
+      p {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .hero {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 28px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 20px;
+      }
+
+      @media (min-width: 900px) {
+        .grid {
+          grid-template-columns: 1.2fr 0.8fr;
+        }
+      }
+
+      .card {
+        background: color-mix(in srgb, var(--card) 92%, white 8%);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 12px 40px rgba(30, 20, 10, 0.06);
+      }
+
+      .stack {
+        display: grid;
+        gap: 14px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 14px;
+      }
+
+      input,
+      textarea,
+      button {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        padding: 12px 14px;
+        font: inherit;
+      }
+
+      textarea {
+        min-height: 110px;
+        resize: vertical;
+      }
+
+      button {
+        cursor: pointer;
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+        font-weight: 600;
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: fit-content;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #edf8f1;
+        color: var(--accent-ink);
+        border: 1px solid #b7e5c7;
+        font-size: 13px;
+      }
+
+      .meta {
+        display: grid;
+        gap: 10px;
+        font-size: 14px;
+      }
+
+      pre {
+        margin: 0;
+        padding: 16px;
+        border-radius: 16px;
+        background: #1f1a17;
+        color: #f9f3eb;
+        overflow: auto;
+        font-size: 13px;
+      }
+
+      .muted-box {
+        border-radius: 16px;
+        padding: 16px;
+        background: #faf5ec;
+        border: 1px dashed var(--line);
+      }
+
+      a {
+        color: var(--accent-ink);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <span class="pill">Browser playground for `spotify-effect`</span>
+        <h1>Try the library in a real browser</h1>
+        <p>
+          This example already lets you fetch a track with a pasted access token, and it is laid out
+          to become the manual PKCE playground for issue #12.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="card stack">
+          <h2>Fetch a track</h2>
+          <label>
+            Access token
+            <textarea id="access-token" placeholder="Paste a Spotify access token"></textarea>
+          </label>
+          <label>
+            Track ID
+            <input id="track-id" placeholder="e.g. 2112123d1" />
+          </label>
+          <button id="fetch-track">Fetch track</button>
+          <div class="meta" id="status"></div>
+          <pre id="output">Waiting for input...</pre>
+        </article>
+
+        <aside class="stack">
+          <article class="card stack">
+            <h2>PKCE next</h2>
+            <div class="muted-box">
+              <p>
+                This browser example is where the PKCE flow will land for issue <strong>#12</strong>.
+              </p>
+              <p>
+                Read <a href="/pkce" target="_blank" rel="noreferrer">the PKCE doc</a> first if the
+                flow still feels fuzzy.
+              </p>
+            </div>
+          </article>
+
+          <article class="card stack">
+            <h2>Planned browser flow</h2>
+            <div class="meta">
+              <div>1. Generate a PKCE verifier and challenge</div>
+              <div>2. Send the user to Spotify auth</div>
+              <div>3. Handle the callback code in the browser example</div>
+              <div>4. Exchange the code through the library</div>
+              <div>5. Reuse and refresh tokens in memory for the session</div>
+            </div>
+          </article>
+        </aside>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

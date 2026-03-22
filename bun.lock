@@ -22,6 +22,14 @@
         "spotify-effect": "workspace:*",
       },
     },
+    "examples/browser": {
+      "name": "@examples/browser",
+      "version": "0.0.0",
+      "dependencies": {
+        "effect": "4.0.0-beta.36",
+        "spotify-effect": "workspace:*",
+      },
+    },
     "packages/spotify-effect": {
       "name": "spotify-effect",
       "version": "0.0.6",
@@ -126,6 +134,8 @@
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.27.4", "", { "os": "win32", "cpu": "x64" }, "sha512-+knoa0BDoeXgkNvvV1vvbZX4+hizelrkwmGJBdT17t8FNPwG2lKemmuMZlmaNQ3ws3DKKCxpb4zRZEIp3UxFCg=="],
 
     "@examples/basic": ["@examples/basic@workspace:examples/basic"],
+
+    "@examples/browser": ["@examples/browser@workspace:examples/browser"],
 
     "@inquirer/external-editor": ["@inquirer/external-editor@1.0.3", "", { "dependencies": { "chardet": "^2.1.1", "iconv-lite": "^0.7.0" }, "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-RWbSrDiYmO4LbejWY7ttpxczuwQyZLBUyygsA9Nsv95hpzUWwnNTVQmAq3xuh7vNwCp07UTmE5i11XAEExx4RA=="],
 
