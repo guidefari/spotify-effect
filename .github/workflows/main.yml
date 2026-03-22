@@ -10,9 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18.x
-      - run: yarn
-      - run: yarn test && yarn build
-
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - run: bun test && bun run build
