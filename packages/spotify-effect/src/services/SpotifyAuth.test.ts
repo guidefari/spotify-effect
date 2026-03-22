@@ -105,6 +105,34 @@ describe("SpotifyAuth", () => {
     expect(requests[0]?.body).toBe("grant_type=refresh_token&refresh_token=refresh-token")
   })
 
+  it("accepts refreshed access tokens without scope", async () => {
+    const { layer } = makeTestHttpClient(
+      () =>
+        new Response(
+          JSON.stringify({
+            access_token: "refreshed-token",
+            token_type: "Bearer",
+            expires_in: 1800,
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
+    )
+
+    const auth = makeSpotifyAuth({ clientId: "client-id", clientSecret: "client-secret" })
+    const tokens = await Effect.runPromise(
+      auth.getRefreshedAccessToken("refresh-token").pipe(Effect.provide(layer)),
+    )
+
+    expect(tokens).toEqual({
+      access_token: "refreshed-token",
+      token_type: "Bearer",
+      expires_in: 1800,
+    })
+  })
+
   it("requests temporary app tokens with client credentials", async () => {
     const { layer, requests } = makeTestHttpClient(
       () =>
@@ -131,6 +159,32 @@ describe("SpotifyAuth", () => {
     expect(requests[0]?.method).toBe("POST")
     expect(requests[0]?.headers.authorization).toBe("Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=")
     expect(requests[0]?.body).toBe("grant_type=client_credentials")
+  })
+
+  it("accepts temporary app tokens without scope", async () => {
+    const { layer } = makeTestHttpClient(
+      () =>
+        new Response(
+          JSON.stringify({
+            access_token: "temporary-token",
+            token_type: "Bearer",
+            expires_in: 3600,
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
+    )
+
+    const auth = makeSpotifyAuth({ clientId: "client-id", clientSecret: "client-secret" })
+    const tokens = await Effect.runPromise(auth.getTemporaryAppTokens().pipe(Effect.provide(layer)))
+
+    expect(tokens).toEqual({
+      access_token: "temporary-token",
+      token_type: "Bearer",
+      expires_in: 3600,
+    })
   })
 
   it("maps token endpoint failures to SpotifyHttpError", async () => {

@@ -35,12 +35,6 @@ export interface SpotifyWebApiCredentials {
   refreshToken?: string;
 }
 
-interface RefreshableTokensState {
-  readonly accessToken: string;
-  readonly accessTokenExpiresAt: number;
-  readonly refreshToken: string;
-}
-
 interface ProvidedTracksApi {
   getTrack(trackId: string, options?: MarketOptions): Effect.Effect<Track, SpotifyRequestError>;
   getTracks(

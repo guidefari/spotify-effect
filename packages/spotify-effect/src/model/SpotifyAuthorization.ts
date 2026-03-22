@@ -22,7 +22,7 @@ export type AuthorizationScope =
 export type GetRefreshableUserTokensResponse = {
   access_token: string;
   token_type: "Bearer";
-  scope: string;
+  scope?: string;
   expires_in: number;
   refresh_token: string;
 };
@@ -31,12 +31,12 @@ export type GetRefreshedAccessTokenResponse = {
   access_token: string;
   token_type: "Bearer";
   expires_in: number;
-  scope: string;
+  scope?: string;
 };
 
 export type GetTemporaryAppTokensResponse = {
   access_token: string;
   token_type: "Bearer";
   expires_in: number;
-  scope: string;
+  scope?: string;
 };

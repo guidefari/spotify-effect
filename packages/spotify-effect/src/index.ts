@@ -7,6 +7,12 @@ export {
   SpotifyTransportError,
 } from "./errors/SpotifyError";
 export { AUTHORIZE_URL, BASE_ACCOUNTS_URL, BASE_API_URL, TOKEN_URL } from "./constants"
+export {
+  createPkceCodeChallenge,
+  createPkceCodeVerifier,
+  makeSpotifyBrowserSession,
+  readAuthorizationCallback,
+} from "./browser/SpotifyBrowserSession"
 export { SpotifyWebApi } from "./SpotifyWebApi";
 export { default } from "./SpotifyWebApi";
 export type { SpotifyRequestError } from "./errors/SpotifyError";
@@ -17,6 +23,11 @@ export type {
   GetRefreshedAccessTokenResponse,
   GetTemporaryAppTokensResponse,
 } from "./model/SpotifyAuthorization";
+export type {
+  BrowserAuthorizationCallback,
+  BrowserPkceState,
+  BrowserRefreshableTokens,
+} from "./browser/SpotifyBrowserSession"
 export type { PrivateUser, Track } from "./model/SpotifyObjects";
 export type { MarketOptions } from "./model/SpotifyOptions";
 export type { GetAuthorizationUrlOptions, PKCEExtensionOptions } from "./utils/getAuthorizationUrl"

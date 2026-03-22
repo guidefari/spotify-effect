@@ -1,6 +1,12 @@
 import * as Effect from "effect/Effect"
-import { SpotifyWebApi } from "spotify-effect"
-import type { AuthorizationScope } from "spotify-effect"
+import {
+  SpotifyWebApi,
+  createPkceCodeChallenge,
+  createPkceCodeVerifier,
+  makeSpotifyBrowserSession,
+  readAuthorizationCallback,
+} from "spotify-effect"
+import type { AuthorizationScope, BrowserRefreshableTokens } from "spotify-effect"
 
 const accessTokenInput = document.querySelector<HTMLTextAreaElement>("#access-token")
 const trackIdInput = document.querySelector<HTMLInputElement>("#track-id")
@@ -44,20 +50,11 @@ const authorizationScopes: ReadonlyArray<AuthorizationScope> = [
 ]
 
 const defaultRedirectUri = `http://127.0.0.1:${window.location.port || "3012"}/`
-
-const storageKeys = {
-  pkceVerifier: "spotify-effect:pkce-verifier",
-  clientId: "spotify-effect:client-id",
-  redirectUri: "spotify-effect:redirect-uri",
-  authState: "spotify-effect:auth-state",
-  tokens: "spotify-effect:tokens",
-} as const
-
-interface RefreshableTokensState {
-  readonly accessToken: string
-  readonly refreshToken: string
-  readonly accessTokenExpiresAt: number
-}
+const browserSession = makeSpotifyBrowserSession({
+  sessionStorage: window.sessionStorage,
+  localStorage: window.localStorage,
+  history: window.history,
+})
 
 const setStatus = (message: string): void => {
   if (status !== null) {
@@ -115,7 +112,7 @@ const readAuthorizationInputs = (): {
 } => {
   const state = authStateInput?.value.trim() ?? ""
   const scope = parseScopes(authScopeInput?.value ?? "")
-  const redirectUri = authRedirectUriInput?.value.trim() ?? defaultRedirectUri
+  const redirectUri = authRedirectUriInput?.value.trim() || defaultRedirectUri
 
   return {
     clientId: authClientIdInput?.value.trim() ?? "",
@@ -125,80 +122,29 @@ const readAuthorizationInputs = (): {
   }
 }
 
-const toBase64Url = (value: Uint8Array): string => {
-  let binary = ""
-
-  value.forEach((byte) => {
-    binary += String.fromCharCode(byte)
-  })
-
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")
-}
-
-const createCodeVerifier = (): string => {
-  const bytes = new Uint8Array(32)
-  crypto.getRandomValues(bytes)
-  return toBase64Url(bytes)
-}
-
-const createCodeChallenge = async (verifier: string): Promise<string> => {
-  const encoded = new TextEncoder().encode(verifier)
-  const digest = await crypto.subtle.digest("SHA-256", encoded)
-  return toBase64Url(new Uint8Array(digest))
-}
-
-const readStoredTokens = (): RefreshableTokensState | undefined => {
-  const raw = localStorage.getItem(storageKeys.tokens)
-
-  if (raw === null) {
-    return undefined
-  }
-
-  try {
-    return JSON.parse(raw) as RefreshableTokensState
-  } catch {
-    return undefined
-  }
-}
-
-const readStoredValue = (key: string): string =>
-  sessionStorage.getItem(key) ?? localStorage.getItem(key) ?? ""
-
-const storeValue = (key: string, value: string): void => {
-  sessionStorage.setItem(key, value)
-  localStorage.setItem(key, value)
-}
-
-const storeTokens = (tokens: RefreshableTokensState): void => {
-  localStorage.setItem(storageKeys.tokens, JSON.stringify(tokens))
-}
-
 const syncStoredStateToUi = (): void => {
-  const code = new URL(window.location.href).searchParams.get("code") ?? ""
-  const verifier = readStoredValue(storageKeys.pkceVerifier)
-  const clientId = readStoredValue(storageKeys.clientId) || authClientIdInput?.value || ""
-  const redirectUri = readStoredValue(storageKeys.redirectUri) || defaultRedirectUri
-  const storedState = readStoredValue(storageKeys.authState)
-  const tokens = readStoredTokens()
+  const callback = readAuthorizationCallback(new URL(window.location.href))
+  const pkceState = browserSession.getPkceState()
+  const tokens = browserSession.getTokens()
 
   if (callbackCodeInput !== null) {
-    callbackCodeInput.value = code
+    callbackCodeInput.value = callback.code ?? ""
   }
 
   if (codeVerifierInput !== null) {
-    codeVerifierInput.value = verifier
+    codeVerifierInput.value = pkceState?.verifier ?? ""
   }
 
-  if (authClientIdInput !== null && clientId.length > 0) {
-    authClientIdInput.value = clientId
+  if (authClientIdInput !== null && pkceState?.clientId !== undefined) {
+    authClientIdInput.value = pkceState.clientId
   }
 
-  if (authRedirectUriInput !== null && redirectUri.length > 0) {
-    authRedirectUriInput.value = redirectUri
+  if (authRedirectUriInput !== null) {
+    authRedirectUriInput.value = pkceState?.redirectUri ?? defaultRedirectUri
   }
 
   if (authStateInput !== null) {
-    authStateInput.value = new URL(window.location.href).searchParams.get("state") ?? storedState
+    authStateInput.value = callback.state ?? pkceState?.state ?? ""
   }
 
   if (accessTokenInput !== null && tokens !== undefined) {
@@ -234,10 +180,7 @@ const fetchTrack = async (): Promise<void> => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        accessToken,
-        trackId,
-      }),
+      body: JSON.stringify({ accessToken, trackId }),
     })
 
     const payload = await response.json()
@@ -246,8 +189,7 @@ const fetchTrack = async (): Promise<void> => {
       throw payload
     }
 
-    const track = payload
-    setOutput(output, track)
+    setOutput(output, payload)
     setStatus("Track fetched successfully.")
   } catch (error) {
     setOutput(output, formatError(error))
@@ -281,8 +223,8 @@ const startPkceLogin = async (): Promise<void> => {
     return
   }
 
-  const verifier = createCodeVerifier()
-  const challenge = await createCodeChallenge(verifier)
+  const verifier = await Effect.runPromise(createPkceCodeVerifier())
+  const challenge = await Effect.runPromise(createPkceCodeChallenge(verifier))
   const spotify = new SpotifyWebApi({
     clientId: inputs.clientId,
     redirectUri: inputs.redirectUri,
@@ -293,11 +235,12 @@ const startPkceLogin = async (): Promise<void> => {
     code_challenge_method: "S256",
   })
 
-  sessionStorage.setItem(storageKeys.pkceVerifier, verifier)
-  localStorage.setItem(storageKeys.pkceVerifier, verifier)
-  storeValue(storageKeys.clientId, inputs.clientId)
-  storeValue(storageKeys.redirectUri, inputs.redirectUri)
-  storeValue(storageKeys.authState, inputs.state ?? "")
+  browserSession.setPkceState({
+    verifier,
+    clientId: inputs.clientId,
+    redirectUri: inputs.redirectUri,
+    ...(inputs.state === undefined ? null : { state: inputs.state }),
+  })
 
   if (codeVerifierInput !== null) {
     codeVerifierInput.value = verifier
@@ -309,11 +252,12 @@ const startPkceLogin = async (): Promise<void> => {
 }
 
 const exchangePkceCode = async (): Promise<void> => {
-  const code = callbackCodeInput?.value.trim() ?? ""
-  const verifier = codeVerifierInput?.value.trim() || readStoredValue(storageKeys.pkceVerifier)
-  const clientId = authClientIdInput?.value.trim() || readStoredValue(storageKeys.clientId)
-  const redirectUri =
-    authRedirectUriInput?.value.trim() || readStoredValue(storageKeys.redirectUri) || defaultRedirectUri
+  const callback = readAuthorizationCallback(new URL(window.location.href))
+  const code = callbackCodeInput?.value.trim() || callback.code || ""
+  const pkceState = browserSession.getPkceState()
+  const verifier = codeVerifierInput?.value.trim() || pkceState?.verifier || ""
+  const clientId = authClientIdInput?.value.trim() || pkceState?.clientId || ""
+  const redirectUri = authRedirectUriInput?.value.trim() || pkceState?.redirectUri || defaultRedirectUri
 
   if (code.length === 0 || verifier.length === 0 || clientId.length === 0) {
     setOutput(profileOutput, {
@@ -349,13 +293,13 @@ const exchangePkceCode = async (): Promise<void> => {
       throw tokens
     }
 
-    const storedTokens: RefreshableTokensState = {
+    const storedTokens: BrowserRefreshableTokens = {
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
       accessTokenExpiresAt: Date.now() + tokens.expires_in * 1000,
     }
 
-    storeTokens(storedTokens)
+    browserSession.setTokens(storedTokens)
 
     if (accessTokenInput !== null) {
       accessTokenInput.value = tokens.access_token
@@ -367,7 +311,7 @@ const exchangePkceCode = async (): Promise<void> => {
     })
     setSessionStatus("Refreshable tokens stored. You can now fetch the current user profile.")
     setStatus("PKCE code exchange succeeded.")
-    window.history.replaceState({}, document.title, defaultRedirectUri)
+    browserSession.clearCallbackParams(new URL(window.location.href))
   } catch (error) {
     setOutput(profileOutput, formatError(error))
     setStatus("PKCE code exchange failed.")
@@ -377,11 +321,10 @@ const exchangePkceCode = async (): Promise<void> => {
 }
 
 const fetchCurrentUserProfile = async (): Promise<void> => {
-  const clientId = authClientIdInput?.value.trim() ?? sessionStorage.getItem(storageKeys.clientId) ?? ""
-  const resolvedClientId = clientId || readStoredValue(storageKeys.clientId)
-  const redirectUri =
-    authRedirectUriInput?.value.trim() || readStoredValue(storageKeys.redirectUri) || defaultRedirectUri
-  const tokens = readStoredTokens()
+  const pkceState = browserSession.getPkceState()
+  const tokens = browserSession.getTokens()
+  const clientId = authClientIdInput?.value.trim() || pkceState?.clientId || ""
+  const redirectUri = authRedirectUriInput?.value.trim() || pkceState?.redirectUri || defaultRedirectUri
 
   if (tokens === undefined) {
     setOutput(profileOutput, "Exchange a PKCE code first so the browser example has refreshable tokens.")
@@ -398,7 +341,7 @@ const fetchCurrentUserProfile = async (): Promise<void> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        clientId: resolvedClientId,
+        clientId,
         redirectUri,
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
@@ -408,14 +351,14 @@ const fetchCurrentUserProfile = async (): Promise<void> => {
 
     const payload = (await response.json()) as {
       profile?: unknown
-      credentials?: Partial<RefreshableTokensState>
+      credentials?: Partial<BrowserRefreshableTokens>
     }
 
     if (!response.ok || payload.profile === undefined || payload.credentials === undefined) {
       throw payload
     }
 
-    storeTokens({
+    browserSession.setTokens({
       accessToken: payload.credentials.accessToken ?? tokens.accessToken,
       refreshToken: payload.credentials.refreshToken ?? tokens.refreshToken,
       accessTokenExpiresAt: payload.credentials.accessTokenExpiresAt ?? tokens.accessTokenExpiresAt,
