@@ -24,7 +24,15 @@ export class SpotifyParseError extends Data.TaggedError("SpotifyParseError")<{
   readonly description?: string;
 }> {}
 
-export type SpotifyRequestError = SpotifyTransportError | SpotifyHttpError | SpotifyParseError;
+export class SpotifyConfigurationError extends Data.TaggedError("SpotifyConfigurationError")<{
+  readonly message: string;
+}> {}
+
+export type SpotifyRequestError =
+  | SpotifyTransportError
+  | SpotifyHttpError
+  | SpotifyParseError
+  | SpotifyConfigurationError;
 
 export interface SpotifyHttpErrorDetails {
   readonly status: number;

@@ -14,7 +14,7 @@ describe("makeSpotifyRequest", () => {
     );
 
     const request = makeSpotifyRequest({
-      getAccessToken: () => "token",
+      getAccessToken: () => Effect.succeed("token"),
     });
 
     const error = await Effect.runPromise(

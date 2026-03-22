@@ -22,7 +22,7 @@ export interface SpotifyRequest {
 }
 
 export interface AccessTokenResolver {
-  getAccessToken(): string;
+  getAccessToken(): Effect.Effect<string, SpotifyRequestError, HttpClient.HttpClient>;
 }
 
 const buildUrl = (path: string): string =>
@@ -94,10 +94,11 @@ const decodeFailureResponse = (
 export const makeSpotifyRequest = (accessTokenResolver: AccessTokenResolver): SpotifyRequest => ({
   getJson: <A>(path: string, options?: SpotifyRequestOptions) =>
     Effect.gen(function* () {
+      const accessToken = yield* accessTokenResolver.getAccessToken();
       const response = yield* HttpClient.get(buildUrl(path), {
         acceptJson: true,
         headers: {
-          Authorization: `Bearer ${accessTokenResolver.getAccessToken()}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         urlParams: options?.query,
       }).pipe(Effect.mapError(mapHttpClientError));

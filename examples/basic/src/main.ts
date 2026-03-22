@@ -6,12 +6,24 @@ const usage = [
   "",
   "Usage:",
   "  bun run example:basic -- --access-token <token> <track-id>",
+  "  bun run example:basic -- --client-id <id> --client-secret <secret> <track-id>",
   "",
-  "If you omit either value, the script will prompt for it.",
+  "If you omit required values, the script will prompt for them.",
 ].join("\n");
 
+type AuthMode =
+  | {
+      readonly _tag: "AccessToken";
+      readonly accessToken: string;
+    }
+  | {
+      readonly _tag: "ClientCredentials";
+      readonly clientId: string;
+      readonly clientSecret: string;
+    };
+
 interface Inputs {
-  accessToken: string;
+  authMode: AuthMode;
   trackId: string;
 }
 
@@ -62,6 +74,8 @@ const formatError = (error: unknown): string => {
 
 const parseInputs = (args: ReadonlyArray<string>): Partial<Inputs> => {
   let accessToken: string | undefined;
+  let clientId: string | undefined;
+  let clientSecret: string | undefined;
   let trackId: string | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
@@ -69,6 +83,18 @@ const parseInputs = (args: ReadonlyArray<string>): Partial<Inputs> => {
 
     if (current === "--access-token") {
       accessToken = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (current === "--client-id") {
+      clientId = args[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (current === "--client-secret") {
+      clientSecret = args[index + 1];
       index += 1;
       continue;
     }
@@ -85,7 +111,13 @@ const parseInputs = (args: ReadonlyArray<string>): Partial<Inputs> => {
   const result: Partial<Inputs> = {};
 
   if (accessToken !== undefined) {
-    result.accessToken = accessToken;
+    result.authMode = { _tag: "AccessToken", accessToken };
+  } else if (clientId !== undefined || clientSecret !== undefined) {
+    result.authMode = {
+      _tag: "ClientCredentials",
+      clientId: clientId ?? "",
+      clientSecret: clientSecret ?? "",
+    };
   }
 
   if (trackId !== undefined) {
@@ -115,6 +147,51 @@ const promptForValue = (label: string): Effect.Effect<string, Error> =>
     catch: (cause) => (cause instanceof Error ? cause : new Error(`Failed to read ${label}`)),
   });
 
+const resolveAuthMode = (parsed: Partial<Inputs>): Effect.Effect<AuthMode, Error> =>
+  Effect.gen(function* () {
+    if (parsed.authMode?._tag === "AccessToken") {
+      return parsed.authMode;
+    }
+
+    if (parsed.authMode?._tag === "ClientCredentials") {
+      const clientId =
+        parsed.authMode.clientId.length > 0
+          ? parsed.authMode.clientId
+          : yield* promptForValue("Spotify client id");
+      const clientSecret =
+        parsed.authMode.clientSecret.length > 0
+          ? parsed.authMode.clientSecret
+          : yield* promptForValue("Spotify client secret");
+
+      return {
+        _tag: "ClientCredentials" as const,
+        clientId,
+        clientSecret,
+      };
+    }
+
+    const mode = yield* promptForValue("Authentication mode (access-token/client-credentials)");
+
+    if (mode === "access-token") {
+      return {
+        _tag: "AccessToken" as const,
+        accessToken: yield* promptForValue("Spotify access token"),
+      };
+    }
+
+    if (mode === "client-credentials") {
+      return {
+        _tag: "ClientCredentials" as const,
+        clientId: yield* promptForValue("Spotify client id"),
+        clientSecret: yield* promptForValue("Spotify client secret"),
+      };
+    }
+
+    return yield* Effect.fail(
+      new Error("Authentication mode must be access-token or client-credentials"),
+    );
+  });
+
 const resolveInputs = (args: ReadonlyArray<string>): Effect.Effect<Inputs, Error> => {
   if (args.includes("--help") || args.includes("-h")) {
     return Effect.fail(new Error(usage));
@@ -123,10 +200,7 @@ const resolveInputs = (args: ReadonlyArray<string>): Effect.Effect<Inputs, Error
   const parsed = parseInputs(args);
 
   return Effect.all({
-    accessToken:
-      parsed.accessToken === undefined
-        ? promptForValue("Spotify access token")
-        : Effect.succeed(parsed.accessToken),
+    authMode: resolveAuthMode(parsed),
     trackId:
       parsed.trackId === undefined
         ? promptForValue("Spotify track id")
@@ -136,7 +210,13 @@ const resolveInputs = (args: ReadonlyArray<string>): Effect.Effect<Inputs, Error
 
 const program = resolveInputs(process.argv.slice(2)).pipe(
   Effect.flatMap((inputs) => {
-    const spotify = new SpotifyWebApi({}, { accessToken: inputs.accessToken });
+    const spotify =
+      inputs.authMode._tag === "AccessToken"
+        ? new SpotifyWebApi({}, { accessToken: inputs.authMode.accessToken })
+        : new SpotifyWebApi({
+            clientId: inputs.authMode.clientId,
+            clientSecret: inputs.authMode.clientSecret,
+          });
 
     return spotify.tracks
       .getTrack(inputs.trackId)

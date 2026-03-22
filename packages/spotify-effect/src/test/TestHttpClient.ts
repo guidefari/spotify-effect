@@ -6,6 +6,7 @@ export interface RequestCapture {
   readonly url: string;
   readonly method: string;
   readonly headers: Record<string, string>;
+  readonly body?: string;
 }
 
 export const makeTestHttpClient = (
@@ -30,6 +31,9 @@ export const makeTestHttpClient = (
         url: url.toString(),
         method: request.method,
         headers,
+        ...(request.body._tag === "Uint8Array"
+          ? { body: new TextDecoder().decode(request.body.body) }
+          : null),
       });
 
       const response = handler(request);
