@@ -157,6 +157,7 @@
           This example already lets you fetch a track with a pasted access token, and it is laid out
           to become the manual PKCE playground for issue #12.
         </p>
+        <div class="pill" id="session-status">No stored browser auth session yet</div>
       </section>
 
       <section class="grid">
@@ -177,10 +178,52 @@
 
         <aside class="stack">
           <article class="card stack">
-            <h2>PKCE next</h2>
+            <h2>Generate auth URLs</h2>
+            <label>
+              Client ID
+              <input id="auth-client-id" placeholder="Spotify client id" />
+            </label>
+            <label>
+              Redirect URI
+              <input id="auth-redirect-uri" placeholder="https://example.com/callback" />
+            </label>
+            <label>
+              State
+              <input id="auth-state" placeholder="optional state" />
+            </label>
+            <label>
+              Scope list
+              <input id="auth-scope" placeholder="space separated scopes" />
+            </label>
+            <div class="stack">
+              <button id="generate-auth-code-url">Generate auth code URL</button>
+              <button id="generate-pkce-url">Start PKCE login</button>
+            </div>
+            <pre id="auth-output">Auth URLs will appear here...</pre>
+          </article>
+
+          <article class="card stack">
+            <h2>PKCE callback</h2>
+            <label>
+              Callback code
+              <input id="callback-code" placeholder="Filled from the URL after Spotify redirects back" />
+            </label>
+            <label>
+              Stored verifier
+              <input id="code-verifier" placeholder="Generated automatically for PKCE login" />
+            </label>
+            <div class="stack">
+              <button id="exchange-pkce-code">Exchange code for tokens</button>
+              <button id="fetch-current-user">Fetch current user profile</button>
+            </div>
+            <pre id="profile-output">User profile and token details will appear here...</pre>
+          </article>
+
+          <article class="card stack">
+            <h2>PKCE notes</h2>
             <div class="muted-box">
               <p>
-                This browser example is where the PKCE flow will land for issue <strong>#12</strong>.
+                This browser example is where the PKCE flow lands for issue <strong>#12</strong>.
               </p>
               <p>
                 Read <a href="/pkce" target="_blank" rel="noreferrer">the PKCE doc</a> first if the
@@ -190,13 +233,13 @@
           </article>
 
           <article class="card stack">
-            <h2>Planned browser flow</h2>
+            <h2>Browser flow</h2>
             <div class="meta">
-              <div>1. Generate a PKCE verifier and challenge</div>
-              <div>2. Send the user to Spotify auth</div>
-              <div>3. Handle the callback code in the browser example</div>
-              <div>4. Exchange the code through the library</div>
-              <div>5. Reuse and refresh tokens in memory for the session</div>
+              <div>1. Generate a PKCE verifier and challenge in the browser</div>
+              <div>2. Redirect to Spotify auth</div>
+              <div>3. Read the callback code from the URL on return</div>
+              <div>4. Exchange the code through `spotify-effect`</div>
+              <div>5. Fetch the current user profile with the returned tokens</div>
             </div>
           </article>
         </aside>
