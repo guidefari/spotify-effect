@@ -1,4 +1,4 @@
-import * as Effect from "@effect/io/Effect"
+import * as Effect from "effect/Effect"
 
 const program = Effect.sync(() => {
   return 10

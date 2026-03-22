@@ -1,22 +1,20 @@
-import * as Effect from "@effect/io/Effect";
-import { identity, pipe } from "@effect/data/Function";
-import * as Schema from "@effect/schema/Schema";
+import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
 
-const HttpErrorSchema = Schema.struct({
-  _tag: Schema.literal("HttpError"),
-  message: Schema.string,
+const HttpErrorSchema = Schema.Struct({
+  _tag: Schema.Literal("HttpError"),
+  message: Schema.String,
 });
-export type HttpError = Schema.To<typeof HttpErrorSchema>;
+export type HttpError = typeof HttpErrorSchema.Type;
 
 export const get = <T>(url: string) =>
-  Effect.tryCatchPromise(
-    () =>
+  Effect.tryPromise({
+    try: () =>
       fetch(url).then((res) =>
-        res.status === 200 ? (res.json() as T) : Promise.reject()
+        res.status === 200 ? (res.json() as Promise<T>) : Promise.reject()
       ),
-    () =>
-      identity<HttpError>({
-        _tag: "HttpError",
-        message: `Failed to fetch${url}`,
-      })
-  );
+    catch: (): HttpError => ({
+      _tag: "HttpError",
+      message: `Failed to fetch${url}`,
+    }),
+  });
