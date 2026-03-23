@@ -1,5 +1,7 @@
+import * as Data from "effect/Data";
 import { Console, Effect } from "effect";
 import { SpotifyWebApi } from "spotify-effect";
+import { makeNodeTelemetryLayer } from "../../shared/nodeTelemetry";
 
 const usage = [
   "spotify-effect basic example",
@@ -26,6 +28,10 @@ interface Inputs {
   authMode: AuthMode;
   trackId: string;
 }
+
+class ExampleInputError extends Data.TaggedError("ExampleInputError")<{
+  readonly message: string;
+}> {}
 
 const formatError = (error: unknown): string => {
   if (typeof error === "string") {
@@ -127,27 +133,32 @@ const parseInputs = (args: ReadonlyArray<string>): Partial<Inputs> => {
   return result;
 };
 
-const promptForValue = (label: string): Effect.Effect<string, Error> =>
+const promptForValue = (label: string): Effect.Effect<string, ExampleInputError> =>
   Effect.try({
     try: () => {
       const promptFn = Reflect.get(globalThis, "prompt");
 
       if (typeof promptFn !== "function") {
-        throw new Error("Interactive prompts are not available in this runtime");
+        throw new ExampleInputError({
+          message: "Interactive prompts are not available in this runtime",
+        });
       }
 
       const value = promptFn(`${label}:`);
 
       if (value === null || value.trim().length === 0) {
-        throw new Error(`${label} is required`);
+        throw new ExampleInputError({ message: `${label} is required` });
       }
 
       return value.trim();
     },
-    catch: (cause) => (cause instanceof Error ? cause : new Error(`Failed to read ${label}`)),
+    catch: (cause) =>
+      cause instanceof ExampleInputError
+        ? cause
+        : new ExampleInputError({ message: `Failed to read ${label}` }),
   });
 
-const resolveAuthMode = (parsed: Partial<Inputs>): Effect.Effect<AuthMode, Error> =>
+const resolveAuthMode = (parsed: Partial<Inputs>): Effect.Effect<AuthMode, ExampleInputError> =>
   Effect.gen(function* () {
     if (parsed.authMode?._tag === "AccessToken") {
       return parsed.authMode;
@@ -187,14 +198,14 @@ const resolveAuthMode = (parsed: Partial<Inputs>): Effect.Effect<AuthMode, Error
       };
     }
 
-    return yield* Effect.fail(
-      new Error("Authentication mode must be access-token or client-credentials"),
-    );
+    return yield* new ExampleInputError({
+      message: "Authentication mode must be access-token or client-credentials",
+    });
   });
 
-const resolveInputs = (args: ReadonlyArray<string>): Effect.Effect<Inputs, Error> => {
+const resolveInputs = (args: ReadonlyArray<string>): Effect.Effect<Inputs, ExampleInputError> => {
   if (args.includes("--help") || args.includes("-h")) {
-    return Effect.fail(new Error(usage));
+    return Effect.fail(new ExampleInputError({ message: usage }));
   }
 
   const parsed = parseInputs(args);
@@ -228,4 +239,7 @@ const program = resolveInputs(process.argv.slice(2)).pipe(
   }),
 );
 
-Effect.runPromise(program);
+const telemetryLayer = makeNodeTelemetryLayer("spotify-effect-example-basic")
+const traced = Effect.withSpan(program, "spotify-effect.example.basic")
+const provided = telemetryLayer !== undefined ? Effect.provide(traced, telemetryLayer) : traced
+Effect.runPromise(provided);
