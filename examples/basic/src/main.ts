@@ -1,7 +1,7 @@
 import * as Data from "effect/Data";
 import { Console, Effect } from "effect";
 import { SpotifyWebApi } from "spotify-effect";
-import { makeNodeTelemetryLayer } from "../../shared/nodeTelemetry";
+import { makeNodeTelemetryLayer } from "./nodeTelemetry";
 
 const usage = [
   "spotify-effect basic example",
