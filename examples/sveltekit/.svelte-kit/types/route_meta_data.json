@@ -1,0 +1,19 @@
+{
+	"/": [
+		"src/routes/+page.ts",
+		"src/routes/+layout.ts",
+		"src/routes/+layout.ts"
+	],
+	"/api/pkce/exchange": [
+		"src/routes/api/pkce/exchange/+server.ts"
+	],
+	"/api/profile": [
+		"src/routes/api/profile/+server.ts"
+	],
+	"/api/track": [
+		"src/routes/api/track/+server.ts"
+	],
+	"/track": [
+		"src/routes/+layout.ts"
+	]
+}
