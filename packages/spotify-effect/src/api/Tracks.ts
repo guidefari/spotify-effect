@@ -28,7 +28,11 @@ export class TracksApi {
     trackId: string,
     options?: MarketOptions,
   ): Effect.Effect<Track, SpotifyRequestError, HttpClient.HttpClient> {
-    return this.request.getJsonWithSchema(`/tracks/${trackId}`, TrackSchema, withMarketQuery(options));
+    return this.request.getJsonWithSchema(
+      `/tracks/${trackId}`,
+      TrackSchema,
+      withMarketQuery(options),
+    );
   }
 
   public getTracks(

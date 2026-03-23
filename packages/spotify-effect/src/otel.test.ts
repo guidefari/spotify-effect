@@ -1,14 +1,14 @@
-import * as NodeSdk from "@effect/opentelemetry/NodeSdk"
-import { InMemorySpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base"
-import * as Effect from "effect/Effect"
-import * as ManagedRuntime from "effect/ManagedRuntime"
-import { afterEach, describe, expect, it } from "vitest"
-import { SpotifyWebApi } from "./SpotifyWebApi"
-import { trackFixture } from "./fixtures/trackFixture"
-import { makeTestHttpClient } from "./test/TestHttpClient"
+import * as NodeSdk from "@effect/opentelemetry/NodeSdk";
+import { InMemorySpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
+import * as Effect from "effect/Effect";
+import * as ManagedRuntime from "effect/ManagedRuntime";
+import { afterEach, describe, expect, it } from "vitest";
+import { SpotifyWebApi } from "./SpotifyWebApi";
+import { trackFixture } from "./fixtures/trackFixture";
+import { makeTestHttpClient } from "./test/TestHttpClient";
 
 describe("OpenTelemetry integration", () => {
-  const exporter = new InMemorySpanExporter()
+  const exporter = new InMemorySpanExporter();
 
   const telemetryLayer = NodeSdk.layer(() => ({
     resource: {
@@ -16,13 +16,13 @@ describe("OpenTelemetry integration", () => {
       serviceVersion: "0.0.0",
     },
     spanProcessor: new SimpleSpanProcessor(exporter),
-  }))
+  }));
 
-  const runtime = ManagedRuntime.make(telemetryLayer)
+  const runtime = ManagedRuntime.make(telemetryLayer);
 
   afterEach(() => {
-    exporter.reset()
-  })
+    exporter.reset();
+  });
 
   it("produces spans for spotify API requests", async () => {
     const { layer } = makeTestHttpClient(
@@ -31,21 +31,19 @@ describe("OpenTelemetry integration", () => {
           status: 200,
           headers: { "content-type": "application/json" },
         }),
-    )
+    );
 
-    const spotify = new SpotifyWebApi({ httpClientLayer: layer }, { accessToken: "token" })
+    const spotify = new SpotifyWebApi({ httpClientLayer: layer }, { accessToken: "token" });
 
-    await runtime.runPromise(
-      Effect.withSpan(spotify.tracks.getTrack("foo"), "test.root"),
-    )
+    await runtime.runPromise(Effect.withSpan(spotify.tracks.getTrack("foo"), "test.root"));
 
-    const spans = exporter.getFinishedSpans()
-    const spanNames = spans.map((s) => s.name)
+    const spans = exporter.getFinishedSpans();
+    const spanNames = spans.map((s) => s.name);
 
-    expect(spanNames).toContain("test.root")
-    expect(spanNames).toContain("spotify.request /tracks/foo")
-    expect(spans.length).toBeGreaterThanOrEqual(2)
-  })
+    expect(spanNames).toContain("test.root");
+    expect(spanNames).toContain("spotify.request /tracks/foo");
+    expect(spans.length).toBeGreaterThanOrEqual(2);
+  });
 
   it("annotates request spans with spotify HTTP attributes", async () => {
     const { layer } = makeTestHttpClient(
@@ -54,19 +52,19 @@ describe("OpenTelemetry integration", () => {
           status: 200,
           headers: { "content-type": "application/json" },
         }),
-    )
+    );
 
-    const spotify = new SpotifyWebApi({ httpClientLayer: layer }, { accessToken: "token" })
+    const spotify = new SpotifyWebApi({ httpClientLayer: layer }, { accessToken: "token" });
 
-    await runtime.runPromise(spotify.tracks.getTrack("foo"))
+    await runtime.runPromise(spotify.tracks.getTrack("foo"));
 
-    const spans = exporter.getFinishedSpans()
-    const requestSpan = spans.find((s) => s.name === "spotify.request /tracks/foo")
+    const spans = exporter.getFinishedSpans();
+    const requestSpan = spans.find((s) => s.name === "spotify.request /tracks/foo");
 
-    expect(requestSpan).toBeDefined()
-    expect(requestSpan!.attributes["spotify.request.path"]).toBe("/tracks/foo")
-    expect(requestSpan!.attributes["spotify.http.status_code"]).toBe(200)
-  })
+    expect(requestSpan).toBeDefined();
+    expect(requestSpan!.attributes["spotify.request.path"]).toBe("/tracks/foo");
+    expect(requestSpan!.attributes["spotify.http.status_code"]).toBe(200);
+  });
 
   it("annotates auth spans with grant type", async () => {
     const { layer } = makeTestHttpClient(
@@ -83,22 +81,22 @@ describe("OpenTelemetry integration", () => {
             headers: { "content-type": "application/json" },
           },
         ),
-    )
+    );
 
     const spotify = new SpotifyWebApi({
       clientId: "id",
       clientSecret: "secret",
       httpClientLayer: layer,
-    })
+    });
 
-    await runtime.runPromise(spotify.getTemporaryAppTokens())
+    await runtime.runPromise(spotify.getTemporaryAppTokens());
 
-    const spans = exporter.getFinishedSpans()
-    const authSpan = spans.find((s) => s.name === "spotify.auth.token")
+    const spans = exporter.getFinishedSpans();
+    const authSpan = spans.find((s) => s.name === "spotify.auth.token");
 
-    expect(authSpan).toBeDefined()
-    expect(authSpan!.attributes["spotify.auth.grant_type"]).toBe("client_credentials")
-  })
+    expect(authSpan).toBeDefined();
+    expect(authSpan!.attributes["spotify.auth.grant_type"]).toBe("client_credentials");
+  });
 
   it("nests library spans under a consumer root span", async () => {
     const { layer } = makeTestHttpClient(
@@ -107,22 +105,20 @@ describe("OpenTelemetry integration", () => {
           status: 200,
           headers: { "content-type": "application/json" },
         }),
-    )
+    );
 
-    const spotify = new SpotifyWebApi({ httpClientLayer: layer }, { accessToken: "token" })
+    const spotify = new SpotifyWebApi({ httpClientLayer: layer }, { accessToken: "token" });
 
-    await runtime.runPromise(
-      Effect.withSpan(spotify.tracks.getTrack("foo"), "app.root"),
-    )
+    await runtime.runPromise(Effect.withSpan(spotify.tracks.getTrack("foo"), "app.root"));
 
-    const spans = exporter.getFinishedSpans()
-    const rootSpan = spans.find((s) => s.name === "app.root")
-    const requestSpan = spans.find((s) => s.name === "spotify.request /tracks/foo")
+    const spans = exporter.getFinishedSpans();
+    const rootSpan = spans.find((s) => s.name === "app.root");
+    const requestSpan = spans.find((s) => s.name === "spotify.request /tracks/foo");
 
-    expect(rootSpan).toBeDefined()
-    expect(requestSpan).toBeDefined()
-    expect(requestSpan!.parentSpanContext?.spanId).toBe(rootSpan!.spanContext().spanId)
-  })
+    expect(rootSpan).toBeDefined();
+    expect(requestSpan).toBeDefined();
+    expect(requestSpan!.parentSpanContext?.spanId).toBe(rootSpan!.spanContext().spanId);
+  });
 
   it("produces no spans when no telemetry layer is provided", async () => {
     const { layer } = makeTestHttpClient(
@@ -131,14 +127,12 @@ describe("OpenTelemetry integration", () => {
           status: 200,
           headers: { "content-type": "application/json" },
         }),
-    )
+    );
 
-    const spotify = new SpotifyWebApi({ httpClientLayer: layer }, { accessToken: "token" })
+    const spotify = new SpotifyWebApi({ httpClientLayer: layer }, { accessToken: "token" });
 
-    await Effect.runPromise(
-      Effect.withSpan(spotify.tracks.getTrack("foo"), "test.root"),
-    )
+    await Effect.runPromise(Effect.withSpan(spotify.tracks.getTrack("foo"), "test.root"));
 
-    expect(exporter.getFinishedSpans()).toHaveLength(0)
-  })
-})
+    expect(exporter.getFinishedSpans()).toHaveLength(0);
+  });
+});

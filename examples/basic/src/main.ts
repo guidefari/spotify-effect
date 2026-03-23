@@ -239,7 +239,7 @@ const program = resolveInputs(process.argv.slice(2)).pipe(
   }),
 );
 
-const telemetryLayer = makeNodeTelemetryLayer("spotify-effect-example-basic")
-const traced = Effect.withSpan(program, "spotify-effect.example.basic")
-const provided = telemetryLayer !== undefined ? Effect.provide(traced, telemetryLayer) : traced
+const telemetryLayer = makeNodeTelemetryLayer("spotify-effect-example-basic");
+const traced = Effect.withSpan(program, "spotify-effect.example.basic");
+const provided = telemetryLayer !== undefined ? Effect.provide(traced, telemetryLayer) : traced;
 Effect.runPromise(provided);

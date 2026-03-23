@@ -71,15 +71,12 @@ const parseJson = (value: string): unknown => {
   }
 };
 
-const getRequiredConfig = (options: {
-  readonly clientId: string;
-  readonly clientSecret: string;
-}) =>
+const getRequiredConfig = (options: { readonly clientId: string; readonly clientSecret: string }) =>
   Effect.gen(function* () {
     if (options.clientId.length === 0 || options.clientSecret.length === 0) {
       return yield* new SpotifyConfigurationError({
         message: "clientId and clientSecret are required for this auth flow",
-      })
+      });
     }
 
     const authorization = yield* Effect.try({
@@ -88,31 +85,28 @@ const getRequiredConfig = (options: {
         new SpotifyConfigurationError({
           message: cause instanceof Error ? cause.message : "Failed to encode client credentials",
         }),
-    })
+    });
 
     return {
       authorization,
-    }
-  })
+    };
+  });
 
-const getRefreshConfig = (options: {
-  readonly clientId: string;
-  readonly clientSecret: string;
-}) =>
+const getRefreshConfig = (options: { readonly clientId: string; readonly clientSecret: string }) =>
   Effect.gen(function* () {
     if (options.clientSecret.length > 0) {
-      const config = yield* getRequiredConfig(options)
+      const config = yield* getRequiredConfig(options);
 
       return {
         authorization: config.authorization,
         body: {} as Readonly<Record<string, string>>,
-      }
+      };
     }
 
     if (options.clientId.length === 0) {
       return yield* new SpotifyConfigurationError({
         message: "clientId is required for refresh token exchange",
-      })
+      });
     }
 
     return {
@@ -120,38 +114,40 @@ const getRefreshConfig = (options: {
       body: {
         client_id: options.clientId,
       },
-    }
-  })
+    };
+  });
 
 const requestToken = <A>(options: {
-  readonly body: Readonly<Record<string, string>>
-  readonly authorization?: string
-  readonly schema: Schema.Top & { readonly Type: A; readonly DecodingServices: never }
+  readonly body: Readonly<Record<string, string>>;
+  readonly authorization?: string;
+  readonly schema: Schema.Top & { readonly Type: A; readonly DecodingServices: never };
 }): Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient> =>
   Effect.withSpan(
     Effect.gen(function* () {
       yield* Effect.annotateCurrentSpan({
         "spotify.auth.grant_type": options.body.grant_type,
         "spotify.auth.uses_client_secret": options.authorization !== undefined,
-      })
+      });
 
       const response = yield* HttpClient.post(TOKEN_URL, {
         headers: {
-          ...(options.authorization === undefined ? null : { Authorization: options.authorization }),
+          ...(options.authorization === undefined
+            ? null
+            : { Authorization: options.authorization }),
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: HttpClientRequest.bodyUrlParams(options.body)(HttpClientRequest.empty).body,
-      }).pipe(Effect.mapError(mapHttpClientError))
+      }).pipe(Effect.mapError(mapHttpClientError));
 
       yield* Effect.annotateCurrentSpan({
         "spotify.http.status_code": response.status,
         "spotify.http.url": response.request.url,
-      })
+      });
 
       if (response.status < 200 || response.status >= 300) {
-        const text = yield* response.text.pipe(Effect.mapError(mapHttpClientError))
-        const body = parseJson(text)
-        const decodedError = decodeSpotifyAccountsErrorBody(body)
+        const text = yield* response.text.pipe(Effect.mapError(mapHttpClientError));
+        const body = parseJson(text);
+        const decodedError = decodeSpotifyAccountsErrorBody(body);
 
         return yield* makeSpotifyHttpError({
           status: response.status,
@@ -159,7 +155,7 @@ const requestToken = <A>(options: {
           url: response.request.url,
           ...(decodedError.body === undefined ? null : { body: decodedError.body }),
           ...(decodedError.message === undefined ? null : { apiMessage: decodedError.message }),
-        })
+        });
       }
 
       return yield* response.json.pipe(
@@ -173,10 +169,10 @@ const requestToken = <A>(options: {
               }),
           }),
         ),
-      )
+      );
     }),
     "spotify.auth.token",
-  )
+  );
 
 export const makeSpotifyAuth = (options: {
   readonly clientId: string;
@@ -188,10 +184,10 @@ export const makeSpotifyAuth = (options: {
       if (options.redirectUri === undefined || options.redirectUri.length === 0) {
         return yield* new SpotifyConfigurationError({
           message: "redirectUri is required for authorization code exchange",
-        })
+        });
       }
 
-      const config = yield* getRequiredConfig(options)
+      const config = yield* getRequiredConfig(options);
 
       return yield* requestToken<GetRefreshableUserTokensResponse>({
         authorization: config.authorization,
@@ -201,14 +197,14 @@ export const makeSpotifyAuth = (options: {
           grant_type: "authorization_code",
           redirect_uri: options.redirectUri,
         },
-      })
+      });
     }),
   getRefreshableUserTokensWithPkce: ({ clientId, code, codeVerifier }) =>
     Effect.gen(function* () {
       if (options.redirectUri === undefined || options.redirectUri.length === 0) {
         return yield* new SpotifyConfigurationError({
           message: "redirectUri is required for PKCE authorization code exchange",
-        })
+        });
       }
 
       return yield* requestToken<GetRefreshableUserTokensResponse>({
@@ -220,11 +216,11 @@ export const makeSpotifyAuth = (options: {
           grant_type: "authorization_code",
           redirect_uri: options.redirectUri,
         },
-      })
+      });
     }),
   getRefreshedAccessToken: (refreshToken) =>
     Effect.gen(function* () {
-      const config = yield* getRefreshConfig(options)
+      const config = yield* getRefreshConfig(options);
 
       return yield* requestToken<GetRefreshedAccessTokenResponse>({
         schema: GetRefreshedAccessTokenResponseSchema,
@@ -234,11 +230,11 @@ export const makeSpotifyAuth = (options: {
           ...config.body,
         },
         ...(config.authorization === undefined ? null : { authorization: config.authorization }),
-      })
+      });
     }),
   getTemporaryAppTokens: () =>
     Effect.gen(function* () {
-      const config = yield* getRequiredConfig(options)
+      const config = yield* getRequiredConfig(options);
 
       return yield* requestToken<GetTemporaryAppTokensResponse>({
         authorization: config.authorization,
@@ -246,6 +242,6 @@ export const makeSpotifyAuth = (options: {
         body: {
           grant_type: "client_credentials",
         },
-      })
+      });
     }),
 });

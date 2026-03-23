@@ -1,22 +1,22 @@
-import * as Schema from "effect/Schema"
+import * as Schema from "effect/Schema";
 
-const ExternalURLSchema = Schema.Record(Schema.String, Schema.String)
+const ExternalURLSchema = Schema.Record(Schema.String, Schema.String);
 
 const FollowersSchema = Schema.Struct({
   href: Schema.NullOr(Schema.String),
   total: Schema.Number,
-})
+});
 
 const ExplicitContentSchema = Schema.Struct({
   filter_enabled: Schema.Boolean,
   filter_locked: Schema.Boolean,
-})
+});
 
 const SpotifyImageSchema = Schema.Struct({
   height: Schema.NullOr(Schema.Number),
   url: Schema.String,
   width: Schema.NullOr(Schema.Number),
-})
+});
 
 const SimplifiedArtistSchema = Schema.Struct({
   external_urls: ExternalURLSchema,
@@ -25,7 +25,7 @@ const SimplifiedArtistSchema = Schema.Struct({
   name: Schema.String,
   type: Schema.Literal("artist"),
   uri: Schema.String,
-})
+});
 
 const SimplifiedAlbumSchema = Schema.Struct({
   album_group: Schema.optionalKey(
@@ -60,7 +60,7 @@ const SimplifiedAlbumSchema = Schema.Struct({
   total_tracks: Schema.Number,
   type: Schema.Literal("album"),
   uri: Schema.String,
-})
+});
 
 export const TrackSchema = Schema.Struct({
   album: SimplifiedAlbumSchema,
@@ -83,7 +83,7 @@ export const TrackSchema = Schema.Struct({
   type: Schema.Literal("track"),
   uri: Schema.String,
   is_local: Schema.Boolean,
-})
+});
 
 export const PrivateUserSchema = Schema.Struct({
   birthdate: Schema.optionalKey(Schema.String),
@@ -99,4 +99,4 @@ export const PrivateUserSchema = Schema.Struct({
   product: Schema.optionalKey(Schema.String),
   type: Schema.Literal("user"),
   uri: Schema.String,
-})
+});

@@ -1,4 +1,4 @@
-import type { PrivateUser } from "../model/SpotifyObjects"
+import type { PrivateUser } from "../model/SpotifyObjects";
 
 export const currentUserProfileFixture: PrivateUser = {
   country: "ZA",
@@ -21,4 +21,4 @@ export const currentUserProfileFixture: PrivateUser = {
   product: "premium",
   type: "user",
   uri: "spotify:user:guidefari",
-}
+};

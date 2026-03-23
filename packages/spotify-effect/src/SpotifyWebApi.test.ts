@@ -35,18 +35,18 @@ describe("SpotifyWebApi", () => {
   });
 
   it("gets an authorization code URL", () => {
-    const spotify = new SpotifyWebApi({ clientId: "foo", redirectUri: "baz" })
+    const spotify = new SpotifyWebApi({ clientId: "foo", redirectUri: "baz" });
 
     expect(spotify.getAuthorizationCodeUrl()).toBe(
       `${AUTHORIZE_URL}?client_id=foo&redirect_uri=baz&response_type=code`,
-    )
+    );
     expect(spotify.getAuthorizationCodeUrl({ state: "qux" })).toBe(
       `${AUTHORIZE_URL}?client_id=foo&redirect_uri=baz&response_type=code&state=qux`,
-    )
-  })
+    );
+  });
 
   it("gets a PKCE authorization URL", () => {
-    const spotify = new SpotifyWebApi({ clientId: "foo", redirectUri: "baz" })
+    const spotify = new SpotifyWebApi({ clientId: "foo", redirectUri: "baz" });
 
     expect(
       spotify.getAuthorizationCodePKCEUrl("foo", {
@@ -56,16 +56,16 @@ describe("SpotifyWebApi", () => {
       }),
     ).toBe(
       `${AUTHORIZE_URL}?client_id=foo&redirect_uri=baz&response_type=code&state=state&code_challenge=challenge&code_challenge_method=S256`,
-    )
-  })
+    );
+  });
 
   it("gets a temporary authorization URL", () => {
-    const spotify = new SpotifyWebApi({ clientId: "foo", redirectUri: "baz" })
+    const spotify = new SpotifyWebApi({ clientId: "foo", redirectUri: "baz" });
 
     expect(spotify.getTemporaryAuthorizationUrl()).toBe(
       `${AUTHORIZE_URL}?client_id=foo&redirect_uri=baz&response_type=token`,
-    )
-  })
+    );
+  });
 
   it("exchanges an authorization code and stores refreshable tokens", async () => {
     const { layer, requests } = makeTestHttpClient(
@@ -83,21 +83,21 @@ describe("SpotifyWebApi", () => {
             headers: { "content-type": "application/json" },
           },
         ),
-    )
+    );
 
     const spotify = new SpotifyWebApi({
       clientId: "foo",
       clientSecret: "bar",
       redirectUri: "baz",
       httpClientLayer: layer,
-    })
+    });
 
-    const tokens = await Effect.runPromise(spotify.getTokenWithAuthenticateCode("qux"))
+    const tokens = await Effect.runPromise(spotify.getTokenWithAuthenticateCode("qux"));
 
-    expect(tokens.refresh_token).toBe("refresh-token")
-    expect(spotify.getAccessToken()).toBe("user-token")
-    expect(requests[0]?.body).toBe("code=qux&grant_type=authorization_code&redirect_uri=baz")
-  })
+    expect(tokens.refresh_token).toBe("refresh-token");
+    expect(spotify.getAccessToken()).toBe("user-token");
+    expect(requests[0]?.body).toBe("code=qux&grant_type=authorization_code&redirect_uri=baz");
+  });
 
   it("exchanges a PKCE authorization code", async () => {
     const { layer, requests } = makeTestHttpClient(
@@ -115,23 +115,25 @@ describe("SpotifyWebApi", () => {
             headers: { "content-type": "application/json" },
           },
         ),
-    )
+    );
 
-    const spotify = new SpotifyWebApi({ redirectUri: "baz", httpClientLayer: layer })
+    const spotify = new SpotifyWebApi({ redirectUri: "baz", httpClientLayer: layer });
 
-    await Effect.runPromise(spotify.getTokenWithAuthenticateCodePKCE("qux", "verifier", "browser-id"))
+    await Effect.runPromise(
+      spotify.getTokenWithAuthenticateCodePKCE("qux", "verifier", "browser-id"),
+    );
 
     expect(requests[0]?.body).toBe(
       "client_id=browser-id&code=qux&code_verifier=verifier&grant_type=authorization_code&redirect_uri=baz",
-    )
-    expect(requests[0]?.headers.authorization).toBeUndefined()
-  })
+    );
+    expect(requests[0]?.headers.authorization).toBeUndefined();
+  });
 
   it("refreshes an expired access token automatically for requests", async () => {
-    let tokenRequests = 0
+    let tokenRequests = 0;
     const { layer, requests } = makeTestHttpClient((request) => {
       if (request.url === "https://accounts.spotify.com/api/token") {
-        tokenRequests += 1
+        tokenRequests += 1;
 
         return new Response(
           JSON.stringify({
@@ -144,14 +146,14 @@ describe("SpotifyWebApi", () => {
             status: 200,
             headers: { "content-type": "application/json" },
           },
-        )
+        );
       }
 
       return new Response(JSON.stringify(trackFixture), {
         status: 200,
         headers: { "content-type": "application/json" },
-      })
-    })
+      });
+    });
 
     const spotify = new SpotifyWebApi(
       {
@@ -165,17 +167,17 @@ describe("SpotifyWebApi", () => {
         accessTokenExpiresAt: Date.now() - 1000,
         refreshToken: "refresh-token",
       },
-    )
+    );
 
-    const track = await Effect.runPromise(spotify.tracks.getTrack("foo"))
+    const track = await Effect.runPromise(spotify.tracks.getTrack("foo"));
 
-    expect(track).toEqual(trackFixture)
-    expect(tokenRequests).toBe(1)
-    expect(requests[1]?.headers.authorization).toBe("Bearer refreshed-user-token")
-  })
+    expect(track).toEqual(trackFixture);
+    expect(tokenRequests).toBe(1);
+    expect(requests[1]?.headers.authorization).toBe("Bearer refreshed-user-token");
+  });
 
   it("refreshes and retries after an unauthorized user request", async () => {
-    let meAttempts = 0
+    let meAttempts = 0;
     const { layer, requests } = makeTestHttpClient((request) => {
       if (request.url === "https://accounts.spotify.com/api/token") {
         return new Response(
@@ -189,27 +191,27 @@ describe("SpotifyWebApi", () => {
             status: 200,
             headers: { "content-type": "application/json" },
           },
-        )
+        );
       }
 
       if (request.url === "https://api.spotify.com/v1/me") {
-        meAttempts += 1
+        meAttempts += 1;
 
         if (meAttempts === 1) {
           return new Response(JSON.stringify({ error: { status: 401, message: "Unauthorized" } }), {
             status: 401,
             headers: { "content-type": "application/json" },
-          })
+          });
         }
 
         return new Response(JSON.stringify(currentUserProfileFixture), {
           status: 200,
           headers: { "content-type": "application/json" },
-        })
+        });
       }
 
-      return new Response(null, { status: 500 })
-    })
+      return new Response(null, { status: 500 });
+    });
 
     const spotify = new SpotifyWebApi(
       {
@@ -222,16 +224,16 @@ describe("SpotifyWebApi", () => {
         accessToken: "bad-token",
         refreshToken: "refresh-token",
       },
-    )
+    );
 
-    const profile = await Effect.runPromise(spotify.users.getCurrentUserProfile())
+    const profile = await Effect.runPromise(spotify.users.getCurrentUserProfile());
 
-    expect(profile).toEqual(currentUserProfileFixture)
-    expect(meAttempts).toBe(2)
-    expect(requests[0]?.url).toBe("https://api.spotify.com/v1/me")
-    expect(requests[1]?.url).toBe("https://accounts.spotify.com/api/token")
-    expect(requests[2]?.headers.authorization).toBe("Bearer fresh-user-token")
-  })
+    expect(profile).toEqual(currentUserProfileFixture);
+    expect(meAttempts).toBe(2);
+    expect(requests[0]?.url).toBe("https://api.spotify.com/v1/me");
+    expect(requests[1]?.url).toBe("https://accounts.spotify.com/api/token");
+    expect(requests[2]?.headers.authorization).toBe("Bearer fresh-user-token");
+  });
 
   it("gets the current user profile with refreshable user tokens", async () => {
     const { layer, requests } = makeTestHttpClient((request) => {
@@ -247,14 +249,14 @@ describe("SpotifyWebApi", () => {
             status: 200,
             headers: { "content-type": "application/json" },
           },
-        )
+        );
       }
 
       return new Response(JSON.stringify(currentUserProfileFixture), {
         status: 200,
         headers: { "content-type": "application/json" },
-      })
-    })
+      });
+    });
 
     const spotify = new SpotifyWebApi(
       {
@@ -268,14 +270,14 @@ describe("SpotifyWebApi", () => {
         accessTokenExpiresAt: Date.now() - 1000,
         refreshToken: "refresh-token",
       },
-    )
+    );
 
-    const profile = await Effect.runPromise(spotify.users.getCurrentUserProfile())
+    const profile = await Effect.runPromise(spotify.users.getCurrentUserProfile());
 
-    expect(profile).toEqual(currentUserProfileFixture)
-    expect(requests[1]?.url).toBe("https://api.spotify.com/v1/me")
-    expect(requests[1]?.headers.authorization).toBe("Bearer fresh-user-token")
-  })
+    expect(profile).toEqual(currentUserProfileFixture);
+    expect(requests[1]?.url).toBe("https://api.spotify.com/v1/me");
+    expect(requests[1]?.headers.authorization).toBe("Bearer fresh-user-token");
+  });
 
   it("fetches a track through the parity-style client", async () => {
     const { layer, requests } = makeTestHttpClient(
@@ -338,22 +340,21 @@ describe("SpotifyWebApi", () => {
   });
 
   it("gets temporary app tokens directly", async () => {
-    const { layer, requests } = makeTestHttpClient(
-      (request) =>
-        request.url === "https://accounts.spotify.com/api/token"
-          ? new Response(
-              JSON.stringify({
-                access_token: "temporary-token",
-                token_type: "Bearer",
-                expires_in: 3600,
-                scope: "",
-              }),
-              {
-                status: 200,
-                headers: { "content-type": "application/json" },
-              },
-            )
-          : new Response(null, { status: 500 }),
+    const { layer, requests } = makeTestHttpClient((request) =>
+      request.url === "https://accounts.spotify.com/api/token"
+        ? new Response(
+            JSON.stringify({
+              access_token: "temporary-token",
+              token_type: "Bearer",
+              expires_in: 3600,
+              scope: "",
+            }),
+            {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            },
+          )
+        : new Response(null, { status: 500 }),
     );
 
     const spotify = new SpotifyWebApi({

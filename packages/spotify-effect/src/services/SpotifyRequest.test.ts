@@ -33,38 +33,38 @@ describe("makeSpotifyRequest", () => {
   });
 
   it("invalidates and retries once on unauthorized responses", async () => {
-    let attempt = 0
-    let invalidated = false
+    let attempt = 0;
+    let invalidated = false;
     const { layer } = makeTestHttpClient(() => {
-      attempt += 1
+      attempt += 1;
 
       if (attempt === 1) {
         return new Response(JSON.stringify({ error: { status: 401, message: "Unauthorized" } }), {
           status: 401,
           headers: { "content-type": "application/json" },
-        })
+        });
       }
 
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { "content-type": "application/json" },
-      })
-    })
+      });
+    });
 
     const request = makeSpotifyRequest({
       getAccessToken: () => Effect.succeed(invalidated ? "fresh-token" : "stale-token"),
       invalidateAccessToken: () =>
         Effect.sync(() => {
-          invalidated = true
+          invalidated = true;
         }),
-    })
+    });
 
     const response = await Effect.runPromise(
       request.getJson<{ ok: boolean }>("/tracks/retry").pipe(Effect.provide(layer)),
-    )
+    );
 
-    expect(response).toEqual({ ok: true })
-    expect(attempt).toBe(2)
-    expect(invalidated).toBe(true)
-  })
+    expect(response).toEqual({ ok: true });
+    expect(attempt).toBe(2);
+    expect(invalidated).toBe(true);
+  });
 });

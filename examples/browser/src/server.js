@@ -1,13 +1,13 @@
-import { Effect } from "effect"
-import { SpotifyWebApi } from "spotify-effect"
-import { makeNodeTelemetryLayer } from "../../shared/nodeTelemetry"
+import { Effect } from "effect";
+import { SpotifyWebApi } from "spotify-effect";
+import { makeNodeTelemetryLayer } from "../../shared/nodeTelemetry";
 
-const appEntry = new URL("./app.ts", import.meta.url)
-const htmlEntry = new URL("./index.html", import.meta.url)
-const pkceEntry = new URL("../../../markdown/pkce.md", import.meta.url)
-const packageEntry = new URL("../../../packages/spotify-effect/src/index.ts", import.meta.url)
+const appEntry = new URL("./app.ts", import.meta.url);
+const htmlEntry = new URL("./index.html", import.meta.url);
+const pkceEntry = new URL("../../../markdown/pkce.md", import.meta.url);
+const packageEntry = new URL("../../../packages/spotify-effect/src/index.ts", import.meta.url);
 
-const telemetryLayer = makeNodeTelemetryLayer("spotify-effect-example-browser")
+const telemetryLayer = makeNodeTelemetryLayer("spotify-effect-example-browser");
 
 const buildClientBundle = async () => {
   const result = await Bun.build({
@@ -18,35 +18,35 @@ const buildClientBundle = async () => {
     alias: {
       "spotify-effect": packageEntry.pathname,
     },
-  })
+  });
 
   if (!result.success) {
-    throw new Error(result.logs.map((log) => log.message).join("\n"))
+    throw new Error(result.logs.map((log) => log.message).join("\n"));
   }
 
-  return await result.outputs[0].text()
-}
+  return await result.outputs[0].text();
+};
 
-let clientBundlePromise = buildClientBundle()
+let clientBundlePromise = buildClientBundle();
 
 const getClientBundle = async () => {
   try {
-    return await clientBundlePromise
+    return await clientBundlePromise;
   } catch (error) {
-    clientBundlePromise = buildClientBundle()
-    throw error
+    clientBundlePromise = buildClientBundle();
+    throw error;
   }
-}
+};
 
-const requestedPort = Number(process.env.PORT ?? "3012")
+const requestedPort = Number(process.env.PORT ?? "3012");
 
 const readJson = async (request) => {
   try {
-    return await request.json()
+    return await request.json();
   } catch {
-    return null
+    return null;
   }
-}
+};
 
 const json = (body, init) =>
   Response.json(body, {
@@ -55,41 +55,41 @@ const json = (body, init) =>
       ...(init?.headers ?? {}),
       "cache-control": "no-store",
     },
-  })
+  });
 
 const runEffect = async (effect) => {
   try {
-    const traced = Effect.withSpan(effect, "spotify-effect.example.browser.request")
-    const provided = telemetryLayer !== undefined ? Effect.provide(traced, telemetryLayer) : traced
-    const result = await Effect.runPromise(provided)
-    return json(result)
+    const traced = Effect.withSpan(effect, "spotify-effect.example.browser.request");
+    const provided = telemetryLayer !== undefined ? Effect.provide(traced, telemetryLayer) : traced;
+    const result = await Effect.runPromise(provided);
+    return json(result);
   } catch (error) {
-    return json(error, { status: 500 })
+    return json(error, { status: 500 });
   }
-}
+};
 
 const server = Bun.serve({
   hostname: "127.0.0.1",
   port: Number.isFinite(requestedPort) ? requestedPort : 3012,
   async fetch(request) {
-    const url = new URL(request.url)
+    const url = new URL(request.url);
 
     if (url.pathname === "/") {
       return new Response(Bun.file(htmlEntry), {
         headers: { "content-type": "text/html; charset=utf-8" },
-      })
+      });
     }
 
     if (url.pathname === "/app.js") {
       return new Response(await getClientBundle(), {
         headers: { "content-type": "application/javascript; charset=utf-8" },
-      })
+      });
     }
 
     if (url.pathname === "/pkce") {
       return new Response(Bun.file(pkceEntry), {
         headers: { "content-type": "text/markdown; charset=utf-8" },
-      })
+      });
     }
 
     if (url.pathname === "/api/ping" && request.method === "GET") {
@@ -99,11 +99,11 @@ const server = Bun.serve({
           service: "spotify-effect-example-browser",
           timestamp: new Date().toISOString(),
         }),
-      )
+      );
     }
 
     if (url.pathname === "/api/pkce/exchange" && request.method === "POST") {
-      const body = await readJson(request)
+      const body = await readJson(request);
 
       if (
         body === null ||
@@ -112,19 +112,21 @@ const server = Bun.serve({
         typeof body.code !== "string" ||
         typeof body.codeVerifier !== "string"
       ) {
-        return json({ message: "Invalid PKCE exchange request body" }, { status: 400 })
+        return json({ message: "Invalid PKCE exchange request body" }, { status: 400 });
       }
 
       const spotify = new SpotifyWebApi({
         clientId: body.clientId,
         redirectUri: body.redirectUri,
-      })
+      });
 
-      return runEffect(spotify.getTokenWithAuthenticateCodePKCE(body.code, body.codeVerifier, body.clientId))
+      return runEffect(
+        spotify.getTokenWithAuthenticateCodePKCE(body.code, body.codeVerifier, body.clientId),
+      );
     }
 
     if (url.pathname === "/api/profile" && request.method === "POST") {
-      const body = await readJson(request)
+      const body = await readJson(request);
 
       if (
         body === null ||
@@ -134,7 +136,7 @@ const server = Bun.serve({
         typeof body.refreshToken !== "string" ||
         typeof body.accessTokenExpiresAt !== "number"
       ) {
-        return json({ message: "Invalid profile request body" }, { status: 400 })
+        return json({ message: "Invalid profile request body" }, { status: 400 });
       }
 
       const spotify = new SpotifyWebApi(
@@ -147,7 +149,7 @@ const server = Bun.serve({
           accessTokenExpiresAt: body.accessTokenExpiresAt,
           refreshToken: body.refreshToken,
         },
-      )
+      );
 
       return runEffect(
         spotify.users.getCurrentUserProfile().pipe(
@@ -160,28 +162,30 @@ const server = Bun.serve({
             },
           })),
         ),
-      )
+      );
     }
 
     if (url.pathname === "/api/track" && request.method === "POST") {
-      const body = await readJson(request)
+      const body = await readJson(request);
 
       if (
         body === null ||
         typeof body.accessToken !== "string" ||
         typeof body.trackId !== "string"
       ) {
-        return json({ message: "Invalid track request body" }, { status: 400 })
+        return json({ message: "Invalid track request body" }, { status: 400 });
       }
 
-      const spotify = new SpotifyWebApi({}, { accessToken: body.accessToken })
+      const spotify = new SpotifyWebApi({}, { accessToken: body.accessToken });
 
-      return runEffect(spotify.tracks.getTrack(body.trackId))
+      return runEffect(spotify.tracks.getTrack(body.trackId));
     }
 
-    return new Response("Not found", { status: 404 })
+    return new Response("Not found", { status: 404 });
   },
-})
+});
 
-console.log(`spotify-effect browser example: http://127.0.0.1:${server.port}`)
-console.log(`tracing: ${telemetryLayer !== undefined ? `enabled → ${process.env.OTEL_EXPORTER_OTLP_ENDPOINT}` : "disabled"}`)
+console.log(`spotify-effect browser example: http://127.0.0.1:${server.port}`);
+console.log(
+  `tracing: ${telemetryLayer !== undefined ? `enabled → ${process.env.OTEL_EXPORTER_OTLP_ENDPOINT}` : "disabled"}`,
+);
