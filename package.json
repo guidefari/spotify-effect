@@ -16,6 +16,7 @@
     "pc": "bun run fmt && bun run lint && bun run typecheck && bun run build",
     "example:basic": "SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 bun run --filter spotify-effect build && SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 bun run examples/basic/src/main.ts",
     "example:browser": "SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 bun run --filter spotify-effect build && SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 bun run --filter @examples/browser dev",
+    "example:sveltekit": "bun run --filter spotify-effect build && bun run --filter @examples/sveltekit dev",
     "release": "bun run build && changeset publish",
     "prepare": "effect-language-service patch"
   },
