@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { SpotifyWebApi } from "spotify-effect";
-import { makeNodeTelemetryLayer } from "../../shared/nodeTelemetry";
+import { makeNodeTelemetryLayer } from "./nodeTelemetry";
 
 const appEntry = new URL("./app.ts", import.meta.url);
 const htmlEntry = new URL("./index.html", import.meta.url);
