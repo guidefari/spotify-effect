@@ -81,15 +81,13 @@ const decodeFailureResponse = (
     const body = parseJson(text);
     const decodedError = decodeSpotifyApiErrorBody(body)
 
-    return yield* Effect.fail(
-      makeSpotifyHttpError({
-        status: response.status,
-        method: response.request.method,
-        url: response.request.url,
-        ...(decodedError.body === undefined ? null : { body: decodedError.body }),
-        ...(decodedError.message === undefined ? null : { apiMessage: decodedError.message }),
-      }),
-    );
+    return yield* makeSpotifyHttpError({
+      status: response.status,
+      method: response.request.method,
+      url: response.request.url,
+      ...(decodedError.body === undefined ? null : { body: decodedError.body }),
+      ...(decodedError.message === undefined ? null : { apiMessage: decodedError.message }),
+    });
   });
 
 const sendRequest = (
@@ -105,53 +103,90 @@ const sendRequest = (
     urlParams: options?.query,
   }).pipe(Effect.mapError(mapHttpClientError));
 
+const annotateResponse = (
+  response: HttpClientResponse.HttpClientResponse,
+): Effect.Effect<void> =>
+  Effect.annotateCurrentSpan({
+    "spotify.http.status_code": response.status,
+    "spotify.http.method": response.request.method,
+    "spotify.http.url": response.request.url,
+    ...(response.status === 429 && response.headers["retry-after"] !== undefined
+      ? { "spotify.http.retry_after": response.headers["retry-after"] }
+      : null),
+  })
+
 export const makeSpotifyRequest = (accessTokenResolver: AccessTokenResolver): SpotifyRequest => ({
   getJson: <A>(path: string, options?: SpotifyRequestOptions) =>
-    Effect.gen(function* () {
-      const accessToken = yield* accessTokenResolver.getAccessToken();
-      const response = yield* sendRequest(accessToken, path, options);
+    Effect.withSpan(
+      Effect.gen(function* () {
+        const accessToken = yield* accessTokenResolver.getAccessToken();
+        const response = yield* sendRequest(accessToken, path, options);
+        yield* annotateResponse(response)
 
-      if (response.status >= 200 && response.status < 300) {
-        return yield* decodeSuccessResponse<A>(response);
-      }
-
-      if (response.status === 401) {
-        yield* accessTokenResolver.invalidateAccessToken();
-
-        const retriedAccessToken = yield* accessTokenResolver.getAccessToken();
-        const retriedResponse = yield* sendRequest(retriedAccessToken, path, options);
-
-        if (retriedResponse.status >= 200 && retriedResponse.status < 300) {
-          return yield* decodeSuccessResponse<A>(retriedResponse);
+        if (response.status >= 200 && response.status < 300) {
+          return yield* decodeSuccessResponse<A>(response);
         }
 
-        return yield* decodeFailureResponse(retriedResponse);
-      }
+        if (response.status === 401) {
+          yield* Effect.annotateCurrentSpan({ "spotify.auth.retry_on_unauthorized": true })
+          yield* Effect.withSpan(accessTokenResolver.invalidateAccessToken(), "spotify.auth.invalidate")
 
-      return yield* decodeFailureResponse(response);
-    }),
+          const retriedAccessToken = yield* accessTokenResolver.getAccessToken();
+          const retriedResponse = yield* sendRequest(retriedAccessToken, path, options);
+          yield* annotateResponse(retriedResponse)
+
+          if (retriedResponse.status >= 200 && retriedResponse.status < 300) {
+            return yield* decodeSuccessResponse<A>(retriedResponse);
+          }
+
+          return yield* decodeFailureResponse(retriedResponse);
+        }
+
+        return yield* decodeFailureResponse(response);
+      }),
+      `spotify.request ${path}`,
+      {
+        attributes: {
+          "spotify.request.path": path,
+          "spotify.request.has_query": options?.query !== undefined,
+        },
+      },
+    ),
   getJsonWithSchema: <A>(path: string, schema: DecodableSchema<A>, options?: SpotifyRequestOptions) =>
-    Effect.gen(function* () {
-      const accessToken = yield* accessTokenResolver.getAccessToken()
-      const response = yield* sendRequest(accessToken, path, options)
+    Effect.withSpan(
+      Effect.gen(function* () {
+        const accessToken = yield* accessTokenResolver.getAccessToken()
+        const response = yield* sendRequest(accessToken, path, options)
+        yield* annotateResponse(response)
 
-      if (response.status >= 200 && response.status < 300) {
-        return yield* decodeSuccessResponseWithSchema(response, schema)
-      }
-
-      if (response.status === 401) {
-        yield* accessTokenResolver.invalidateAccessToken()
-
-        const retriedAccessToken = yield* accessTokenResolver.getAccessToken()
-        const retriedResponse = yield* sendRequest(retriedAccessToken, path, options)
-
-        if (retriedResponse.status >= 200 && retriedResponse.status < 300) {
-          return yield* decodeSuccessResponseWithSchema(retriedResponse, schema)
+        if (response.status >= 200 && response.status < 300) {
+          return yield* decodeSuccessResponseWithSchema(response, schema)
         }
 
-        return yield* decodeFailureResponse(retriedResponse)
-      }
+        if (response.status === 401) {
+          yield* Effect.annotateCurrentSpan({ "spotify.auth.retry_on_unauthorized": true })
+          yield* Effect.withSpan(accessTokenResolver.invalidateAccessToken(), "spotify.auth.invalidate")
 
-      return yield* decodeFailureResponse(response)
-    }),
+          const retriedAccessToken = yield* accessTokenResolver.getAccessToken()
+          const retriedResponse = yield* sendRequest(retriedAccessToken, path, options)
+          yield* annotateResponse(retriedResponse)
+
+          if (retriedResponse.status >= 200 && retriedResponse.status < 300) {
+            return yield* decodeSuccessResponseWithSchema(retriedResponse, schema)
+          }
+
+          return yield* decodeFailureResponse(retriedResponse)
+        }
+
+        return yield* decodeFailureResponse(response)
+      }),
+      `spotify.request ${path}`,
+      {
+        attributes: {
+          "spotify.request.path": path,
+          "spotify.request.has_query": options?.query !== undefined,
+          "spotify.request.uses_schema": true,
+        },
+      },
+    ),
 });

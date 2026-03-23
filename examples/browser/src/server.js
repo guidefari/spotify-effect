@@ -1,16 +1,23 @@
 import { Effect } from "effect"
 import { SpotifyWebApi } from "spotify-effect"
+import { makeNodeTelemetryLayer } from "../../shared/nodeTelemetry"
 
 const appEntry = new URL("./app.ts", import.meta.url)
 const htmlEntry = new URL("./index.html", import.meta.url)
 const pkceEntry = new URL("../../../markdown/pkce.md", import.meta.url)
+const packageEntry = new URL("../../../packages/spotify-effect/src/index.ts", import.meta.url)
 
-const bundleClient = async () => {
+const telemetryLayer = makeNodeTelemetryLayer("spotify-effect-example-browser")
+
+const buildClientBundle = async () => {
   const result = await Bun.build({
     entrypoints: [appEntry.pathname],
     target: "browser",
     format: "esm",
     minify: false,
+    alias: {
+      "spotify-effect": packageEntry.pathname,
+    },
   })
 
   if (!result.success) {
@@ -18,6 +25,17 @@ const bundleClient = async () => {
   }
 
   return await result.outputs[0].text()
+}
+
+let clientBundlePromise = buildClientBundle()
+
+const getClientBundle = async () => {
+  try {
+    return await clientBundlePromise
+  } catch (error) {
+    clientBundlePromise = buildClientBundle()
+    throw error
+  }
 }
 
 const requestedPort = Number(process.env.PORT ?? "3012")
@@ -41,7 +59,9 @@ const json = (body, init) =>
 
 const runEffect = async (effect) => {
   try {
-    const result = await Effect.runPromise(effect)
+    const traced = Effect.withSpan(effect, "spotify-effect.example.browser.request")
+    const provided = telemetryLayer !== undefined ? Effect.provide(traced, telemetryLayer) : traced
+    const result = await Effect.runPromise(provided)
     return json(result)
   } catch (error) {
     return json(error, { status: 500 })
@@ -61,7 +81,7 @@ const server = Bun.serve({
     }
 
     if (url.pathname === "/app.js") {
-      return new Response(await bundleClient(), {
+      return new Response(await getClientBundle(), {
         headers: { "content-type": "application/javascript; charset=utf-8" },
       })
     }
@@ -70,6 +90,16 @@ const server = Bun.serve({
       return new Response(Bun.file(pkceEntry), {
         headers: { "content-type": "text/markdown; charset=utf-8" },
       })
+    }
+
+    if (url.pathname === "/api/ping" && request.method === "GET") {
+      return runEffect(
+        Effect.succeed({
+          ok: true,
+          service: "spotify-effect-example-browser",
+          timestamp: new Date().toISOString(),
+        }),
+      )
     }
 
     if (url.pathname === "/api/pkce/exchange" && request.method === "POST") {
@@ -154,3 +184,4 @@ const server = Bun.serve({
 })
 
 console.log(`spotify-effect browser example: http://127.0.0.1:${server.port}`)
+console.log(`tracing: ${telemetryLayer !== undefined ? `enabled → ${process.env.OTEL_EXPORTER_OTLP_ENDPOINT}` : "disabled"}`)

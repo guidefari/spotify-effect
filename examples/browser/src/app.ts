@@ -17,6 +17,7 @@ const authStateInput = document.querySelector<HTMLInputElement>("#auth-state")
 const authScopeInput = document.querySelector<HTMLInputElement>("#auth-scope")
 const authCodeButton = document.querySelector<HTMLButtonElement>("#generate-auth-code-url")
 const pkceButton = document.querySelector<HTMLButtonElement>("#generate-pkce-url")
+const pingServerButton = document.querySelector<HTMLButtonElement>("#ping-server")
 const exchangePkceButton = document.querySelector<HTMLButtonElement>("#exchange-pkce-code")
 const fetchCurrentUserButton = document.querySelector<HTMLButtonElement>("#fetch-current-user")
 const callbackCodeInput = document.querySelector<HTMLInputElement>("#callback-code")
@@ -215,6 +216,28 @@ const generateAuthorizationCodeUrl = (): void => {
   setOutput(authOutput, spotify.getAuthorizationCodeUrl(inputs))
 }
 
+const pingServer = async (): Promise<void> => {
+  pingServerButton!.disabled = true
+  setStatus("Pinging traced server...")
+
+  try {
+    const response = await fetch("/api/ping")
+    const payload = await response.json()
+
+    if (!response.ok) {
+      throw payload
+    }
+
+    setOutput(authOutput, payload)
+    setStatus("Ping succeeded. Check Jaeger for spotify-effect-example-browser.")
+  } catch (error) {
+    setOutput(authOutput, formatError(error))
+    setStatus("Ping failed.")
+  } finally {
+    pingServerButton!.disabled = false
+  }
+}
+
 const startPkceLogin = async (): Promise<void> => {
   const inputs = readAuthorizationInputs()
 
@@ -384,6 +407,9 @@ fetchButton?.addEventListener("click", () => {
 })
 
 authCodeButton?.addEventListener("click", generateAuthorizationCodeUrl)
+pingServerButton?.addEventListener("click", () => {
+  void pingServer()
+})
 
 pkceButton?.addEventListener("click", () => {
   void startPkceLogin()
