@@ -85,6 +85,17 @@ export const TrackSchema = Schema.Struct({
   is_local: Schema.Boolean,
 });
 
+export const PublicUserSchema = Schema.Struct({
+  display_name: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  external_urls: ExternalURLSchema,
+  followers: Schema.optionalKey(FollowersSchema),
+  href: Schema.String,
+  id: Schema.String,
+  images: Schema.optionalKey(Schema.mutable(Schema.Array(SpotifyImageSchema))),
+  type: Schema.Literal("user"),
+  uri: Schema.String,
+});
+
 export const PrivateUserSchema = Schema.Struct({
   birthdate: Schema.optionalKey(Schema.String),
   country: Schema.optionalKey(Schema.String),
