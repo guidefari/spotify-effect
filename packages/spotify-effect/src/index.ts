@@ -4,7 +4,9 @@ export {
   SpotifyConfigurationError,
   SpotifyHttpError,
   SpotifyParseError,
+  SpotifyRateLimitError,
   SpotifyTransportError,
+  isRetryableError,
 } from "./errors/SpotifyError";
 export { AUTHORIZE_URL, BASE_ACCOUNTS_URL, BASE_API_URL, TOKEN_URL } from "./constants";
 export {
@@ -17,6 +19,7 @@ export { SpotifyWebApi } from "./SpotifyWebApi";
 export { default } from "./SpotifyWebApi";
 export type { SpotifyRequestError } from "./errors/SpotifyError";
 export type { SpotifyWebApiCredentials, SpotifyWebApiOptions } from "./SpotifyWebApi";
+export type { SpotifyRetryConfig } from "./services/SpotifyRequest";
 export type {
   AuthorizationScope,
   GetRefreshableUserTokensResponse,

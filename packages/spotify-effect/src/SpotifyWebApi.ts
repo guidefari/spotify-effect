@@ -14,7 +14,7 @@ import type { MarketOptions } from "./model/SpotifyOptions";
 import type { GetTracksResponse } from "./model/SpotifyResponses";
 import { makeSpotifyAuth } from "./services/SpotifyAuth";
 import type { SpotifyAuth } from "./services/SpotifyAuth";
-import { makeSpotifyRequest } from "./services/SpotifyRequest";
+import { makeSpotifyRequest, type SpotifyRetryConfig } from "./services/SpotifyRequest";
 import { makeSpotifySession, type SpotifySession } from "./services/SpotifySession";
 import {
   getAuthorizationUrl,
@@ -27,6 +27,7 @@ export interface SpotifyWebApiOptions {
   clientSecret?: string;
   redirectUri?: string;
   httpClientLayer?: Layer.Layer<HttpClient.HttpClient>;
+  retry?: SpotifyRetryConfig;
 }
 
 export interface SpotifyWebApiCredentials {
@@ -53,6 +54,7 @@ export class SpotifyWebApi {
   private readonly _clientId: string;
   private readonly _clientSecret: string;
   private readonly _redirectUri: string;
+  private readonly _retryConfig: SpotifyRetryConfig | undefined;
   private readonly provideHttpClient: <A, E>(
     effect: Effect.Effect<A, E, HttpClient.HttpClient>,
   ) => Effect.Effect<A, E>;
@@ -66,6 +68,7 @@ export class SpotifyWebApi {
     this._clientId = options.clientId ?? "";
     this._clientSecret = options.clientSecret ?? "";
     this._redirectUri = options.redirectUri ?? "";
+    this._retryConfig = options.retry;
     this.appAuth = makeSpotifyAuth({
       clientId: this._clientId,
       clientSecret: this._clientSecret,
@@ -79,26 +82,32 @@ export class SpotifyWebApi {
     ): Effect.Effect<A, E> => Effect.provide(effect, layer);
 
     const rawTracks = new TracksApi(
-      makeSpotifyRequest({
-        getAccessToken: () =>
-          this.session.getAccessToken({
-            auth: this.appAuth,
-            canUseClientCredentials:
-              isConfigured(this._clientId) && isConfigured(this._clientSecret),
-          }),
-        invalidateAccessToken: () => this.session.invalidateAccessToken(),
-      }),
+      makeSpotifyRequest(
+        {
+          getAccessToken: () =>
+            this.session.getAccessToken({
+              auth: this.appAuth,
+              canUseClientCredentials:
+                isConfigured(this._clientId) && isConfigured(this._clientSecret),
+            }),
+          invalidateAccessToken: () => this.session.invalidateAccessToken(),
+        },
+        this._retryConfig,
+      ),
     );
     const rawUsers = new UsersApi(
-      makeSpotifyRequest({
-        getAccessToken: () =>
-          this.session.getAccessToken({
-            auth: this.appAuth,
-            canUseClientCredentials:
-              isConfigured(this._clientId) && isConfigured(this._clientSecret),
-          }),
-        invalidateAccessToken: () => this.session.invalidateAccessToken(),
-      }),
+      makeSpotifyRequest(
+        {
+          getAccessToken: () =>
+            this.session.getAccessToken({
+              auth: this.appAuth,
+              canUseClientCredentials:
+                isConfigured(this._clientId) && isConfigured(this._clientSecret),
+            }),
+          invalidateAccessToken: () => this.session.invalidateAccessToken(),
+        },
+        this._retryConfig,
+      ),
     );
 
     this.tracks = {
