@@ -255,7 +255,7 @@ const makeRequestWithAuthRetry = <A>(
         const freshToken = yield* accessTokenResolver.getAccessToken();
         return yield* tryWithToken(freshToken);
       }
-      return yield* Effect.fail(result.error);
+      return yield* result.error;
     }
 
     return result.value;
