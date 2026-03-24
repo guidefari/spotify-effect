@@ -9,7 +9,7 @@ import type {
   GetRefreshedAccessTokenResponse,
   GetTemporaryAppTokensResponse,
 } from "./model/SpotifyAuthorization";
-import type { PrivateUser, Track } from "./model/SpotifyObjects";
+import type { PrivateUser, PublicUser, Track } from "./model/SpotifyObjects";
 import type { MarketOptions } from "./model/SpotifyOptions";
 import type { GetTracksResponse } from "./model/SpotifyResponses";
 import { makeSpotifyAuth } from "./services/SpotifyAuth";
@@ -46,6 +46,7 @@ interface ProvidedTracksApi {
 
 interface ProvidedUsersApi {
   getCurrentUserProfile(): Effect.Effect<PrivateUser, SpotifyRequestError>;
+  getUser(userId: string): Effect.Effect<PublicUser, SpotifyRequestError>;
 }
 
 const isConfigured = (value: string): boolean => value.length > 0;
@@ -116,6 +117,7 @@ export class SpotifyWebApi {
     };
     this.users = {
       getCurrentUserProfile: () => this.provideHttpClient(rawUsers.getCurrentUserProfile()),
+      getUser: (userId) => this.provideHttpClient(rawUsers.getUser(userId)),
     };
   }
 

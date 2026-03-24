@@ -31,6 +31,6 @@ export type {
   BrowserPkceState,
   BrowserRefreshableTokens,
 } from "./browser/SpotifyBrowserSession";
-export type { PrivateUser, Track } from "./model/SpotifyObjects";
+export type { PrivateUser, PublicUser, Track } from "./model/SpotifyObjects";
 export type { MarketOptions } from "./model/SpotifyOptions";
 export type { GetAuthorizationUrlOptions, PKCEExtensionOptions } from "./utils/getAuthorizationUrl";
