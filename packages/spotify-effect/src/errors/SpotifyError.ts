@@ -28,11 +28,28 @@ export class SpotifyConfigurationError extends Data.TaggedError("SpotifyConfigur
   readonly message: string;
 }> {}
 
+export class SpotifyRateLimitError extends Data.TaggedError("SpotifyRateLimitError")<{
+  readonly method: string;
+  readonly url: string;
+  readonly retryAfterSeconds: number;
+}> {}
+
 export type SpotifyRequestError =
   | SpotifyTransportError
   | SpotifyHttpError
   | SpotifyParseError
-  | SpotifyConfigurationError;
+  | SpotifyConfigurationError
+  | SpotifyRateLimitError;
+
+export const isRetryableError = (error: SpotifyRequestError): boolean => {
+  if (error._tag === "SpotifyTransportError") {
+    return true;
+  }
+  if (error._tag === "SpotifyHttpError") {
+    return error.status === 429 || error.status >= 500;
+  }
+  return false;
+};
 
 export interface SpotifyHttpErrorDetails {
   readonly status: number;
