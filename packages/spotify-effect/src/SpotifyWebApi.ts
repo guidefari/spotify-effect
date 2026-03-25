@@ -7,7 +7,7 @@ import { BrowseApi } from "./api/Browse";
 import { SearchApi } from "./api/Search";
 import { TracksApi } from "./api/Tracks";
 import { UsersApi } from "./api/Users";
-import { SpotifyConfigurationError, type SpotifyRequestError } from "./errors/SpotifyError";
+import { type SpotifyRequestError } from "./errors/SpotifyError";
 import type {
   GetRefreshableUserTokensResponse,
   GetRefreshedAccessTokenResponse,

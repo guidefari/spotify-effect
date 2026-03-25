@@ -1,11 +1,10 @@
 import * as Effect from "effect/Effect";
 import type { HttpClient } from "effect/unstable/http";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
-import type { Artist, Paging, SimplifiedAlbum, Track } from "../model/SpotifyObjects";
+import type { Artist, Paging, SimplifiedAlbum } from "../model/SpotifyObjects";
 import { ArtistSchema } from "../model/SpotifyObjectSchemas";
 import type { GetArtistAlbumsOptions } from "../model/SpotifyOptions";
 import type {
-  GetArtistAlbumsResponse,
   GetArtistsResponse,
   GetArtistTopTracksResponse,
   GetRelatedArtistsResponse,

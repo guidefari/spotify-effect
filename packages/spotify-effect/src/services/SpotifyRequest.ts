@@ -16,7 +16,8 @@ import { decodeSpotifyApiErrorBody } from "../model/SpotifyErrorSchemas";
 const spotifyApiBaseUrl = "https://api.spotify.com/v1";
 
 type QueryValue = string | number | boolean | ReadonlyArray<string | number | boolean> | undefined;
-type DecodableSchema<A> = Schema.Top & { readonly Type: A; readonly DecodingServices: never };
+type SyncDecodableSchema = Schema.Top & { readonly DecodingServices: never };
+type DecodableSchema<A> = Schema.Top & { readonly Type: A };
 
 export interface SpotifyRequestOptions {
   readonly query?: Readonly<Record<string, QueryValue>>;
@@ -81,9 +82,12 @@ const decodeSuccessResponseWithSchema = <A>(
 ): Effect.Effect<A, SpotifyRequestError> =>
   Effect.gen(function* () {
     const body = yield* response.json.pipe(Effect.mapError(mapHttpClientError));
+    const decode = Schema.decodeUnknownSync(
+      schema as unknown as SyncDecodableSchema & { readonly Type: A },
+    );
 
     return yield* Effect.try({
-      try: () => Schema.decodeUnknownSync(schema)(body),
+      try: () => decode(body),
       catch: (cause) =>
         new SpotifyParseError({
           cause,

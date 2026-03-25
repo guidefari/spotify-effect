@@ -1,6 +1,5 @@
 import * as Effect from "effect/Effect";
 import { describe, expect, it } from "vitest";
-import { SpotifyRateLimitError } from "../errors/SpotifyError";
 import { makeTestHttpClient } from "../test/TestHttpClient";
 import { makeSpotifyRequest } from "./SpotifyRequest";
 
