@@ -105,11 +105,12 @@ describe("makeSpotifyRequest", () => {
   });
 
   it("returns SpotifyRateLimitError when 429 retries are exhausted", async () => {
-    const { layer } = makeTestHttpClient(() =>
-      new Response(JSON.stringify({ error: { status: 429, message: "Rate limited" } }), {
-        status: 429,
-        headers: { "content-type": "application/json", "retry-after": "0" },
-      }),
+    const { layer } = makeTestHttpClient(
+      () =>
+        new Response(JSON.stringify({ error: { status: 429, message: "Rate limited" } }), {
+          status: 429,
+          headers: { "content-type": "application/json", "retry-after": "0" },
+        }),
     );
 
     const request = makeSpotifyRequest(
@@ -166,11 +167,12 @@ describe("makeSpotifyRequest", () => {
   });
 
   it("returns SpotifyHttpError when 500 retries are exhausted", async () => {
-    const { layer } = makeTestHttpClient(() =>
-      new Response(JSON.stringify({ error: { status: 500, message: "Internal error" } }), {
-        status: 500,
-        headers: { "content-type": "application/json" },
-      }),
+    const { layer } = makeTestHttpClient(
+      () =>
+        new Response(JSON.stringify({ error: { status: 500, message: "Internal error" } }), {
+          status: 500,
+          headers: { "content-type": "application/json" },
+        }),
     );
 
     const request = makeSpotifyRequest(

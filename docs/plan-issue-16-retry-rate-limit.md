@@ -30,9 +30,9 @@ Add to `SpotifyRequestError` union. Add `isRetryableError` helper that returns t
 
 ```typescript
 export interface SpotifyRetryConfig {
-  readonly maxRetries?: number;       // default: 3
-  readonly baseDelayMs?: number;      // default: 1000
-  readonly maxDelayMs?: number;       // default: 30000
+  readonly maxRetries?: number; // default: 3
+  readonly baseDelayMs?: number; // default: 1000
+  readonly maxDelayMs?: number; // default: 30000
 }
 ```
 
@@ -99,6 +99,7 @@ Export `SpotifyRateLimitError` and `SpotifyRetryConfig`.
 ### 7. OTel annotations
 
 Inside the retry loop, annotate spans with:
+
 - `spotify.retry.attempt` — attempt number (via a `Ref` counter)
 - `spotify.retry.exhausted` — true when retries run out
 
@@ -106,13 +107,13 @@ The existing `spotify.http.retry_after` annotation stays.
 
 ## File Changes
 
-| File                                                          | Change                                                                        |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `packages/spotify-effect/src/errors/SpotifyError.ts`         | Add `SpotifyRateLimitError`, `isRetryableError`, update union                 |
-| `packages/spotify-effect/src/services/SpotifyRequest.ts`     | Add `SpotifyRetryConfig`, refactor into shared `executeRequest`, add retry wrapping |
-| `packages/spotify-effect/src/SpotifyWebApi.ts`               | Add `retry` to options, pass through                                          |
-| `packages/spotify-effect/src/index.ts`                       | Export new types                                                              |
-| `packages/spotify-effect/src/services/SpotifyRequest.test.ts` | Add retry/rate-limit tests                                                    |
+| File                                                          | Change                                                                              |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `packages/spotify-effect/src/errors/SpotifyError.ts`          | Add `SpotifyRateLimitError`, `isRetryableError`, update union                       |
+| `packages/spotify-effect/src/services/SpotifyRequest.ts`      | Add `SpotifyRetryConfig`, refactor into shared `executeRequest`, add retry wrapping |
+| `packages/spotify-effect/src/SpotifyWebApi.ts`                | Add `retry` to options, pass through                                                |
+| `packages/spotify-effect/src/index.ts`                        | Export new types                                                                    |
+| `packages/spotify-effect/src/services/SpotifyRequest.test.ts` | Add retry/rate-limit tests                                                          |
 
 ## Verification
 
