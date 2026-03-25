@@ -1,7 +1,6 @@
 import * as NodeSdk from "@effect/opentelemetry/NodeSdk";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import {
-	BatchSpanProcessor,
 	ConsoleSpanExporter,
 	SimpleSpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
@@ -32,8 +31,7 @@ const telemetryLayer: Layer.Layer<Resource.Resource> | undefined = (() => {
 			? new ConsoleSpanExporter()
 			: new OTLPTraceExporter({ url: exporterUrl });
 
-	const processor =
-		exporterUrl !== undefined ? new BatchSpanProcessor(exporter) : new SimpleSpanProcessor(exporter);
+	const processor = new SimpleSpanProcessor(exporter);
 
 	return NodeSdk.layer(() => ({
 		resource: {
