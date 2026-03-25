@@ -4,21 +4,21 @@ description: "Svelte 5 runes, snippets, SvelteKit patterns, and modern best prac
 license: MIT
 metadata:
   author: ejirocodes
-  version: '1.0.0'
+  version: "1.0.0"
 ---
 
 # Svelte 5 Best Practices
 
 ## Quick Reference
 
-| Topic | When to Use | Reference |
-|-------|-------------|-----------|
-| **Runes** | $state, $derived, $effect, $props, $bindable, $inspect | [runes.md](references/runes.md) |
-| **Snippets** | Replacing slots, {#snippet}, {@render} | [snippets.md](references/snippets.md) |
-| **Events** | onclick handlers, callback props, context API | [events.md](references/events.md) |
-| **TypeScript** | Props typing, generic components | [typescript.md](references/typescript.md) |
-| **Migration** | Svelte 4 to 5, stores to runes | [migration.md](references/migration.md) |
-| **SvelteKit** | Load functions, form actions, SSR, page typing | [sveltekit.md](references/sveltekit.md) |
+| Topic           | When to Use                                               | Reference                                   |
+| --------------- | --------------------------------------------------------- | ------------------------------------------- |
+| **Runes**       | $state, $derived, $effect, $props, $bindable, $inspect    | [runes.md](references/runes.md)             |
+| **Snippets**    | Replacing slots, {#snippet}, {@render}                    | [snippets.md](references/snippets.md)       |
+| **Events**      | onclick handlers, callback props, context API             | [events.md](references/events.md)           |
+| **TypeScript**  | Props typing, generic components                          | [typescript.md](references/typescript.md)   |
+| **Migration**   | Svelte 4 to 5, stores to runes                            | [migration.md](references/migration.md)     |
+| **SvelteKit**   | Load functions, form actions, SSR, page typing            | [sveltekit.md](references/sveltekit.md)     |
 | **Performance** | Universal reactivity, avoiding over-reactivity, streaming | [performance.md](references/performance.md) |
 
 ## Essential Patterns

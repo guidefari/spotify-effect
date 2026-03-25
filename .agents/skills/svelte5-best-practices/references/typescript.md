@@ -1,6 +1,7 @@
 # Svelte 5 TypeScript Reference
 
 ## Table of Contents
+
 - [Props Typing](#props-typing)
 - [Generic Components](#generic-components)
 
@@ -13,6 +14,7 @@
 ### Basic Props Typing
 
 **Inline typing:**
+
 ```svelte
 <script lang="ts">
   let { name, count = 0 }: { name: string; count?: number } = $props();
@@ -20,6 +22,7 @@
 ```
 
 **Interface typing (recommended):**
+
 ```svelte
 <script lang="ts">
   interface Props {
