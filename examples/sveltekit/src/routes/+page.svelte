@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { session } from '$lib/session.svelte';
 
 	let { data } = $props();
@@ -22,23 +21,32 @@
 	let isStartingLogin = $state(false);
 	let loginError = $state<string | null>(null);
 
-	// Sync clientId back to session when it changes
 	$effect(() => {
 		session.setClientId(clientId);
 	});
 
-	// Auto-handle PKCE callback
-	onMount(async () => {
-		if (data.error) {
-			loginError = `Spotify returned an error: ${data.error}`;
+	let hasHandledCallback = false;
+
+	$effect(() => {
+		if (hasHandledCallback || session.isLoggedIn) return;
+		const code = data.code;
+		const error = data.error;
+		if (!code && !error) return;
+		hasHandledCallback = true;
+
+		if (error) {
+			loginError = `Spotify returned an error: ${error}`;
 			return;
 		}
-		if (data.code && !session.isLoggedIn) {
-			await session.exchangeCode(data.code);
-			if (!session.error && session.isLoggedIn) {
+
+		(async () => {
+			await session.exchangeCode(code!);
+			if (session.error) {
+				loginError = session.error;
+			} else if (session.isLoggedIn) {
 				await session.fetchProfile();
 			}
-		}
+		})();
 	});
 
 	async function startLogin() {

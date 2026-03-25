@@ -88,8 +88,6 @@ export class Session {
 			.filter(Boolean);
 
 		const url = spotify.getAuthorizationCodePKCEUrl(this.clientId, {
-			clientId: this.clientId,
-			redirectUri,
 			...(scopeList.length > 0 ? { scope: scopeList as never } : null),
 			code_challenge: challenge,
 			code_challenge_method: 'S256'
