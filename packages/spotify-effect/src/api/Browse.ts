@@ -1,7 +1,12 @@
 import * as Effect from "effect/Effect";
 import type { HttpClient } from "effect/unstable/http";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
-import type { Category } from "../model/SpotifyObjects";
+import type {
+  Category,
+  Paging,
+  SimplifiedAlbum,
+  SimplifiedPlaylist,
+} from "../model/SpotifyObjects";
 import { CategorySchema } from "../model/SpotifyObjectSchemas";
 import type {
   GetCategoriesOptions,
