@@ -14,11 +14,11 @@
     "test:watch": "bun vitest --config vite.config.ts",
     "build": "tsup src/index.ts --format cjs,esm --dts"
   },
+  "dependencies": {
+    "effect": "4.0.0-beta.36"
+  },
   "devDependencies": {
     "@effect/opentelemetry": "4.0.0-beta.36",
     "@opentelemetry/sdk-trace-base": "^2.6.0"
-  },
-  "dependencies": {
-    "effect": "4.0.0-beta.36"
   }
 }

@@ -35,7 +35,7 @@ const program = Effect.gen(function* () {
   });
 
   const track = yield* spotify.tracks.getTrack("4iV5W9uYEdYUVa79Axb7Rh");
-  
+
   return track;
 });
 

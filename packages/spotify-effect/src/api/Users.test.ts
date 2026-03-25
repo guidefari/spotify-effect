@@ -41,13 +41,9 @@ describe("UsersApi", () => {
   });
 
   it("gets a user's profile", async () => {
-    const { users, layer, requests } = makeUsersWithTestClient(
-      jsonResponse(publicUserFixture),
-    );
+    const { users, layer, requests } = makeUsersWithTestClient(jsonResponse(publicUserFixture));
 
-    const response = await Effect.runPromise(
-      users.getUser("griegs").pipe(Effect.provide(layer)),
-    );
+    const response = await Effect.runPromise(users.getUser("griegs").pipe(Effect.provide(layer)));
 
     expect(response).toEqual(publicUserFixture);
     expect(requests[0]?.url).toBe("https://api.spotify.com/v1/users/griegs");

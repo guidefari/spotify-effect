@@ -138,7 +138,9 @@ const annotateResponse = (response: HttpClientResponse.HttpClientResponse): Effe
       : null),
   });
 
-type DecodeFn<A> = (response: HttpClientResponse.HttpClientResponse) => Effect.Effect<A, SpotifyRequestError>;
+type DecodeFn<A> = (
+  response: HttpClientResponse.HttpClientResponse,
+) => Effect.Effect<A, SpotifyRequestError>;
 
 const executeRequest = <A>(
   accessToken: string,
@@ -187,7 +189,7 @@ const withRetry = <A, E extends SpotifyRequestError, R>(
         Effect.matchEffect({
           onFailure: (error) => Effect.succeed({ _tag: "Error" as const, error }),
           onSuccess: (value) => Effect.succeed({ _tag: "Success" as const, value }),
-        })
+        }),
       );
 
       if (result._tag === "Success") {
@@ -203,7 +205,7 @@ const withRetry = <A, E extends SpotifyRequestError, R>(
       if (attempt < retryConfig.maxRetries) {
         const delayMs = Math.min(
           retryConfig.baseDelayMs * Math.pow(2, attempt),
-          retryConfig.maxDelayMs
+          retryConfig.maxDelayMs,
         );
         yield* Effect.sleep(`${delayMs} millis`);
       }
@@ -241,7 +243,7 @@ const makeRequestWithAuthRetry = <A>(
       Effect.matchEffect({
         onFailure: (error) => Effect.succeed({ _tag: "Error" as const, error }),
         onSuccess: (value) => Effect.succeed({ _tag: "Success" as const, value }),
-      })
+      }),
     );
 
     if (result._tag === "Error") {
@@ -288,7 +290,11 @@ export const makeSpotifyRequest = (
           },
         },
       ),
-    getJsonWithSchema: <A>(path: string, schema: DecodableSchema<A>, options?: SpotifyRequestOptions) =>
+    getJsonWithSchema: <A>(
+      path: string,
+      schema: DecodableSchema<A>,
+      options?: SpotifyRequestOptions,
+    ) =>
       Effect.withSpan(
         makeRequestWithAuthRetry(
           accessTokenResolver,
