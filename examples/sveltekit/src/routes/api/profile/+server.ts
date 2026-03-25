@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import * as Effect from 'effect/Effect';
 import { SpotifyWebApi } from 'spotify-effect';
+import { runTraced } from '$lib/server/telemetry';
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: unknown;
@@ -36,7 +36,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	);
 
 	try {
-		const profile = await Effect.runPromise(spotify.users.getCurrentUserProfile());
+		const profile = await runTraced(
+			spotify.users.getCurrentUserProfile(),
+			'sveltekit.api.profile'
+		);
 		return json({
 			profile,
 			credentials: {

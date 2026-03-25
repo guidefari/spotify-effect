@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import * as Effect from 'effect/Effect';
 import { SpotifyWebApi } from 'spotify-effect';
+import { runTraced } from '$lib/server/telemetry';
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: unknown;
@@ -20,7 +20,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	const spotify = new SpotifyWebApi({}, { accessToken: b.accessToken });
 
 	try {
-		const track = await Effect.runPromise(spotify.tracks.getTrack(b.trackId));
+		const track = await runTraced(
+			spotify.tracks.getTrack(b.trackId),
+			'sveltekit.api.track'
+		);
 		return json(track);
 	} catch (err) {
 		return json(err, { status: 500 });

@@ -46,6 +46,11 @@
       "name": "@examples/sveltekit",
       "version": "0.0.1",
       "dependencies": {
+        "@effect/opentelemetry": "4.0.0-beta.36",
+        "@opentelemetry/api": "^1.9.0",
+        "@opentelemetry/exporter-trace-otlp-http": "^0.213.0",
+        "@opentelemetry/sdk-trace-base": "^2.6.0",
+        "@opentelemetry/sdk-trace-node": "^2.6.0",
         "effect": "4.0.0-beta.36",
         "spotify-effect": "workspace:*",
       },

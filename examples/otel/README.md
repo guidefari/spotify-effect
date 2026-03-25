@@ -36,6 +36,13 @@ SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 bun ru
 SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 bun run example:browser
 ```
 
+### SvelteKit example
+
+```sh
+cd examples/sveltekit
+SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 bun run dev
+```
+
 The examples will auto-append `/v1/traces` to `OTEL_EXPORTER_OTLP_ENDPOINT` when needed.
 
 The collector is exposed on host port `14318` to avoid collisions with anything already using `4318` locally.
