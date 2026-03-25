@@ -16,7 +16,7 @@ import { decodeSpotifyApiErrorBody } from "../model/SpotifyErrorSchemas";
 const spotifyApiBaseUrl = "https://api.spotify.com/v1";
 
 type QueryValue = string | number | boolean | ReadonlyArray<string | number | boolean> | undefined;
-type DecodableSchema<A> = Schema.Top & { readonly Type: A; readonly DecodingServices: never };
+type DecodableSchema<A> = Schema.Top & { readonly Type: A };
 
 export interface SpotifyRequestOptions {
   readonly query?: Readonly<Record<string, QueryValue>>;

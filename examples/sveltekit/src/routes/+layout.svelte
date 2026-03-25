@@ -5,10 +5,24 @@
 
 	let { children } = $props();
 
-	const links = [
-		{ href: '/', label: 'home' },
-		{ href: '/track', label: 'track' },
-		{ href: '/user', label: 'user' }
+	const navGroups = [
+		{
+			label: 'Auth',
+			links: [{ href: '/', label: 'home' }]
+		},
+		{
+			label: 'Catalog',
+			links: [
+				{ href: '/album', label: 'album' },
+				{ href: '/artist', label: 'artist' },
+				{ href: '/track', label: 'track' },
+				{ href: '/user', label: 'user' }
+			]
+		},
+		{
+			label: 'Search',
+			links: [{ href: '/search', label: 'search' }]
+		}
 	];
 </script>
 
@@ -16,9 +30,16 @@
 	<nav>
 		<span class="brand">spotify-effect</span>
 
-		<div class="nav-links">
-			{#each links as link}
-				<a href={link.href} class:active={page.url.pathname === link.href}>{link.label}</a>
+		<div class="nav-groups">
+			{#each navGroups as group}
+				<div class="nav-group">
+					<span class="nav-group-label">{group.label}</span>
+					<div class="nav-group-links">
+						{#each group.links as link}
+							<a href={link.href} class:active={page.url.pathname === link.href}>{link.label}</a>
+						{/each}
+					</div>
+				</div>
 			{/each}
 		</div>
 
@@ -68,13 +89,34 @@
 		letter-spacing: -0.02em;
 	}
 
-	.nav-links {
+	.nav-groups {
 		display: flex;
-		gap: 4px;
+		gap: 24px;
 		flex: 1;
+		align-items: center;
 	}
 
-	.nav-links a {
+	.nav-group {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.nav-group-label {
+		color: var(--muted);
+		font-size: 10px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		opacity: 0.7;
+	}
+
+	.nav-group-links {
+		display: flex;
+		gap: 2px;
+	}
+
+	.nav-group-links a {
 		color: var(--muted);
 		text-decoration: none;
 		font-size: 12px;
@@ -83,13 +125,13 @@
 		transition: color 0.1s, background 0.1s;
 	}
 
-	.nav-links a:hover {
+	.nav-group-links a:hover {
 		color: var(--text);
 		background: var(--surface-2);
 		text-decoration: none;
 	}
 
-	.nav-links a.active {
+	.nav-group-links a.active {
 		color: var(--text);
 		background: var(--surface-2);
 	}

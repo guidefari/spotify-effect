@@ -1,3 +1,7 @@
+export { AlbumsApi } from "./api/Albums";
+export { ArtistsApi } from "./api/Artists";
+export { BrowseApi } from "./api/Browse";
+export { SearchApi } from "./api/Search";
 export { TracksApi } from "./api/Tracks";
 export { UsersApi } from "./api/Users";
 export {
@@ -31,6 +35,40 @@ export type {
   BrowserPkceState,
   BrowserRefreshableTokens,
 } from "./browser/SpotifyBrowserSession";
-export type { PrivateUser, PublicUser, Track } from "./model/SpotifyObjects";
-export type { MarketOptions } from "./model/SpotifyOptions";
+export type {
+  Album,
+  Artist,
+  Category,
+  Paging,
+  PrivateUser,
+  PublicUser,
+  SearchType,
+  SimplifiedAlbum,
+  SimplifiedPlaylist,
+  SimplifiedTrack,
+  Track,
+} from "./model/SpotifyObjects";
+export type {
+  GetAlbumTracksOptions,
+  GetArtistAlbumsOptions,
+  GetCategoriesOptions,
+  GetCategoryOptions,
+  GetCategoryPlaylistsOptions,
+  GetFeaturedPlaylistsOptions,
+  GetNewReleasesOptions,
+  MarketOptions,
+  SearchOptions,
+} from "./model/SpotifyOptions";
+export type {
+  GetAlbumsResponse,
+  GetArtistTopTracksResponse,
+  GetArtistsResponse,
+  GetCategoriesResponse,
+  GetCategoryPlaylistsResponse,
+  GetFeaturedPlaylistsResponse,
+  GetNewReleasesResponse,
+  GetRelatedArtistsResponse,
+  GetTracksResponse,
+  SearchResponse,
+} from "./model/SpotifyResponses";
 export type { GetAuthorizationUrlOptions, PKCEExtensionOptions } from "./utils/getAuthorizationUrl";

@@ -1,6 +1,7 @@
 # Svelte 5 Snippets Reference
 
 ## Table of Contents
+
 - [Replacing Slots with Snippets](#replacing-slots-with-snippets)
 - [Rendering with @render](#rendering-with-render)
 
@@ -13,11 +14,13 @@ Svelte 5 replaces `<slot>` with snippets - a more powerful and type-safe composi
 ### Default Content (children)
 
 **Svelte 4:**
+
 ```svelte
 <div class="card"><slot /></div>
 ```
 
 **Svelte 5:**
+
 ```svelte
 <script>
   let { children } = $props();
@@ -29,6 +32,7 @@ Svelte 5 replaces `<slot>` with snippets - a more powerful and type-safe composi
 ### Named Slots to Named Snippets
 
 **Svelte 4:**
+
 ```svelte
 <header><slot name="header" /></header>
 <main><slot /></main>
@@ -43,6 +47,7 @@ Svelte 5 replaces `<slot>` with snippets - a more powerful and type-safe composi
 ```
 
 **Svelte 5:**
+
 ```svelte
 <script>
   let { header, children, footer } = $props();
@@ -63,6 +68,7 @@ Svelte 5 replaces `<slot>` with snippets - a more powerful and type-safe composi
 ### Slot Props to Snippet Parameters
 
 **Svelte 4:**
+
 ```svelte
 <ul>
   {#each items as item}
@@ -76,6 +82,7 @@ Svelte 5 replaces `<slot>` with snippets - a more powerful and type-safe composi
 ```
 
 **Svelte 5:**
+
 ```svelte
 <script>
   let { items, children } = $props();

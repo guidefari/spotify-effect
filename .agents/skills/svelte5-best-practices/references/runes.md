@@ -1,6 +1,7 @@
 # Svelte 5 Runes Reference
 
 ## Table of Contents
+
 - [$state - Reactive State](#state---reactive-state)
 - [$derived - Computed Values](#derived---computed-values)
 - [$effect - Side Effects](#effect---side-effects)

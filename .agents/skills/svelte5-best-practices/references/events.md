@@ -1,6 +1,7 @@
 # Svelte 5 Events Reference
 
 ## Table of Contents
+
 - [Event Handler Syntax](#event-handler-syntax)
 - [Callback Props Pattern](#callback-props-pattern)
 - [Context API](#context-api)
@@ -14,6 +15,7 @@ Svelte 5 replaces `on:click` directive syntax with standard HTML attribute synta
 ### Basic Event Handlers
 
 **Svelte 4:**
+
 ```svelte
 <button on:click={handleClick}>Click</button>
 <input on:input={handleInput} />
@@ -21,6 +23,7 @@ Svelte 5 replaces `on:click` directive syntax with standard HTML attribute synta
 ```
 
 **Svelte 5:**
+
 ```svelte
 <button onclick={handleClick}>Click</button>
 <input oninput={handleInput} />
@@ -32,12 +35,14 @@ Svelte 5 replaces `on:click` directive syntax with standard HTML attribute synta
 Event modifiers no longer exist. Use wrapper functions:
 
 **Svelte 4:**
+
 ```svelte
 <form on:submit|preventDefault={handleSubmit}>...</form>
 <button on:click|stopPropagation={handleClick}>...</button>
 ```
 
 **Svelte 5:**
+
 ```svelte
 <script>
   function handleSubmit(event) {
@@ -147,6 +152,7 @@ Svelte 5 deprecates `createEventDispatcher` in favor of callback props for compo
 ### Basic Event Pattern
 
 **Svelte 4:**
+
 ```svelte
 <!-- Button.svelte -->
 <script>
@@ -161,6 +167,7 @@ Svelte 5 deprecates `createEventDispatcher` in favor of callback props for compo
 ```
 
 **Svelte 5:**
+
 ```svelte
 <!-- Button.svelte -->
 <script>
@@ -289,12 +296,12 @@ Pass `$state` objects for reactive context:
 
 ```ts
 // context.ts
-import { setContext, getContext } from 'svelte';
+import { setContext, getContext } from "svelte";
 
-const THEME_KEY = Symbol('theme');
+const THEME_KEY = Symbol("theme");
 
 interface ThemeContext {
-  current: 'light' | 'dark';
+  current: "light" | "dark";
   toggle: () => void;
 }
 
@@ -304,7 +311,7 @@ export function setThemeContext(context: ThemeContext) {
 
 export function getThemeContext(): ThemeContext {
   const context = getContext<ThemeContext>(THEME_KEY);
-  if (!context) throw new Error('Theme context not found');
+  if (!context) throw new Error("Theme context not found");
   return context;
 }
 ```

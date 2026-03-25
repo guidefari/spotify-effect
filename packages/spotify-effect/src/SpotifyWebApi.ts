@@ -1,6 +1,10 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { FetchHttpClient, type HttpClient } from "effect/unstable/http";
+import { AlbumsApi } from "./api/Albums";
+import { ArtistsApi } from "./api/Artists";
+import { BrowseApi } from "./api/Browse";
+import { SearchApi } from "./api/Search";
 import { TracksApi } from "./api/Tracks";
 import { UsersApi } from "./api/Users";
 import { SpotifyConfigurationError, type SpotifyRequestError } from "./errors/SpotifyError";
@@ -9,9 +13,40 @@ import type {
   GetRefreshedAccessTokenResponse,
   GetTemporaryAppTokensResponse,
 } from "./model/SpotifyAuthorization";
-import type { PrivateUser, PublicUser, Track } from "./model/SpotifyObjects";
-import type { MarketOptions } from "./model/SpotifyOptions";
-import type { GetTracksResponse } from "./model/SpotifyResponses";
+import type {
+  Album,
+  Artist,
+  Category,
+  Paging,
+  PrivateUser,
+  PublicUser,
+  SimplifiedAlbum,
+  SimplifiedTrack,
+  Track,
+} from "./model/SpotifyObjects";
+import type {
+  GetAlbumTracksOptions,
+  GetArtistAlbumsOptions,
+  GetCategoriesOptions,
+  GetCategoryOptions,
+  GetCategoryPlaylistsOptions,
+  GetFeaturedPlaylistsOptions,
+  GetNewReleasesOptions,
+  MarketOptions,
+  SearchOptions,
+} from "./model/SpotifyOptions";
+import type {
+  GetAlbumsResponse,
+  GetArtistTopTracksResponse,
+  GetArtistsResponse,
+  GetCategoriesResponse,
+  GetCategoryPlaylistsResponse,
+  GetFeaturedPlaylistsResponse,
+  GetNewReleasesResponse,
+  GetRelatedArtistsResponse,
+  GetTracksResponse,
+  SearchResponse,
+} from "./model/SpotifyResponses";
 import { makeSpotifyAuth } from "./services/SpotifyAuth";
 import type { SpotifyAuth } from "./services/SpotifyAuth";
 import { makeSpotifyRequest, type SpotifyRetryConfig } from "./services/SpotifyRequest";
@@ -21,6 +56,7 @@ import {
   type GetAuthorizationUrlOptions,
   type PKCEExtensionOptions,
 } from "./utils/getAuthorizationUrl";
+import type { SearchType } from "./model/SpotifyObjects";
 
 export interface SpotifyWebApiOptions {
   clientId?: string;
@@ -49,6 +85,65 @@ interface ProvidedUsersApi {
   getUser(userId: string): Effect.Effect<PublicUser, SpotifyRequestError>;
 }
 
+interface ProvidedAlbumsApi {
+  getAlbum(albumId: string, options?: MarketOptions): Effect.Effect<Album, SpotifyRequestError>;
+  getAlbums(
+    albumIds: ReadonlyArray<string>,
+    options?: MarketOptions,
+  ): Effect.Effect<GetAlbumsResponse["albums"], SpotifyRequestError>;
+  getAlbumTracks(
+    albumId: string,
+    options?: GetAlbumTracksOptions,
+  ): Effect.Effect<Paging<SimplifiedTrack>, SpotifyRequestError>;
+}
+
+interface ProvidedArtistsApi {
+  getArtist(artistId: string): Effect.Effect<Artist, SpotifyRequestError>;
+  getArtists(
+    artistIds: ReadonlyArray<string>,
+  ): Effect.Effect<GetArtistsResponse["artists"], SpotifyRequestError>;
+  getArtistAlbums(
+    artistId: string,
+    options?: GetArtistAlbumsOptions,
+  ): Effect.Effect<Paging<SimplifiedAlbum>, SpotifyRequestError>;
+  getArtistTopTracks(
+    artistId: string,
+    country: string,
+  ): Effect.Effect<GetArtistTopTracksResponse["tracks"], SpotifyRequestError>;
+  getRelatedArtists(
+    artistId: string,
+  ): Effect.Effect<GetRelatedArtistsResponse["artists"], SpotifyRequestError>;
+}
+
+interface ProvidedBrowseApi {
+  getCategories(
+    options?: GetCategoriesOptions,
+  ): Effect.Effect<GetCategoriesResponse["categories"], SpotifyRequestError>;
+  getCategory(
+    categoryId: string,
+    options?: GetCategoryOptions,
+  ): Effect.Effect<Category, SpotifyRequestError>;
+  getCategoryPlaylists(
+    categoryId: string,
+    options?: GetCategoryPlaylistsOptions,
+  ): Effect.Effect<GetCategoryPlaylistsResponse["playlists"], SpotifyRequestError>;
+  getFeaturedPlaylists(
+    options?: GetFeaturedPlaylistsOptions,
+  ): Effect.Effect<GetFeaturedPlaylistsResponse, SpotifyRequestError>;
+  getNewReleases(
+    options?: GetNewReleasesOptions,
+  ): Effect.Effect<GetNewReleasesResponse["albums"], SpotifyRequestError>;
+  getAvailableGenreSeeds(): Effect.Effect<string[], SpotifyRequestError>;
+}
+
+interface ProvidedSearchApi {
+  search(
+    query: string,
+    types: ReadonlyArray<SearchType>,
+    options?: SearchOptions,
+  ): Effect.Effect<SearchResponse, SpotifyRequestError>;
+}
+
 const isConfigured = (value: string): boolean => value.length > 0;
 
 export class SpotifyWebApi {
@@ -64,6 +159,10 @@ export class SpotifyWebApi {
 
   public readonly tracks: ProvidedTracksApi;
   public readonly users: ProvidedUsersApi;
+  public readonly albums: ProvidedAlbumsApi;
+  public readonly artists: ProvidedArtistsApi;
+  public readonly browse: ProvidedBrowseApi;
+  public readonly search: ProvidedSearchApi;
 
   public constructor(options: SpotifyWebApiOptions = {}, credentials?: SpotifyWebApiCredentials) {
     this._clientId = options.clientId ?? "";
@@ -82,7 +181,7 @@ export class SpotifyWebApi {
       effect: Effect.Effect<A, E, HttpClient.HttpClient>,
     ): Effect.Effect<A, E> => Effect.provide(effect, layer);
 
-    const rawTracks = new TracksApi(
+    const makeRequest = () =>
       makeSpotifyRequest(
         {
           getAccessToken: () =>
@@ -94,22 +193,16 @@ export class SpotifyWebApi {
           invalidateAccessToken: () => this.session.invalidateAccessToken(),
         },
         this._retryConfig,
-      ),
-    );
-    const rawUsers = new UsersApi(
-      makeSpotifyRequest(
-        {
-          getAccessToken: () =>
-            this.session.getAccessToken({
-              auth: this.appAuth,
-              canUseClientCredentials:
-                isConfigured(this._clientId) && isConfigured(this._clientSecret),
-            }),
-          invalidateAccessToken: () => this.session.invalidateAccessToken(),
-        },
-        this._retryConfig,
-      ),
-    );
+      );
+
+    const request = makeRequest();
+
+    const rawTracks = new TracksApi(request);
+    const rawUsers = new UsersApi(request);
+    const rawAlbums = new AlbumsApi(request);
+    const rawArtists = new ArtistsApi(request);
+    const rawBrowse = new BrowseApi(request);
+    const rawSearch = new SearchApi(request);
 
     this.tracks = {
       getTrack: (trackId, opts) => this.provideHttpClient(rawTracks.getTrack(trackId, opts)),
@@ -118,6 +211,35 @@ export class SpotifyWebApi {
     this.users = {
       getCurrentUserProfile: () => this.provideHttpClient(rawUsers.getCurrentUserProfile()),
       getUser: (userId) => this.provideHttpClient(rawUsers.getUser(userId)),
+    };
+    this.albums = {
+      getAlbum: (albumId, opts) => this.provideHttpClient(rawAlbums.getAlbum(albumId, opts)),
+      getAlbums: (albumIds, opts) => this.provideHttpClient(rawAlbums.getAlbums(albumIds, opts)),
+      getAlbumTracks: (albumId, opts) =>
+        this.provideHttpClient(rawAlbums.getAlbumTracks(albumId, opts)),
+    };
+    this.artists = {
+      getArtist: (artistId) => this.provideHttpClient(rawArtists.getArtist(artistId)),
+      getArtists: (artistIds) => this.provideHttpClient(rawArtists.getArtists(artistIds)),
+      getArtistAlbums: (artistId, opts) =>
+        this.provideHttpClient(rawArtists.getArtistAlbums(artistId, opts)),
+      getArtistTopTracks: (artistId, country) =>
+        this.provideHttpClient(rawArtists.getArtistTopTracks(artistId, country)),
+      getRelatedArtists: (artistId) =>
+        this.provideHttpClient(rawArtists.getRelatedArtists(artistId)),
+    };
+    this.browse = {
+      getCategories: (opts) => this.provideHttpClient(rawBrowse.getCategories(opts)),
+      getCategory: (categoryId, opts) =>
+        this.provideHttpClient(rawBrowse.getCategory(categoryId, opts)),
+      getCategoryPlaylists: (categoryId, opts) =>
+        this.provideHttpClient(rawBrowse.getCategoryPlaylists(categoryId, opts)),
+      getFeaturedPlaylists: (opts) => this.provideHttpClient(rawBrowse.getFeaturedPlaylists(opts)),
+      getNewReleases: (opts) => this.provideHttpClient(rawBrowse.getNewReleases(opts)),
+      getAvailableGenreSeeds: () => this.provideHttpClient(rawBrowse.getAvailableGenreSeeds()),
+    };
+    this.search = {
+      search: (query, types, opts) => this.provideHttpClient(rawSearch.search(query, types, opts)),
     };
   }
 

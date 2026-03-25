@@ -432,7 +432,7 @@ export type SimplifiedPlaylist = {
   images: SpotifyImage[];
   name: string;
   owner: PublicUser;
-  primary_color: string | null;
+  primary_color?: string | null;
   public: boolean | null;
   snapshot_id: string;
   tracks: Tracks;
