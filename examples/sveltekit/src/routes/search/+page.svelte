@@ -65,7 +65,8 @@
 
 	const getResults = (type: string): Array<Record<string, unknown>> => {
 		if (!result) return [];
-		const typeResults = result[type] as Record<string, unknown> | undefined;
+		const pluralKey = type + 's';
+		const typeResults = result[pluralKey] as Record<string, unknown> | undefined;
 		const items = typeResults?.items as Array<Record<string, unknown>> | undefined;
 		return items ?? [];
 	};
