@@ -428,5 +428,82 @@ export const QueueObjectSchema = Schema.Struct({
   queue: Schema.mutable(Schema.Array(TrackOrEpisodeSchema)),
 });
 
+export const AudioFeaturesSchema = Schema.Struct({
+  duration_ms: Schema.Number,
+  key: Schema.Number,
+  mode: Schema.Number,
+  time_signature: Schema.Number,
+  acousticness: Schema.Number,
+  danceability: Schema.Number,
+  energy: Schema.Number,
+  instrumentalness: Schema.Number,
+  liveness: Schema.Number,
+  loudness: Schema.Number,
+  speechiness: Schema.Number,
+  valence: Schema.Number,
+  tempo: Schema.Number,
+  id: Schema.String,
+  uri: Schema.String,
+  track_href: Schema.String,
+  analysis_url: Schema.String,
+  type: Schema.Literal("audio_features"),
+});
+
+const TimeIntervalSchema = Schema.Struct({
+  start: Schema.Number,
+  duration: Schema.Number,
+  confidence: Schema.Number,
+});
+
+const SectionSchema = Schema.Struct({
+  start: Schema.Number,
+  duration: Schema.Number,
+  confidence: Schema.Number,
+  loudness: Schema.Number,
+  tempo: Schema.Number,
+  tempo_confidence: Schema.Number,
+  key: Schema.Number,
+  key_confidence: Schema.Number,
+  mode: Schema.Number,
+  mode_confidence: Schema.Number,
+  time_signature: Schema.Number,
+  time_signature_confidence: Schema.Number,
+});
+
+const SegmentSchema = Schema.Struct({
+  start: Schema.Number,
+  duration: Schema.Number,
+  confidence: Schema.Number,
+  loudness_start: Schema.Number,
+  loudness_max: Schema.Number,
+  loudness_max_time: Schema.Number,
+  loudness_end: Schema.Number,
+  pitches: Schema.mutable(Schema.Array(Schema.Number)),
+  timbre: Schema.mutable(Schema.Array(Schema.Number)),
+});
+
+export const AudioAnalysisSchema = Schema.Struct({
+  bars: Schema.mutable(Schema.Array(TimeIntervalSchema)),
+  beats: Schema.mutable(Schema.Array(TimeIntervalSchema)),
+  meta: Schema.optionalKey(Schema.Unknown),
+  sections: Schema.mutable(Schema.Array(SectionSchema)),
+  segments: Schema.mutable(Schema.Array(SegmentSchema)),
+  tatums: Schema.mutable(Schema.Array(TimeIntervalSchema)),
+  track: Schema.optionalKey(Schema.Unknown),
+});
+
+export const SavedAlbumSchema = Schema.Struct({
+  added_at: Schema.String,
+  album: AlbumSchema,
+});
+
+export const SavedTrackSchema = Schema.Struct({
+  added_at: Schema.String,
+  track: TrackSchema,
+});
+
+const BooleanArraySchema = Schema.mutable(Schema.Array(Schema.Boolean));
+export { BooleanArraySchema };
+
 export { makePagingSchema };
 export { SimplifiedAlbumSchema };

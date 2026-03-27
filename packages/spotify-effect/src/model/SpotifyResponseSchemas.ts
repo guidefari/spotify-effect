@@ -2,6 +2,9 @@ import * as Schema from "effect/Schema";
 import {
   AlbumSchema,
   ArtistSchema,
+  AudioAnalysisSchema,
+  AudioFeaturesSchema,
+  BooleanArraySchema,
   CategorySchema,
   CurrentlyPlayingContextSchema,
   CurrentlyPlayingSchema,
@@ -10,6 +13,8 @@ import {
   PlaylistItemSchema,
   PlaylistSchema,
   QueueObjectSchema,
+  SavedAlbumSchema,
+  SavedTrackSchema,
   SimplifiedAlbumSchema,
   SimplifiedPlaylistSchema,
   SnapshotIdResponseSchema,
@@ -111,6 +116,32 @@ export const GetCurrentlyPlayingTrackResponseSchema = CurrentlyPlayingSchema;
 export const GetRecentlyPlayedTracksResponseSchema = makeCursorBasedPagingSchema(PlayHistorySchema);
 
 export const GetQueueResponseSchema = QueueObjectSchema;
+
+export const AudioAnalysisResponseSchema = AudioAnalysisSchema;
+
+export const AudioFeaturesResponseSchema = AudioFeaturesSchema;
+
+export const GetAudioFeaturesForTracksResponseSchema = Schema.Struct({
+  audio_features: Schema.mutable(Schema.Array(Schema.NullOr(AudioFeaturesSchema))),
+});
+
+export const GetMarketsResponseSchema = Schema.Struct({
+  markets: Schema.mutable(Schema.Array(Schema.String)),
+});
+
+export const GetMyTopArtistsResponseSchema = makePagingSchema(ArtistSchema);
+
+export const GetMyTopTracksResponseSchema = makePagingSchema(TrackSchema);
+
+export const GetSavedAlbumsResponseSchema = makePagingSchema(SavedAlbumSchema);
+
+export const GetSavedTracksResponseSchema = makePagingSchema(SavedTrackSchema);
+
+export const GetFollowedArtistsResponseSchema = Schema.Struct({
+  artists: makeCursorBasedPagingSchema(ArtistSchema),
+});
+
+export { BooleanArraySchema };
 
 export const SearchResponseSchema = Schema.Struct({
   albums: Schema.optionalKey(makePagingSchema(SimplifiedAlbumSchema)),

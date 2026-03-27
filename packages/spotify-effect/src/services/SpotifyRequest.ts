@@ -64,6 +64,10 @@ export interface SpotifyRequest {
     schema: DecodableSchema<A>,
     options?: SpotifyRequestOptions,
   ): Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>;
+  deleteVoid(
+    path: string,
+    options?: SpotifyRequestOptions,
+  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient>;
 }
 
 export interface AccessTokenResolver {
@@ -369,6 +373,12 @@ export const makeSpotifyRequest = (
         makeRequestWithAuthRetry(accessTokenResolver, path, (r) => decodeSuccessResponseWithSchema(r, schema), config, "DELETE", options),
         `spotify.request DELETE ${path}`,
         withSpanAttrs(path, "DELETE", options, true),
+      ),
+    deleteVoid: (path: string, options?: SpotifyRequestOptions) =>
+      Effect.withSpan(
+        makeRequestWithAuthRetry(accessTokenResolver, path, decodeVoidResponse, config, "DELETE", options),
+        `spotify.request DELETE ${path}`,
+        withSpanAttrs(path, "DELETE", options),
       ),
   };
 };

@@ -4,6 +4,10 @@ import { FetchHttpClient, type HttpClient } from "effect/unstable/http";
 import { AlbumsApi } from "./api/Albums";
 import { ArtistsApi } from "./api/Artists";
 import { BrowseApi } from "./api/Browse";
+import { FollowApi } from "./api/Follow";
+import { LibraryApi } from "./api/Library";
+import { MarketsApi } from "./api/Markets";
+import { PersonalizationApi } from "./api/Personalization";
 import { PlayerApi } from "./api/Player";
 import { PlaylistsApi } from "./api/Playlists";
 import { SearchApi } from "./api/Search";
@@ -18,6 +22,8 @@ import type {
 import type {
   Album,
   Artist,
+  AudioAnalysis,
+  AudioFeatures,
   Category,
   CurrentlyPlaying,
   CurrentlyPlayingContext,
@@ -32,6 +38,8 @@ import type {
   PublicUser,
   QueueObject,
   RepeatState,
+  SavedAlbum,
+  SavedTrack,
   SimplifiedAlbum,
   SimplifiedPlaylist,
   SimplifiedTrack,
@@ -41,6 +49,7 @@ import type {
   AddItemsToPlaylistOptions,
   CreatePlaylistOptions,
   DeviceIdOptions,
+  FollowPlaylistOptions,
   GetAlbumTracksOptions,
   GetArtistAlbumsOptions,
   GetCategoriesOptions,
@@ -48,15 +57,20 @@ import type {
   GetCategoryPlaylistsOptions,
   GetCurrentlyPlayingTrackOptions,
   GetFeaturedPlaylistsOptions,
+  GetFollowedArtistsOptions,
   GetMyPlaylistsOptions,
   GetNewReleasesOptions,
   GetPlaybackInfoOptions,
   GetPlaylistItemsOptions,
   GetPlaylistOptions,
   GetRecentlyPlayedTracksOptions,
+  GetSavedAlbumsOptions,
+  GetSavedTracksOptions,
   GetUserPlaylistsOptions,
   MarketOptions,
+  PersonalizationOptions,
   PlayOptions,
+  RemoveSavedShowsOptions,
   SearchOptions,
   TransferPlaybackOptions,
 } from "./model/SpotifyOptions";
@@ -64,6 +78,7 @@ import type {
   GetAlbumsResponse,
   GetArtistTopTracksResponse,
   GetArtistsResponse,
+  GetAudioFeaturesForTracksResponse,
   GetCategoriesResponse,
   GetCategoryPlaylistsResponse,
   GetFeaturedPlaylistsResponse,
@@ -104,6 +119,11 @@ interface ProvidedTracksApi {
     trackIds: ReadonlyArray<string>,
     options?: MarketOptions,
   ): Effect.Effect<GetTracksResponse["tracks"], SpotifyRequestError>;
+  getAudioAnalysisForTrack(trackId: string): Effect.Effect<AudioAnalysis, SpotifyRequestError>;
+  getAudioFeaturesForTrack(trackId: string): Effect.Effect<AudioFeatures, SpotifyRequestError>;
+  getAudioFeaturesForTracks(
+    trackIds: ReadonlyArray<string>,
+  ): Effect.Effect<GetAudioFeaturesForTracksResponse["audio_features"], SpotifyRequestError>;
 }
 
 interface ProvidedUsersApi {
@@ -199,6 +219,40 @@ interface ProvidedSearchApi {
   ): Effect.Effect<SearchResponse, SpotifyRequestError>;
 }
 
+interface ProvidedMarketsApi {
+  getMarkets(): Effect.Effect<string[], SpotifyRequestError>;
+}
+
+interface ProvidedPersonalizationApi {
+  getMyTopArtists(options?: PersonalizationOptions): Effect.Effect<Paging<Artist>, SpotifyRequestError>;
+  getMyTopTracks(options?: PersonalizationOptions): Effect.Effect<Paging<Track>, SpotifyRequestError>;
+}
+
+interface ProvidedLibraryApi {
+  getSavedAlbums(options?: GetSavedAlbumsOptions): Effect.Effect<Paging<SavedAlbum>, SpotifyRequestError>;
+  getSavedTracks(options?: GetSavedTracksOptions): Effect.Effect<Paging<SavedTrack>, SpotifyRequestError>;
+  areAlbumsSaved(albumIds: ReadonlyArray<string>): Effect.Effect<boolean[], SpotifyRequestError>;
+  areTracksSaved(trackIds: ReadonlyArray<string>): Effect.Effect<boolean[], SpotifyRequestError>;
+  saveAlbums(albumIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError>;
+  saveTracks(trackIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError>;
+  removeSavedAlbums(albumIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError>;
+  removeSavedTracks(trackIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError>;
+  removeSavedShows(showIds: ReadonlyArray<string>, options?: RemoveSavedShowsOptions): Effect.Effect<void, SpotifyRequestError>;
+}
+
+interface ProvidedFollowApi {
+  getFollowedArtists(options?: GetFollowedArtistsOptions): Effect.Effect<CursorBasedPaging<Artist>, SpotifyRequestError>;
+  followArtists(artistIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError>;
+  unfollowArtists(artistIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError>;
+  followUsers(userIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError>;
+  unfollowUsers(userIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError>;
+  isFollowingArtists(artistIds: ReadonlyArray<string>): Effect.Effect<boolean[], SpotifyRequestError>;
+  isFollowingUsers(userIds: ReadonlyArray<string>): Effect.Effect<boolean[], SpotifyRequestError>;
+  followPlaylist(playlistId: string, options?: FollowPlaylistOptions): Effect.Effect<void, SpotifyRequestError>;
+  unfollowPlaylist(playlistId: string): Effect.Effect<void, SpotifyRequestError>;
+  areFollowingPlaylist(playlistId: string, userIds: ReadonlyArray<string>): Effect.Effect<boolean[], SpotifyRequestError>;
+}
+
 const isConfigured = (value: string): boolean => value.length > 0;
 
 export class SpotifyWebApi {
@@ -217,6 +271,10 @@ export class SpotifyWebApi {
   public readonly albums: ProvidedAlbumsApi;
   public readonly artists: ProvidedArtistsApi;
   public readonly browse: ProvidedBrowseApi;
+  public readonly follow: ProvidedFollowApi;
+  public readonly library: ProvidedLibraryApi;
+  public readonly markets: ProvidedMarketsApi;
+  public readonly personalization: ProvidedPersonalizationApi;
   public readonly player: ProvidedPlayerApi;
   public readonly playlists: ProvidedPlaylistsApi;
   public readonly search: ProvidedSearchApi;
@@ -259,6 +317,10 @@ export class SpotifyWebApi {
     const rawAlbums = new AlbumsApi(request);
     const rawArtists = new ArtistsApi(request);
     const rawBrowse = new BrowseApi(request);
+    const rawFollow = new FollowApi(request);
+    const rawLibrary = new LibraryApi(request);
+    const rawMarkets = new MarketsApi(request);
+    const rawPersonalization = new PersonalizationApi(request);
     const rawPlayer = new PlayerApi(request);
     const rawPlaylists = new PlaylistsApi(request);
     const rawSearch = new SearchApi(request);
@@ -266,6 +328,9 @@ export class SpotifyWebApi {
     this.tracks = {
       getTrack: (trackId, opts) => this.provideHttpClient(rawTracks.getTrack(trackId, opts)),
       getTracks: (trackIds, opts) => this.provideHttpClient(rawTracks.getTracks(trackIds, opts)),
+      getAudioAnalysisForTrack: (trackId) => this.provideHttpClient(rawTracks.getAudioAnalysisForTrack(trackId)),
+      getAudioFeaturesForTrack: (trackId) => this.provideHttpClient(rawTracks.getAudioFeaturesForTrack(trackId)),
+      getAudioFeaturesForTracks: (trackIds) => this.provideHttpClient(rawTracks.getAudioFeaturesForTracks(trackIds)),
     };
     this.users = {
       getCurrentUserProfile: () => this.provideHttpClient(rawUsers.getCurrentUserProfile()),
@@ -296,6 +361,36 @@ export class SpotifyWebApi {
       getFeaturedPlaylists: (opts) => this.provideHttpClient(rawBrowse.getFeaturedPlaylists(opts)),
       getNewReleases: (opts) => this.provideHttpClient(rawBrowse.getNewReleases(opts)),
       getAvailableGenreSeeds: () => this.provideHttpClient(rawBrowse.getAvailableGenreSeeds()),
+    };
+    this.follow = {
+      getFollowedArtists: (opts) => this.provideHttpClient(rawFollow.getFollowedArtists(opts)),
+      followArtists: (artistIds) => this.provideHttpClient(rawFollow.followArtists(artistIds)),
+      unfollowArtists: (artistIds) => this.provideHttpClient(rawFollow.unfollowArtists(artistIds)),
+      followUsers: (userIds) => this.provideHttpClient(rawFollow.followUsers(userIds)),
+      unfollowUsers: (userIds) => this.provideHttpClient(rawFollow.unfollowUsers(userIds)),
+      isFollowingArtists: (artistIds) => this.provideHttpClient(rawFollow.isFollowingArtists(artistIds)),
+      isFollowingUsers: (userIds) => this.provideHttpClient(rawFollow.isFollowingUsers(userIds)),
+      followPlaylist: (playlistId, opts) => this.provideHttpClient(rawFollow.followPlaylist(playlistId, opts)),
+      unfollowPlaylist: (playlistId) => this.provideHttpClient(rawFollow.unfollowPlaylist(playlistId)),
+      areFollowingPlaylist: (playlistId, userIds) => this.provideHttpClient(rawFollow.areFollowingPlaylist(playlistId, userIds)),
+    };
+    this.library = {
+      getSavedAlbums: (opts) => this.provideHttpClient(rawLibrary.getSavedAlbums(opts)),
+      getSavedTracks: (opts) => this.provideHttpClient(rawLibrary.getSavedTracks(opts)),
+      areAlbumsSaved: (albumIds) => this.provideHttpClient(rawLibrary.areAlbumsSaved(albumIds)),
+      areTracksSaved: (trackIds) => this.provideHttpClient(rawLibrary.areTracksSaved(trackIds)),
+      saveAlbums: (albumIds) => this.provideHttpClient(rawLibrary.saveAlbums(albumIds)),
+      saveTracks: (trackIds) => this.provideHttpClient(rawLibrary.saveTracks(trackIds)),
+      removeSavedAlbums: (albumIds) => this.provideHttpClient(rawLibrary.removeSavedAlbums(albumIds)),
+      removeSavedTracks: (trackIds) => this.provideHttpClient(rawLibrary.removeSavedTracks(trackIds)),
+      removeSavedShows: (showIds, opts) => this.provideHttpClient(rawLibrary.removeSavedShows(showIds, opts)),
+    };
+    this.markets = {
+      getMarkets: () => this.provideHttpClient(rawMarkets.getMarkets()),
+    };
+    this.personalization = {
+      getMyTopArtists: (opts) => this.provideHttpClient(rawPersonalization.getMyTopArtists(opts)),
+      getMyTopTracks: (opts) => this.provideHttpClient(rawPersonalization.getMyTopTracks(opts)),
     };
     this.player = {
       getPlaybackInfo: (opts) => this.provideHttpClient(rawPlayer.getPlaybackInfo(opts)),

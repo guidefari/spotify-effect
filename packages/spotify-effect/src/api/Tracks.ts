@@ -2,11 +2,16 @@ import * as Effect from "effect/Effect";
 import type { HttpClient } from "effect/unstable/http";
 import type { SpotifyRequest, SpotifyRequestOptions } from "../services/SpotifyRequest";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
-import type { Track } from "../model/SpotifyObjects";
+import type { AudioAnalysis, AudioFeatures, Track } from "../model/SpotifyObjects";
 import { TrackSchema } from "../model/SpotifyObjectSchemas";
 import type { MarketOptions } from "../model/SpotifyOptions";
-import type { GetTracksResponse } from "../model/SpotifyResponses";
-import { GetTracksResponseSchema } from "../model/SpotifyResponseSchemas";
+import type { GetAudioFeaturesForTracksResponse, GetTracksResponse } from "../model/SpotifyResponses";
+import {
+  AudioAnalysisResponseSchema,
+  AudioFeaturesResponseSchema,
+  GetAudioFeaturesForTracksResponseSchema,
+  GetTracksResponseSchema,
+} from "../model/SpotifyResponseSchemas";
 
 const withMarketQuery = (options?: MarketOptions): SpotifyRequestOptions | undefined =>
   options?.market === undefined ? undefined : { query: { market: options.market } };
@@ -42,5 +47,27 @@ export class TracksApi {
     return this.request
       .getJsonWithSchema("/tracks", GetTracksResponseSchema, withTrackIdsQuery(trackIds, options))
       .pipe(Effect.map((response) => response.tracks));
+  }
+
+  public getAudioAnalysisForTrack(
+    trackId: string,
+  ): Effect.Effect<AudioAnalysis, SpotifyRequestError, HttpClient.HttpClient> {
+    return this.request.getJsonWithSchema(`/audio-analysis/${trackId}`, AudioAnalysisResponseSchema);
+  }
+
+  public getAudioFeaturesForTrack(
+    trackId: string,
+  ): Effect.Effect<AudioFeatures, SpotifyRequestError, HttpClient.HttpClient> {
+    return this.request.getJsonWithSchema(`/audio-features/${trackId}`, AudioFeaturesResponseSchema);
+  }
+
+  public getAudioFeaturesForTracks(
+    trackIds: ReadonlyArray<string>,
+  ): Effect.Effect<GetAudioFeaturesForTracksResponse["audio_features"], SpotifyRequestError, HttpClient.HttpClient> {
+    return this.request
+      .getJsonWithSchema("/audio-features", GetAudioFeaturesForTracksResponseSchema, {
+        query: { ids: trackIds.join(",") },
+      })
+      .pipe(Effect.map((response) => response.audio_features));
   }
 }
