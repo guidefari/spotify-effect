@@ -1,8 +1,8 @@
 import * as Effect from "effect/Effect";
 import * as Stream from "effect/Stream";
 import { describe, expect, it } from "vitest";
-import type { Paging } from "../model/SpotifyObjects";
-import { paginateAll, paginateStream } from "./paginate";
+import type { CursorBasedPaging, Paging } from "../model/SpotifyObjects";
+import { cursorPaginateAll, cursorPaginateStream, paginateAll, paginateStream } from "./paginate";
 
 const makePage = <T>(items: T[], offset: number, total: number, limit = 2): Paging<T> => ({
   href: `https://api.spotify.com/v1/test?offset=${offset}&limit=${limit}`,
@@ -94,6 +94,86 @@ describe("paginateStream", () => {
 
     const result = await Effect.runPromise(
       Stream.runCollect(paginateStream(fetch, 20)),
+    );
+    expect(result).toEqual([]);
+  });
+});
+
+const makeCursorPage = <T>(
+  items: T[],
+  after: string,
+  hasNext: boolean,
+  limit = 2,
+): CursorBasedPaging<T> => ({
+  href: "https://api.spotify.com/v1/test",
+  items,
+  limit,
+  next: hasNext ? "https://api.spotify.com/v1/test?after=next" : null,
+  cursors: { after },
+});
+
+describe("cursorPaginateAll", () => {
+  it("collects a single page when next is null", async () => {
+    const fetch = () => Effect.succeed(makeCursorPage(["a", "b"], "cursor1", false));
+    const result = await Effect.runPromise(cursorPaginateAll(fetch, 2));
+    expect(result).toEqual(["a", "b"]);
+  });
+
+  it("collects multiple pages following cursors", async () => {
+    const pages: Record<string, CursorBasedPaging<string>> = {
+      initial: makeCursorPage(["a", "b"], "cursor1", true),
+      cursor1: makeCursorPage(["c", "d"], "cursor2", true),
+      cursor2: makeCursorPage(["e"], "cursor3", false),
+    };
+
+    const fetch = (opts?: { limit?: number; after?: string }) => {
+      const key = opts?.after ?? "initial";
+      const page = pages[key];
+      return page ? Effect.succeed(page) : Effect.fail("unexpected cursor" as const);
+    };
+
+    const result = await Effect.runPromise(cursorPaginateAll(fetch, 2));
+    expect(result).toEqual(["a", "b", "c", "d", "e"]);
+  });
+
+  it("returns empty array for empty results", async () => {
+    const fetch = () => Effect.succeed(makeCursorPage([], "none", false));
+    const result = await Effect.runPromise(cursorPaginateAll(fetch, 20));
+    expect(result).toEqual([]);
+  });
+});
+
+describe("cursorPaginateStream", () => {
+  it("streams items lazily across cursor pages", async () => {
+    let fetchCount = 0;
+    const pages: Record<string, CursorBasedPaging<number>> = {
+      initial: makeCursorPage([1, 2], "c1", true),
+      c1: makeCursorPage([3, 4], "c2", false),
+    };
+
+    const fetch = (opts?: { limit?: number; after?: string }) => {
+      fetchCount++;
+      const key = opts?.after ?? "initial";
+      const page = pages[key];
+      return page ? Effect.succeed(page) : Effect.fail("unexpected cursor" as const);
+    };
+
+    const stream = cursorPaginateStream(fetch, 2);
+    const first = await Effect.runPromise(
+      Stream.runCollect(Stream.take(stream, 2)),
+    );
+    expect(first).toEqual([1, 2]);
+    expect(fetchCount).toBe(1);
+
+    fetchCount = 0;
+    const all = await Effect.runPromise(Stream.runCollect(stream));
+    expect(all).toEqual([1, 2, 3, 4]);
+  });
+
+  it("handles empty cursor stream", async () => {
+    const fetch = () => Effect.succeed(makeCursorPage([], "none", false));
+    const result = await Effect.runPromise(
+      Stream.runCollect(cursorPaginateStream(fetch, 20)),
     );
     expect(result).toEqual([]);
   });

@@ -1,4 +1,4 @@
-export { paginateAll, paginateStream } from "./pagination/paginate";
+export { cursorPaginateAll, cursorPaginateStream, paginateAll, paginateStream } from "./pagination/paginate";
 export { AlbumsApi } from "./api/Albums";
 export { ArtistsApi } from "./api/Artists";
 export { BrowseApi } from "./api/Browse";
@@ -105,5 +105,5 @@ export type {
   SearchResponse,
   SnapshotIdResponse,
 } from "./model/SpotifyResponses";
-export type { PaginatedFetch } from "./pagination/paginate";
+export type { CursorPaginatedFetch, PaginatedFetch } from "./pagination/paginate";
 export type { GetAuthorizationUrlOptions, PKCEExtensionOptions } from "./utils/getAuthorizationUrl";
