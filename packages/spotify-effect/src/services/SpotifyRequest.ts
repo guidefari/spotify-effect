@@ -228,13 +228,13 @@ const executeRequest = <A>(
     return yield* decodeFailureResponse(response);
   });
 
-const withRetry = <A, E extends SpotifyRequestError, R>(
-  effect: Effect.Effect<A, E, R>,
+const withRetry = <A, R>(
+  effect: Effect.Effect<A, SpotifyRequestError, R>,
   retryConfig: Required<SpotifyRetryConfig>,
   attemptRef: Ref.Ref<number>,
-): Effect.Effect<A, E | SpotifyRateLimitError, R> =>
+): Effect.Effect<A, SpotifyRequestError, R> =>
   Effect.gen(function* () {
-    let lastError: E | undefined;
+    let lastError: SpotifyRequestError | undefined;
 
     for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
       yield* Ref.set(attemptRef, attempt);
@@ -254,7 +254,7 @@ const withRetry = <A, E extends SpotifyRequestError, R>(
       lastError = result.error;
 
       if (!isRetryableError(result.error)) {
-        return yield* Effect.fail(result.error);
+        return yield* result.error;
       }
 
       if (attempt < retryConfig.maxRetries) {
@@ -276,7 +276,7 @@ const withRetry = <A, E extends SpotifyRequestError, R>(
       });
     }
 
-    return yield* Effect.fail(lastError!);
+    return yield* lastError!;
   });
 
 const makeRequestWithAuthRetry = <A>(
