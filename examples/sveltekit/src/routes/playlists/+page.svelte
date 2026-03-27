@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { session } from '$lib/session.svelte';
 
@@ -11,6 +12,12 @@
 	let error = $state<string | null>(null);
 	let showRaw = $state(false);
 	let offset = $state(0);
+	let isCreating = $state(false);
+	let createMessage = $state<string | null>(null);
+	let createName = $state('');
+	let createDescription = $state('');
+	let createPublic = $state(true);
+	let createCollaborative = $state(false);
 
 	const isRecord = (value: unknown): value is JsonObject => typeof value === 'object' && value !== null;
 	const getString = (value: unknown): string | null => (typeof value === 'string' ? value : null);
@@ -106,6 +113,59 @@
 	const openLookup = (playlist: JsonObject): void => {
 		window.location.href = getLookupHref(playlist);
 	};
+
+	async function createPlaylist() {
+		const accessToken = session.tokens?.accessToken;
+		if (!accessToken) {
+			createMessage = 'No access token - log in on the home page first.';
+			return;
+		}
+
+		if (!createName.trim()) {
+			createMessage = 'Playlist name is required.';
+			return;
+		}
+
+		isCreating = true;
+		createMessage = null;
+
+		try {
+			const response = await fetch('/api/playlist/create', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					accessToken,
+					name: createName.trim(),
+					description: createDescription,
+					public: createPublic,
+					collaborative: createCollaborative
+				})
+			});
+
+			const data: unknown = await response.json();
+			if (!response.ok) {
+				const message = isRecord(data) ? getString(data.message) : null;
+				throw new Error(message ?? JSON.stringify(data));
+			}
+
+			createMessage = 'Playlist created.';
+			createName = '';
+			createDescription = '';
+			createPublic = true;
+			createCollaborative = false;
+			await fetchPlaylists(0);
+		} catch (err) {
+			createMessage = err instanceof Error ? err.message : String(err);
+		} finally {
+			isCreating = false;
+		}
+	}
+
+	onMount(() => {
+		if (session.tokens?.accessToken) {
+			void fetchPlaylists(0);
+		}
+	});
 </script>
 
 <div class="stack" style="gap: 20px">
@@ -115,6 +175,43 @@
 			<p style="color: var(--muted); font-size: 12px; line-height: 1.7">
 				Loads the current user's playlists with the new `spotify.playlists.getMyPlaylists()` API.
 			</p>
+
+			<div class="stack" style="gap: 12px">
+				<div class="section-header" style="margin-bottom: 0">create playlist</div>
+				<div class="field">
+					<label class="field-label" for="create-name">name</label>
+					<input id="create-name" type="text" bind:value={createName} placeholder="release radar clone" />
+				</div>
+				<div class="field">
+					<label class="field-label" for="create-description">description</label>
+					<textarea id="create-description" rows={3} bind:value={createDescription}></textarea>
+				</div>
+				<div class="row" style="flex-wrap: wrap; gap: 16px">
+					<label class="checkbox-row">
+						<input type="checkbox" bind:checked={createPublic} />
+						<span>public</span>
+					</label>
+					<label class="checkbox-row">
+						<input type="checkbox" bind:checked={createCollaborative} />
+						<span>collaborative</span>
+					</label>
+				</div>
+				<div class="row" style="justify-content: space-between; flex-wrap: wrap; gap: 12px">
+					<button onclick={createPlaylist} disabled={isCreating || !createName.trim()}>
+						{#if isCreating}
+							<span class="row" style="justify-content: center; gap: 8px">
+								<span class="spinner"></span>
+								creating...
+							</span>
+						{:else}
+							create playlist
+						{/if}
+					</button>
+					{#if createMessage}
+						<span style="font-size: 12px; color: var(--muted)">{createMessage}</span>
+					{/if}
+				</div>
+			</div>
 
 			{#if !session.isLoggedIn}
 				<div style="color: var(--warn); font-size: 12px">not logged in - log in on the home page first</div>
@@ -251,5 +348,17 @@
 
 	.playlist-action {
 		padding: 4px 10px;
+	}
+
+	.checkbox-row {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.checkbox-row input {
+		width: auto;
 	}
 </style>

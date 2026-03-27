@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
 	import { session } from '$lib/session.svelte';
 
 	type JsonObject = Record<string, unknown>;
@@ -9,6 +10,17 @@
 	let result = $state<JsonObject | null>(null);
 	let error = $state<string | null>(null);
 	let showRaw = $state(false);
+	let isSaving = $state(false);
+	let saveMessage = $state<string | null>(null);
+	let isMutatingItems = $state(false);
+	let itemMessage = $state<string | null>(null);
+	let updateName = $state('');
+	let updateDescription = $state('');
+	let updatePublic = $state(true);
+	let updateCollaborative = $state(false);
+	let addTrackInput = $state('');
+	let removeTrackInput = $state('');
+	let addPositionInput = $state('');
 
 	const isRecord = (value: unknown): value is JsonObject => typeof value === 'object' && value !== null;
 	const getString = (value: unknown): string | null => (typeof value === 'string' ? value : null);
@@ -24,8 +36,20 @@
 		return trimmed;
 	};
 
-	async function fetchPlaylist() {
-		const playlistId = parsePlaylistId(input);
+	const parseTrackUri = (value: string): string | null => {
+		const trimmed = value.trim();
+		if (!trimmed) return null;
+		const uriMatch = trimmed.match(/^spotify:track:([A-Za-z0-9]+)$/);
+		if (uriMatch) return trimmed;
+		const urlMatch = trimmed.match(/\/track\/([A-Za-z0-9]+)/);
+		if (urlMatch) return `spotify:track:${urlMatch[1]}`;
+		const idMatch = trimmed.match(/^[A-Za-z0-9]+$/);
+		if (idMatch) return `spotify:track:${trimmed}`;
+		return null;
+	};
+
+	async function fetchPlaylist(prefilledId?: string) {
+		const playlistId = parsePlaylistId(prefilledId ?? input);
 		if (!playlistId) {
 			error = 'Enter a playlist ID or Spotify URL.';
 			return;
@@ -58,6 +82,11 @@
 				throw new Error('Unexpected response shape.');
 			}
 			result = data;
+			itemMessage = null;
+			updateName = getString(data.name) ?? '';
+			updateDescription = getPlaylistDescription(data) ?? '';
+			updatePublic = typeof data.public === 'boolean' ? data.public : true;
+			updateCollaborative = data.collaborative === true;
 		} catch (err) {
 			error = err instanceof Error ? err.message : String(err);
 		} finally {
@@ -128,6 +157,112 @@
 		if (!href) return;
 		window.open(href, '_blank', 'noopener,noreferrer');
 	};
+
+	onMount(() => {
+		if (input.trim()) {
+			void fetchPlaylist(input);
+		}
+	});
+
+	async function savePlaylistDetails() {
+		const accessToken = session.tokens?.accessToken;
+		const playlistId = result ? getString(result.id) : null;
+		if (!accessToken || !playlistId) {
+			saveMessage = 'Load a playlist before updating it.';
+			return;
+		}
+
+		isSaving = true;
+		saveMessage = null;
+
+		try {
+			const response = await fetch('/api/playlist/update', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					accessToken,
+					playlistId,
+					name: updateName,
+					description: updateDescription,
+					public: updatePublic,
+					collaborative: updateCollaborative
+				})
+			});
+
+			const data: unknown = await response.json();
+			if (!response.ok) {
+				const message = isRecord(data) ? getString(data.message) : null;
+				throw new Error(message ?? JSON.stringify(data));
+			}
+
+			saveMessage = 'Playlist details updated.';
+			await fetchPlaylist(playlistId);
+		} catch (err) {
+			saveMessage = err instanceof Error ? err.message : String(err);
+		} finally {
+			isSaving = false;
+		}
+	}
+
+	const getPlaylistId = (): string | null => (result ? getString(result.id) : null);
+	const getSnapshotId = (): string | undefined => {
+		const snapshotId = result ? getString(result.snapshot_id) : null;
+		return snapshotId ?? undefined;
+	};
+
+	async function mutatePlaylistItems(mode: 'add' | 'remove') {
+		const accessToken = session.tokens?.accessToken;
+		const playlistId = getPlaylistId();
+		const rawValue = mode === 'add' ? addTrackInput : removeTrackInput;
+		const uri = parseTrackUri(rawValue);
+
+		if (!accessToken || !playlistId) {
+			itemMessage = 'Load a playlist before changing its tracks.';
+			return;
+		}
+
+		if (!uri) {
+			itemMessage = 'Enter a track URL, URI, or ID.';
+			return;
+		}
+
+		isMutatingItems = true;
+		itemMessage = null;
+
+		try {
+			const response = await fetch(mode === 'add' ? '/api/playlist/add-items' : '/api/playlist/remove-items', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					accessToken,
+					playlistId,
+					uris: [uri],
+					position:
+						mode === 'add' && addPositionInput.trim().length > 0 ? Number(addPositionInput) : undefined,
+					snapshotId: mode === 'remove' ? getSnapshotId() : undefined
+				})
+			});
+
+			const data: unknown = await response.json();
+			if (!response.ok) {
+				const message = isRecord(data) ? getString(data.message) : null;
+				throw new Error(message ?? JSON.stringify(data));
+			}
+
+			itemMessage = mode === 'add' ? 'Track added to playlist.' : 'Track removed from playlist.';
+			if (mode === 'add') {
+				addTrackInput = '';
+				addPositionInput = '';
+			} else {
+				removeTrackInput = '';
+			}
+			await fetchPlaylist(playlistId);
+		} catch (err) {
+			itemMessage = err instanceof Error ? err.message : String(err);
+		} finally {
+			isMutatingItems = false;
+		}
+	}
 </script>
 
 <div class="stack" style="gap: 20px">
@@ -149,7 +284,7 @@
 				/>
 			</div>
 
-			<button onclick={fetchPlaylist} disabled={isLoading || !input.trim()}>
+			<button onclick={() => fetchPlaylist()} disabled={isLoading || !input.trim()}>
 				{#if isLoading}
 					<span class="row" style="justify-content: center; gap: 8px">
 						<span class="spinner"></span>
@@ -212,7 +347,85 @@
 				</div>
 
 				<div class="stack" style="gap: 12px">
+					<div class="section-header" style="margin-bottom: 0">update details</div>
+					<div class="field">
+						<label class="field-label" for="update-name">name</label>
+						<input id="update-name" type="text" bind:value={updateName} />
+					</div>
+					<div class="field">
+						<label class="field-label" for="update-description">description</label>
+						<textarea id="update-description" rows={3} bind:value={updateDescription}></textarea>
+					</div>
+					<div class="row" style="flex-wrap: wrap; gap: 16px">
+						<label class="checkbox-row">
+							<input type="checkbox" bind:checked={updatePublic} />
+							<span>public</span>
+						</label>
+						<label class="checkbox-row">
+							<input type="checkbox" bind:checked={updateCollaborative} />
+							<span>collaborative</span>
+						</label>
+					</div>
+					<div class="row" style="justify-content: space-between; flex-wrap: wrap; gap: 12px">
+						<button onclick={savePlaylistDetails} disabled={isSaving}>
+							{#if isSaving}
+								<span class="row" style="justify-content: center; gap: 8px">
+									<span class="spinner"></span>
+									saving...
+								</span>
+							{:else}
+								save details
+							{/if}
+						</button>
+						{#if saveMessage}
+							<span style="font-size: 12px; color: var(--muted)">{saveMessage}</span>
+						{/if}
+					</div>
+				</div>
+
+				<div class="stack" style="gap: 12px">
 					<div class="section-header" style="margin-bottom: 0">tracks</div>
+					<div class="track-actions">
+						<div class="stack track-action-card">
+							<div class="field">
+								<label class="field-label" for="add-track-input">add track</label>
+								<input
+									id="add-track-input"
+									type="text"
+									bind:value={addTrackInput}
+									placeholder="spotify:track:... or https://open.spotify.com/track/..."
+								/>
+							</div>
+							<div class="field">
+								<label class="field-label" for="add-position-input">position (optional)</label>
+								<input id="add-position-input" type="number" min="0" bind:value={addPositionInput} />
+							</div>
+							<button onclick={() => mutatePlaylistItems('add')} disabled={isMutatingItems || !addTrackInput.trim()}>
+								add track
+							</button>
+						</div>
+						<div class="stack track-action-card">
+							<div class="field">
+								<label class="field-label" for="remove-track-input">remove track</label>
+								<input
+									id="remove-track-input"
+									type="text"
+									bind:value={removeTrackInput}
+									placeholder="spotify:track:... or https://open.spotify.com/track/..."
+								/>
+							</div>
+							<button
+								class="ghost"
+								onclick={() => mutatePlaylistItems('remove')}
+								disabled={isMutatingItems || !removeTrackInput.trim()}
+							>
+								remove track
+							</button>
+						</div>
+					</div>
+					{#if itemMessage}
+						<div style="font-size: 12px; color: var(--muted)">{itemMessage}</div>
+					{/if}
 					{#if getPlaylistItems(result).length === 0}
 						<div style="color: var(--muted); font-size: 12px">No track items returned.</div>
 					{:else}
@@ -305,6 +518,19 @@
 		gap: 8px;
 	}
 
+	.track-actions {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 12px;
+	}
+
+	.track-action-card {
+		padding: 12px;
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		background: var(--bg);
+	}
+
 	.playlist-item {
 		display: grid;
 		grid-template-columns: 24px 40px minmax(0, 1fr);
@@ -356,5 +582,17 @@
 
 	.inline-button {
 		padding: 4px 10px;
+	}
+
+	.checkbox-row {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.checkbox-row input {
+		width: auto;
 	}
 </style>
