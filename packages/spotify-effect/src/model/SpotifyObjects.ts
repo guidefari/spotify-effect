@@ -224,6 +224,11 @@ export type PlayHistory = {
   context: Context | null;
 };
 
+export type QueueObject = {
+  currently_playing: Track | Episode | null;
+  queue: Array<Track | Episode>;
+};
+
 export type Playlist = {
   collaborative: boolean;
   description: string | null;

@@ -4,10 +4,14 @@ import {
   AudioFeatures,
   Category,
   CursorBasedPaging,
+  CurrentlyPlaying,
+  CurrentlyPlayingContext,
+  Device,
   Episode,
   Paging,
   PlayHistory,
   PlaylistItem,
+  QueueObject,
   RecommendationSeed,
   SavedAlbum,
   SavedShow,
@@ -84,7 +88,17 @@ export type GetMyTopArtistsResponse = Paging<Artist>;
 
 export type GetMyTopTracksResponse = Paging<Track>;
 
+export type GetMyDevicesResponse = {
+  devices: Device[];
+};
+
+export type GetPlaybackInfoResponse = CurrentlyPlayingContext;
+
+export type GetCurrentlyPlayingTrackResponse = CurrentlyPlaying;
+
 export type GetRecentlyPlayedTracksResponse = CursorBasedPaging<PlayHistory>;
+
+export type GetQueueResponse = QueueObject;
 
 export type GetMyPlaylistsResponse = Paging<SimplifiedPlaylist>;
 

@@ -2,6 +2,7 @@ export { paginateAll, paginateStream } from "./pagination/paginate";
 export { AlbumsApi } from "./api/Albums";
 export { ArtistsApi } from "./api/Artists";
 export { BrowseApi } from "./api/Browse";
+export { PlayerApi } from "./api/Player";
 export { PlaylistsApi } from "./api/Playlists";
 export { SearchApi } from "./api/Search";
 export { TracksApi } from "./api/Tracks";
@@ -42,11 +43,18 @@ export type {
   Artist,
   Category,
   Paging,
+  CurrentlyPlaying,
+  CurrentlyPlayingContext,
+  CursorBasedPaging,
+  Device,
+  PlayHistory,
   Playlist,
   PlaylistDetails,
   PlaylistItem,
   PrivateUser,
   PublicUser,
+  QueueObject,
+  RepeatState,
   SearchType,
   SimplifiedAlbum,
   SimplifiedPlaylist,
@@ -67,8 +75,14 @@ export type {
   GetPlaylistItemsOptions,
   GetPlaylistOptions,
   GetUserPlaylistsOptions,
+  DeviceIdOptions,
+  GetCurrentlyPlayingTrackOptions,
+  GetPlaybackInfoOptions,
+  GetRecentlyPlayedTracksOptions,
   MarketOptions,
+  PlayOptions,
   SearchOptions,
+  TransferPlaybackOptions,
 } from "./model/SpotifyOptions";
 export type {
   GetAlbumsResponse,
@@ -81,6 +95,11 @@ export type {
   GetRelatedArtistsResponse,
   GetMyPlaylistsResponse,
   GetPlaylistItemsResponse,
+  GetCurrentlyPlayingTrackResponse,
+  GetMyDevicesResponse,
+  GetPlaybackInfoResponse,
+  GetQueueResponse,
+  GetRecentlyPlayedTracksResponse,
   GetTracksResponse,
   GetUserPlaylistsResponse,
   SearchResponse,

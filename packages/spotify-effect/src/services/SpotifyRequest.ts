@@ -51,6 +51,10 @@ export interface SpotifyRequest {
     schema: DecodableSchema<A>,
     options?: SpotifyRequestOptions,
   ): Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>;
+  postJson(
+    path: string,
+    options?: SpotifyRequestOptions,
+  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient>;
   putJson(
     path: string,
     options?: SpotifyRequestOptions,
@@ -347,6 +351,12 @@ export const makeSpotifyRequest = (
         makeRequestWithAuthRetry(accessTokenResolver, path, (r) => decodeSuccessResponseWithSchema(r, schema), config, "POST", options),
         `spotify.request POST ${path}`,
         withSpanAttrs(path, "POST", options, true),
+      ),
+    postJson: (path: string, options?: SpotifyRequestOptions) =>
+      Effect.withSpan(
+        makeRequestWithAuthRetry(accessTokenResolver, path, decodeVoidResponse, config, "POST", options),
+        `spotify.request POST ${path}`,
+        withSpanAttrs(path, "POST", options),
       ),
     putJson: (path: string, options?: SpotifyRequestOptions) =>
       Effect.withSpan(

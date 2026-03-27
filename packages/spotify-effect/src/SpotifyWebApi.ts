@@ -4,6 +4,7 @@ import { FetchHttpClient, type HttpClient } from "effect/unstable/http";
 import { AlbumsApi } from "./api/Albums";
 import { ArtistsApi } from "./api/Artists";
 import { BrowseApi } from "./api/Browse";
+import { PlayerApi } from "./api/Player";
 import { PlaylistsApi } from "./api/Playlists";
 import { SearchApi } from "./api/Search";
 import { TracksApi } from "./api/Tracks";
@@ -18,12 +19,19 @@ import type {
   Album,
   Artist,
   Category,
+  CurrentlyPlaying,
+  CurrentlyPlayingContext,
+  CursorBasedPaging,
+  Device,
   Paging,
+  PlayHistory,
   Playlist,
   PlaylistDetails,
   PlaylistItem,
   PrivateUser,
   PublicUser,
+  QueueObject,
+  RepeatState,
   SimplifiedAlbum,
   SimplifiedPlaylist,
   SimplifiedTrack,
@@ -32,19 +40,25 @@ import type {
 import type {
   AddItemsToPlaylistOptions,
   CreatePlaylistOptions,
+  DeviceIdOptions,
   GetAlbumTracksOptions,
   GetArtistAlbumsOptions,
   GetCategoriesOptions,
   GetCategoryOptions,
   GetCategoryPlaylistsOptions,
+  GetCurrentlyPlayingTrackOptions,
   GetFeaturedPlaylistsOptions,
   GetMyPlaylistsOptions,
   GetNewReleasesOptions,
+  GetPlaybackInfoOptions,
   GetPlaylistItemsOptions,
   GetPlaylistOptions,
+  GetRecentlyPlayedTracksOptions,
   GetUserPlaylistsOptions,
   MarketOptions,
+  PlayOptions,
   SearchOptions,
+  TransferPlaybackOptions,
 } from "./model/SpotifyOptions";
 import type {
   GetAlbumsResponse,
@@ -159,6 +173,24 @@ interface ProvidedPlaylistsApi {
   changePlaylistDetails(playlistId: string, details: PlaylistDetails): Effect.Effect<void, SpotifyRequestError>;
 }
 
+interface ProvidedPlayerApi {
+  getPlaybackInfo(options?: GetPlaybackInfoOptions): Effect.Effect<CurrentlyPlayingContext, SpotifyRequestError>;
+  getMyDevices(): Effect.Effect<Device[], SpotifyRequestError>;
+  getCurrentlyPlayingTrack(options?: GetCurrentlyPlayingTrackOptions): Effect.Effect<CurrentlyPlaying, SpotifyRequestError>;
+  getRecentlyPlayedTracks(options?: GetRecentlyPlayedTracksOptions): Effect.Effect<CursorBasedPaging<PlayHistory>, SpotifyRequestError>;
+  getQueue(): Effect.Effect<QueueObject, SpotifyRequestError>;
+  transferPlayback(deviceId: string, options?: TransferPlaybackOptions): Effect.Effect<void, SpotifyRequestError>;
+  play(options?: PlayOptions): Effect.Effect<void, SpotifyRequestError>;
+  pause(options?: DeviceIdOptions): Effect.Effect<void, SpotifyRequestError>;
+  seek(positionMs: number, options?: DeviceIdOptions): Effect.Effect<void, SpotifyRequestError>;
+  setRepeat(state: RepeatState, options?: DeviceIdOptions): Effect.Effect<void, SpotifyRequestError>;
+  setVolume(volumePercent: number, options?: DeviceIdOptions): Effect.Effect<void, SpotifyRequestError>;
+  setShuffle(state: boolean, options?: DeviceIdOptions): Effect.Effect<void, SpotifyRequestError>;
+  skipToNext(options?: DeviceIdOptions): Effect.Effect<void, SpotifyRequestError>;
+  skipToPrevious(options?: DeviceIdOptions): Effect.Effect<void, SpotifyRequestError>;
+  addToQueue(uri: string, options?: DeviceIdOptions): Effect.Effect<void, SpotifyRequestError>;
+}
+
 interface ProvidedSearchApi {
   search(
     query: string,
@@ -185,6 +217,7 @@ export class SpotifyWebApi {
   public readonly albums: ProvidedAlbumsApi;
   public readonly artists: ProvidedArtistsApi;
   public readonly browse: ProvidedBrowseApi;
+  public readonly player: ProvidedPlayerApi;
   public readonly playlists: ProvidedPlaylistsApi;
   public readonly search: ProvidedSearchApi;
 
@@ -226,6 +259,7 @@ export class SpotifyWebApi {
     const rawAlbums = new AlbumsApi(request);
     const rawArtists = new ArtistsApi(request);
     const rawBrowse = new BrowseApi(request);
+    const rawPlayer = new PlayerApi(request);
     const rawPlaylists = new PlaylistsApi(request);
     const rawSearch = new SearchApi(request);
 
@@ -262,6 +296,23 @@ export class SpotifyWebApi {
       getFeaturedPlaylists: (opts) => this.provideHttpClient(rawBrowse.getFeaturedPlaylists(opts)),
       getNewReleases: (opts) => this.provideHttpClient(rawBrowse.getNewReleases(opts)),
       getAvailableGenreSeeds: () => this.provideHttpClient(rawBrowse.getAvailableGenreSeeds()),
+    };
+    this.player = {
+      getPlaybackInfo: (opts) => this.provideHttpClient(rawPlayer.getPlaybackInfo(opts)),
+      getMyDevices: () => this.provideHttpClient(rawPlayer.getMyDevices()),
+      getCurrentlyPlayingTrack: (opts) => this.provideHttpClient(rawPlayer.getCurrentlyPlayingTrack(opts)),
+      getRecentlyPlayedTracks: (opts) => this.provideHttpClient(rawPlayer.getRecentlyPlayedTracks(opts)),
+      getQueue: () => this.provideHttpClient(rawPlayer.getQueue()),
+      transferPlayback: (deviceId, opts) => this.provideHttpClient(rawPlayer.transferPlayback(deviceId, opts)),
+      play: (opts) => this.provideHttpClient(rawPlayer.play(opts)),
+      pause: (opts) => this.provideHttpClient(rawPlayer.pause(opts)),
+      seek: (positionMs, opts) => this.provideHttpClient(rawPlayer.seek(positionMs, opts)),
+      setRepeat: (state, opts) => this.provideHttpClient(rawPlayer.setRepeat(state, opts)),
+      setVolume: (volumePercent, opts) => this.provideHttpClient(rawPlayer.setVolume(volumePercent, opts)),
+      setShuffle: (state, opts) => this.provideHttpClient(rawPlayer.setShuffle(state, opts)),
+      skipToNext: (opts) => this.provideHttpClient(rawPlayer.skipToNext(opts)),
+      skipToPrevious: (opts) => this.provideHttpClient(rawPlayer.skipToPrevious(opts)),
+      addToQueue: (uri, opts) => this.provideHttpClient(rawPlayer.addToQueue(uri, opts)),
     };
     this.playlists = {
       getPlaylist: (playlistId, opts) => this.provideHttpClient(rawPlaylists.getPlaylist(playlistId, opts)),

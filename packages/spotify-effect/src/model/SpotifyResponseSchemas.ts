@@ -3,12 +3,18 @@ import {
   AlbumSchema,
   ArtistSchema,
   CategorySchema,
+  CurrentlyPlayingContextSchema,
+  CurrentlyPlayingSchema,
+  DeviceSchema,
+  PlayHistorySchema,
   PlaylistItemSchema,
   PlaylistSchema,
+  QueueObjectSchema,
   SimplifiedAlbumSchema,
   SimplifiedPlaylistSchema,
   SnapshotIdResponseSchema,
   TrackSchema,
+  makeCursorBasedPagingSchema,
   makePagingSchema,
 } from "./SpotifyObjectSchemas";
 
@@ -93,6 +99,18 @@ export const GetMyPlaylistsResponseSchema = makePagingSchema(SimplifiedPlaylistS
 export const GetUserPlaylistsResponseSchema = makePagingSchema(SimplifiedPlaylistSchema);
 
 export { PlaylistSchema, SnapshotIdResponseSchema };
+
+export const GetMyDevicesResponseSchema = Schema.Struct({
+  devices: Schema.mutable(Schema.Array(DeviceSchema)),
+});
+
+export const GetPlaybackInfoResponseSchema = CurrentlyPlayingContextSchema;
+
+export const GetCurrentlyPlayingTrackResponseSchema = CurrentlyPlayingSchema;
+
+export const GetRecentlyPlayedTracksResponseSchema = makeCursorBasedPagingSchema(PlayHistorySchema);
+
+export const GetQueueResponseSchema = QueueObjectSchema;
 
 export const SearchResponseSchema = Schema.Struct({
   albums: Schema.optionalKey(makePagingSchema(SimplifiedAlbumSchema)),
