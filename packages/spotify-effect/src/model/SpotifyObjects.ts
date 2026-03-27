@@ -254,7 +254,7 @@ export type PlaylistItem = {
   added_by: PublicUser | null;
   is_local: boolean;
   primary_color?: string | null;
-  track: Track | Episode;
+  track: Track | Episode | Record<string, unknown>;
   video_thumbnail?: VideoThumbnail;
 };
 

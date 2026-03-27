@@ -3,8 +3,11 @@ import {
   AlbumSchema,
   ArtistSchema,
   CategorySchema,
+  PlaylistItemSchema,
+  PlaylistSchema,
   SimplifiedAlbumSchema,
   SimplifiedPlaylistSchema,
+  SnapshotIdResponseSchema,
   TrackSchema,
   makePagingSchema,
 } from "./SpotifyObjectSchemas";
@@ -82,6 +85,14 @@ export const GetNewReleasesResponseSchema = Schema.Struct({
 export const GetAvailableGenreSeedsResponseSchema = Schema.Struct({
   genres: Schema.mutable(Schema.Array(Schema.String)),
 });
+
+export const GetPlaylistItemsResponseSchema = makePagingSchema(PlaylistItemSchema);
+
+export const GetMyPlaylistsResponseSchema = makePagingSchema(SimplifiedPlaylistSchema);
+
+export const GetUserPlaylistsResponseSchema = makePagingSchema(SimplifiedPlaylistSchema);
+
+export { PlaylistSchema, SnapshotIdResponseSchema };
 
 export const SearchResponseSchema = Schema.Struct({
   albums: Schema.optionalKey(makePagingSchema(SimplifiedAlbumSchema)),

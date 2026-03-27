@@ -4,6 +4,7 @@ import { FetchHttpClient, type HttpClient } from "effect/unstable/http";
 import { AlbumsApi } from "./api/Albums";
 import { ArtistsApi } from "./api/Artists";
 import { BrowseApi } from "./api/Browse";
+import { PlaylistsApi } from "./api/Playlists";
 import { SearchApi } from "./api/Search";
 import { TracksApi } from "./api/Tracks";
 import { UsersApi } from "./api/Users";
@@ -18,20 +19,30 @@ import type {
   Artist,
   Category,
   Paging,
+  Playlist,
+  PlaylistDetails,
+  PlaylistItem,
   PrivateUser,
   PublicUser,
   SimplifiedAlbum,
+  SimplifiedPlaylist,
   SimplifiedTrack,
   Track,
 } from "./model/SpotifyObjects";
 import type {
+  AddItemsToPlaylistOptions,
+  CreatePlaylistOptions,
   GetAlbumTracksOptions,
   GetArtistAlbumsOptions,
   GetCategoriesOptions,
   GetCategoryOptions,
   GetCategoryPlaylistsOptions,
   GetFeaturedPlaylistsOptions,
+  GetMyPlaylistsOptions,
   GetNewReleasesOptions,
+  GetPlaylistItemsOptions,
+  GetPlaylistOptions,
+  GetUserPlaylistsOptions,
   MarketOptions,
   SearchOptions,
 } from "./model/SpotifyOptions";
@@ -46,6 +57,7 @@ import type {
   GetRelatedArtistsResponse,
   GetTracksResponse,
   SearchResponse,
+  SnapshotIdResponse,
 } from "./model/SpotifyResponses";
 import { makeSpotifyAuth } from "./services/SpotifyAuth";
 import type { SpotifyAuth } from "./services/SpotifyAuth";
@@ -136,6 +148,17 @@ interface ProvidedBrowseApi {
   getAvailableGenreSeeds(): Effect.Effect<string[], SpotifyRequestError>;
 }
 
+interface ProvidedPlaylistsApi {
+  getPlaylist(playlistId: string, options?: GetPlaylistOptions): Effect.Effect<Playlist, SpotifyRequestError>;
+  getPlaylistItems(playlistId: string, options?: GetPlaylistItemsOptions): Effect.Effect<Paging<PlaylistItem>, SpotifyRequestError>;
+  getMyPlaylists(options?: GetMyPlaylistsOptions): Effect.Effect<Paging<SimplifiedPlaylist>, SpotifyRequestError>;
+  getUserPlaylists(userId: string, options?: GetUserPlaylistsOptions): Effect.Effect<Paging<SimplifiedPlaylist>, SpotifyRequestError>;
+  createPlaylist(userId: string, name: string, options?: CreatePlaylistOptions): Effect.Effect<Playlist, SpotifyRequestError>;
+  addItemsToPlaylist(playlistId: string, uris: ReadonlyArray<string>, options?: AddItemsToPlaylistOptions): Effect.Effect<SnapshotIdResponse, SpotifyRequestError>;
+  removePlaylistItems(playlistId: string, uris: ReadonlyArray<string>, snapshotId?: string): Effect.Effect<SnapshotIdResponse, SpotifyRequestError>;
+  changePlaylistDetails(playlistId: string, details: PlaylistDetails): Effect.Effect<void, SpotifyRequestError>;
+}
+
 interface ProvidedSearchApi {
   search(
     query: string,
@@ -162,6 +185,7 @@ export class SpotifyWebApi {
   public readonly albums: ProvidedAlbumsApi;
   public readonly artists: ProvidedArtistsApi;
   public readonly browse: ProvidedBrowseApi;
+  public readonly playlists: ProvidedPlaylistsApi;
   public readonly search: ProvidedSearchApi;
 
   public constructor(options: SpotifyWebApiOptions = {}, credentials?: SpotifyWebApiCredentials) {
@@ -202,6 +226,7 @@ export class SpotifyWebApi {
     const rawAlbums = new AlbumsApi(request);
     const rawArtists = new ArtistsApi(request);
     const rawBrowse = new BrowseApi(request);
+    const rawPlaylists = new PlaylistsApi(request);
     const rawSearch = new SearchApi(request);
 
     this.tracks = {
@@ -237,6 +262,16 @@ export class SpotifyWebApi {
       getFeaturedPlaylists: (opts) => this.provideHttpClient(rawBrowse.getFeaturedPlaylists(opts)),
       getNewReleases: (opts) => this.provideHttpClient(rawBrowse.getNewReleases(opts)),
       getAvailableGenreSeeds: () => this.provideHttpClient(rawBrowse.getAvailableGenreSeeds()),
+    };
+    this.playlists = {
+      getPlaylist: (playlistId, opts) => this.provideHttpClient(rawPlaylists.getPlaylist(playlistId, opts)),
+      getPlaylistItems: (playlistId, opts) => this.provideHttpClient(rawPlaylists.getPlaylistItems(playlistId, opts)),
+      getMyPlaylists: (opts) => this.provideHttpClient(rawPlaylists.getMyPlaylists(opts)),
+      getUserPlaylists: (userId, opts) => this.provideHttpClient(rawPlaylists.getUserPlaylists(userId, opts)),
+      createPlaylist: (userId, name, opts) => this.provideHttpClient(rawPlaylists.createPlaylist(userId, name, opts)),
+      addItemsToPlaylist: (playlistId, uris, opts) => this.provideHttpClient(rawPlaylists.addItemsToPlaylist(playlistId, uris, opts)),
+      removePlaylistItems: (playlistId, uris, snapshotId) => this.provideHttpClient(rawPlaylists.removePlaylistItems(playlistId, uris, snapshotId)),
+      changePlaylistDetails: (playlistId, details) => this.provideHttpClient(rawPlaylists.changePlaylistDetails(playlistId, details)),
     };
     this.search = {
       search: (query, types, opts) => this.provideHttpClient(rawSearch.search(query, types, opts)),

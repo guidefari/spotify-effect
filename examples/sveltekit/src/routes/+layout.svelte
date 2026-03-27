@@ -15,6 +15,7 @@
 			links: [
 				{ href: '/album', label: 'album' },
 				{ href: '/artist', label: 'artist' },
+				{ href: '/playlist', label: 'playlist' },
 				{ href: '/track', label: 'track' },
 				{ href: '/user', label: 'user' }
 			]
@@ -22,6 +23,10 @@
 		{
 			label: 'Search',
 			links: [{ href: '/search', label: 'search' }]
+		},
+		{
+			label: 'Library',
+			links: [{ href: '/playlists', label: 'my playlists' }]
 		}
 	];
 </script>

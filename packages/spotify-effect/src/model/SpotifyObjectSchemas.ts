@@ -226,5 +226,36 @@ export const SimplifiedPlaylistSchema = Schema.Struct({
   uri: Schema.String,
 });
 
+export const PlaylistItemSchema = Schema.Struct({
+  added_at: Schema.NullOr(Schema.String),
+  added_by: Schema.NullOr(PublicUserSchema),
+  is_local: Schema.Boolean,
+  primary_color: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  track: Schema.Union([TrackSchema, Schema.Record(Schema.String, Schema.Unknown)]),
+  video_thumbnail: Schema.optionalKey(Schema.Struct({ url: Schema.NullOr(Schema.String) })),
+});
+
+export const PlaylistSchema = Schema.Struct({
+  collaborative: Schema.Boolean,
+  description: Schema.NullOr(Schema.String),
+  external_urls: ExternalURLSchema,
+  followers: FollowersSchema,
+  href: Schema.String,
+  id: Schema.String,
+  images: Schema.mutable(Schema.Array(SpotifyImageSchema)),
+  name: Schema.String,
+  owner: PublicUserSchema,
+  primary_color: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  public: Schema.NullOr(Schema.Boolean),
+  snapshot_id: Schema.String,
+  tracks: makePagingSchema(PlaylistItemSchema),
+  type: Schema.Literal("playlist"),
+  uri: Schema.String,
+});
+
+export const SnapshotIdResponseSchema = Schema.Struct({
+  snapshot_id: Schema.String,
+});
+
 export { makePagingSchema };
 export { SimplifiedAlbumSchema };

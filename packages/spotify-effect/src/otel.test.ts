@@ -41,7 +41,7 @@ describe("OpenTelemetry integration", () => {
     const spanNames = spans.map((s) => s.name);
 
     expect(spanNames).toContain("test.root");
-    expect(spanNames).toContain("spotify.request /tracks/foo");
+    expect(spanNames).toContain("spotify.request GET /tracks/foo");
     expect(spans.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -59,7 +59,7 @@ describe("OpenTelemetry integration", () => {
     await runtime.runPromise(spotify.tracks.getTrack("foo"));
 
     const spans = exporter.getFinishedSpans();
-    const requestSpan = spans.find((s) => s.name === "spotify.request /tracks/foo");
+    const requestSpan = spans.find((s) => s.name === "spotify.request GET /tracks/foo");
 
     expect(requestSpan).toBeDefined();
     expect(requestSpan!.attributes["spotify.request.path"]).toBe("/tracks/foo");
@@ -113,7 +113,7 @@ describe("OpenTelemetry integration", () => {
 
     const spans = exporter.getFinishedSpans();
     const rootSpan = spans.find((s) => s.name === "app.root");
-    const requestSpan = spans.find((s) => s.name === "spotify.request /tracks/foo");
+    const requestSpan = spans.find((s) => s.name === "spotify.request GET /tracks/foo");
 
     expect(rootSpan).toBeDefined();
     expect(requestSpan).toBeDefined();

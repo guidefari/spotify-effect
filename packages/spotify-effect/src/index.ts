@@ -1,6 +1,8 @@
+export { paginateAll, paginateStream } from "./pagination/paginate";
 export { AlbumsApi } from "./api/Albums";
 export { ArtistsApi } from "./api/Artists";
 export { BrowseApi } from "./api/Browse";
+export { PlaylistsApi } from "./api/Playlists";
 export { SearchApi } from "./api/Search";
 export { TracksApi } from "./api/Tracks";
 export { UsersApi } from "./api/Users";
@@ -40,6 +42,9 @@ export type {
   Artist,
   Category,
   Paging,
+  Playlist,
+  PlaylistDetails,
+  PlaylistItem,
   PrivateUser,
   PublicUser,
   SearchType,
@@ -49,13 +54,19 @@ export type {
   Track,
 } from "./model/SpotifyObjects";
 export type {
+  AddItemsToPlaylistOptions,
+  CreatePlaylistOptions,
   GetAlbumTracksOptions,
   GetArtistAlbumsOptions,
   GetCategoriesOptions,
   GetCategoryOptions,
   GetCategoryPlaylistsOptions,
   GetFeaturedPlaylistsOptions,
+  GetMyPlaylistsOptions,
   GetNewReleasesOptions,
+  GetPlaylistItemsOptions,
+  GetPlaylistOptions,
+  GetUserPlaylistsOptions,
   MarketOptions,
   SearchOptions,
 } from "./model/SpotifyOptions";
@@ -68,7 +79,12 @@ export type {
   GetFeaturedPlaylistsResponse,
   GetNewReleasesResponse,
   GetRelatedArtistsResponse,
+  GetMyPlaylistsResponse,
+  GetPlaylistItemsResponse,
   GetTracksResponse,
+  GetUserPlaylistsResponse,
   SearchResponse,
+  SnapshotIdResponse,
 } from "./model/SpotifyResponses";
+export type { PaginatedFetch } from "./pagination/paginate";
 export type { GetAuthorizationUrlOptions, PKCEExtensionOptions } from "./utils/getAuthorizationUrl";
