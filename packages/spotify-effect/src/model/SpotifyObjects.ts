@@ -120,7 +120,7 @@ export type CurrentlyPlayingContext = {
 };
 
 export type Cursor = {
-  after: string;
+  after?: string | null;
   before?: string;
 };
 
@@ -429,8 +429,8 @@ export type SimplifiedEpisode = {
 };
 
 export type SimplifiedPlaylist = {
-  collaborative: boolean;
-  description: string | null;
+  collaborative?: boolean;
+  description?: string | null;
   external_urls: ExternalURL;
   href: string;
   id: string;
@@ -438,8 +438,8 @@ export type SimplifiedPlaylist = {
   name: string;
   owner: PublicUser;
   primary_color?: string | null;
-  public: boolean | null;
-  snapshot_id: string;
+  public?: boolean | null;
+  snapshot_id?: string;
   tracks: Tracks;
   type: "playlist";
   uri: string;
@@ -476,7 +476,7 @@ export type SimplifiedTrack = {
   linked_from?: TrackLink;
   restrictions?: Restrictions;
   name: string;
-  preview_url: string;
+  preview_url: string | null;
   track_number: number;
   type: "track";
   uri: string;

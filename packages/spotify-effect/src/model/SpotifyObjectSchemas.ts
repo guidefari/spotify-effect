@@ -85,7 +85,7 @@ const SimplifiedTrackSchema = Schema.Struct({
   is_playable: Schema.optionalKey(Schema.Boolean),
   restrictions: Schema.optionalKey(RestrictionsSchema),
   name: Schema.String,
-  preview_url: Schema.String,
+  preview_url: Schema.NullOr(Schema.String),
   track_number: Schema.Number,
   type: Schema.Literal("track"),
   uri: Schema.String,
@@ -210,8 +210,8 @@ const TracksRefSchema = Schema.Struct({
 });
 
 export const SimplifiedPlaylistSchema = Schema.Struct({
-  collaborative: Schema.Boolean,
-  description: Schema.NullOr(Schema.String),
+  collaborative: Schema.optionalKey(Schema.Boolean),
+  description: Schema.optionalKey(Schema.NullOr(Schema.String)),
   external_urls: ExternalURLSchema,
   href: Schema.String,
   id: Schema.String,
@@ -219,8 +219,8 @@ export const SimplifiedPlaylistSchema = Schema.Struct({
   name: Schema.String,
   owner: PublicUserSchema,
   primary_color: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  public: Schema.NullOr(Schema.Boolean),
-  snapshot_id: Schema.String,
+  public: Schema.optionalKey(Schema.NullOr(Schema.Boolean)),
+  snapshot_id: Schema.optionalKey(Schema.String),
   tracks: TracksRefSchema,
   type: Schema.Literal("playlist"),
   uri: Schema.String,
@@ -409,7 +409,7 @@ export const PlayHistorySchema = Schema.Struct({
 });
 
 const CursorSchema = Schema.Struct({
-  after: Schema.String,
+  after: Schema.optionalKey(Schema.NullOr(Schema.String)),
   before: Schema.optionalKey(Schema.String),
 });
 

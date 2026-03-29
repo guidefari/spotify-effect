@@ -49,7 +49,7 @@ const fetchCursorPageStream = <T, E, R>(
       if (page.next === null) return items;
       return Stream.concat(
         items,
-        Stream.suspend(() => fetchCursorPageStream(fetch, page.cursors.after, pageSize)),
+        Stream.suspend(() => fetchCursorPageStream(fetch, page.cursors.after ?? undefined, pageSize)),
       );
     }),
   );
