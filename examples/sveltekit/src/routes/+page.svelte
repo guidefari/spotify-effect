@@ -11,8 +11,12 @@
 		'user-read-currently-playing',
 		'user-top-read',
 		'user-read-recently-played',
+		'user-follow-read',
+		'user-follow-modify',
 		'playlist-read-private',
 		'playlist-read-collaborative',
+		'playlist-modify-private',
+		'playlist-modify-public',
 		'user-library-read'
 	].join(' ');
 
@@ -155,7 +159,7 @@
 				<div class="section-header">profile</div>
 				<div class="card stack">
 					<div class="kv-table">
-						{#each profileFields as key}
+						{#each profileFields as key (key)}
 							{#if session.profile[key] !== undefined}
 								<span class="kv-key">{key}</span>
 								<span class="kv-value">{formatProfileValue(key, session.profile[key])}</span>
@@ -197,6 +201,11 @@
 					to your app's redirect URIs in the
 					<a href="https://developer.spotify.com/dashboard" target="_blank" rel="noreferrer">Spotify dashboard</a>.
 				</p>
+
+				<div style="color: var(--muted); font-size: 12px; line-height: 1.7">
+					Default scopes include playlist write access so the playlist create, update, add-track, and
+					remove-track examples work after login.
+				</div>
 
 				<div class="field">
 					<label class="field-label" for="client-id">client_id</label>

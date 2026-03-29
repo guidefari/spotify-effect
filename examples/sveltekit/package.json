@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 vite dev",
-    "build": "vite build",
-    "preview": "vite preview",
+    "build": "SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 vite build",
+    "preview": "SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 vite preview",
     "typecheck": "bun run --filter 'spotify-effect' build && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {

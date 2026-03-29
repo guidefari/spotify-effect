@@ -4,6 +4,7 @@
 	let input = $state('');
 	let isLoading = $state(false);
 	let result = $state<Record<string, unknown> | null>(null);
+	let audio = $state<Record<string, unknown> | null>(null);
 	let error = $state<string | null>(null);
 	let showRaw = $state(false);
 
@@ -39,6 +40,7 @@
 		isLoading = true;
 		error = null;
 		result = null;
+		audio = null;
 		showRaw = false;
 
 		try {
@@ -51,6 +53,17 @@
 			const data = await response.json();
 			if (!response.ok) throw new Error(data.message ?? JSON.stringify(data));
 			result = data as Record<string, unknown>;
+
+			const audioResponse = await fetch('/api/track/audio', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ accessToken, trackId })
+			});
+
+			const audioData = await audioResponse.json();
+			if (audioResponse.ok) {
+				audio = audioData as Record<string, unknown>;
+			}
 		} catch (err) {
 			error = err instanceof Error ? err.message : String(err);
 		} finally {
@@ -86,13 +99,36 @@
 		return (images?.[0]?.url as string) ?? null;
 	};
 
-	const getSpotifyUrl = (track: Record<string, unknown>): string | null => {
+	const getSpotifyUrl = (track: Record<string, unknown> | null): string | null => {
+		if (!track) return null;
 		const external = track.external_urls as Record<string, unknown> | undefined;
 		return (external?.spotify as string) ?? null;
 	};
 
 	const getPopularity = (track: Record<string, unknown>): number => {
 		return (track.popularity as number) ?? 0;
+	};
+
+	const openExternal = (href: string | null): void => {
+		if (!href) return;
+		window.open(href, '_blank', 'noopener,noreferrer');
+	};
+
+	const getAudioFeatures = (): Record<string, unknown> | null => {
+		const features = audio?.features;
+		return typeof features === 'object' && features !== null ? (features as Record<string, unknown>) : null;
+	};
+
+	const getAudioAnalysis = (): Record<string, unknown> | null => {
+		const analysis = audio?.analysis;
+		return typeof analysis === 'object' && analysis !== null ? (analysis as Record<string, unknown>) : null;
+	};
+
+	const getAudioAnalysisCount = (key: 'bars' | 'beats' | 'sections' | 'segments'): number | string => {
+		const analysis = getAudioAnalysis();
+		if (!analysis) return '—';
+		const value = analysis[key];
+		return Array.isArray(value) ? value.length : '—';
 	};
 </script>
 
@@ -135,9 +171,9 @@
 	</div>
 
 	{#if result}
-		<div>
-			<div class="section-header">result</div>
-			<div class="card stack">
+			<div>
+				<div class="section-header">result</div>
+				<div class="card stack">
 				<!-- Track header -->
 				<div class="track-header">
 					{#if getAlbumImage(result)}
@@ -189,10 +225,40 @@
 					{#if getSpotifyUrl(result)}
 						<span class="kv-key">open</span>
 						<span class="kv-value">
-							<a href={getSpotifyUrl(result)!} target="_blank" rel="noreferrer">↗ spotify</a>
+							<button class="ghost inline-button" onclick={() => openExternal(getSpotifyUrl(result))}>
+								open in spotify
+							</button>
 						</span>
 					{/if}
 				</div>
+
+				{#if getAudioFeatures()}
+					<div class="section-header" style="margin-bottom: 0">audio features</div>
+					<div class="kv-table" style="font-size: 12px">
+						<span class="kv-key">tempo</span>
+						<span class="kv-value">{getAudioFeatures()?.tempo ?? '—'}</span>
+						<span class="kv-key">energy</span>
+						<span class="kv-value">{getAudioFeatures()?.energy ?? '—'}</span>
+						<span class="kv-key">danceability</span>
+						<span class="kv-value">{getAudioFeatures()?.danceability ?? '—'}</span>
+						<span class="kv-key">valence</span>
+						<span class="kv-value">{getAudioFeatures()?.valence ?? '—'}</span>
+					</div>
+				{/if}
+
+				{#if getAudioAnalysis()}
+					<div class="section-header" style="margin-bottom: 0">audio analysis</div>
+					<div class="kv-table" style="font-size: 12px">
+						<span class="kv-key">bars</span>
+						<span class="kv-value">{getAudioAnalysisCount('bars')}</span>
+						<span class="kv-key">beats</span>
+						<span class="kv-value">{getAudioAnalysisCount('beats')}</span>
+						<span class="kv-key">sections</span>
+						<span class="kv-value">{getAudioAnalysisCount('sections')}</span>
+						<span class="kv-key">segments</span>
+						<span class="kv-value">{getAudioAnalysisCount('segments')}</span>
+					</div>
+				{/if}
 
 				<!-- Raw JSON toggle -->
 				<details bind:open={showRaw}>
@@ -239,5 +305,9 @@
 		font-size: 13px;
 		color: var(--text);
 		opacity: 0.7;
+	}
+
+	.inline-button {
+		padding: 4px 10px;
 	}
 </style>

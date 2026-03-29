@@ -39,8 +39,89 @@ const telemetryLayer: Layer.Layer<Resource.Resource> | undefined = (() => {
   }));
 })();
 
+export type TracedResult<A> = {
+  data: A | null;
+  error: string | null;
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null) {
+    const parts: string[] = [];
+
+    if ("_tag" in error && typeof error._tag === "string") {
+      parts.push(error._tag);
+    }
+
+    if ("description" in error && typeof error.description === "string" && error.description.length > 0) {
+      parts.push(error.description);
+    }
+
+    if ("method" in error && typeof error.method === "string") {
+      parts.push(error.method);
+    }
+
+    if ("url" in error && typeof error.url === "string") {
+      parts.push(error.url);
+    }
+
+    if (parts.length > 0) {
+      return parts.join(" · ");
+    }
+
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  }
+  return String(error);
+};
+
+const getErrorDetails = (error: unknown): string | null => {
+  if (error instanceof Error && error.stack) {
+    return error.stack;
+  }
+
+  if (typeof error === "object" && error !== null) {
+    try {
+      return JSON.stringify(error, null, 2);
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+};
+
+export const logServerError = (label: string, error: unknown): void => {
+  const summary = getErrorMessage(error);
+  console.error(`[${label}] ${summary}`);
+
+  if (process.env.SPOTIFY_EFFECT_VERBOSE_ERRORS === "1") {
+    const details = getErrorDetails(error);
+    if (details) {
+      console.error(details);
+    }
+  }
+};
+
 export const runTraced = <A, E>(effect: Effect.Effect<A, E>, spanName: string): Promise<A> => {
   const traced = Effect.withSpan(effect, spanName);
   const provided = telemetryLayer !== undefined ? Effect.provide(traced, telemetryLayer) : traced;
-  return Effect.runPromise(provided);
+  return Effect.runPromise(provided).catch((error) => {
+    logServerError(spanName, error);
+    throw error;
+  });
+};
+
+export const runTracedResult = async <A, E>(
+  effect: Effect.Effect<A, E>,
+  spanName: string,
+): Promise<TracedResult<A>> => {
+  try {
+    return { data: await runTraced(effect, spanName), error: null };
+  } catch (error) {
+    return { data: null, error: getErrorMessage(error) };
+  }
 };
