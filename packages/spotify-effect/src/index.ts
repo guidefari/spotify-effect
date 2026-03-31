@@ -1,4 +1,5 @@
 export { cursorPaginateAll, cursorPaginateStream, paginateAll, paginateStream } from "./pagination/paginate";
+export { getOtlpTraceExporterUrl, makeSpotifyNodeTelemetryLayer } from "./telemetry/SpotifyNodeTelemetry";
 export { AlbumsApi } from "./api/Albums";
 export { ArtistsApi } from "./api/Artists";
 export { BrowseApi } from "./api/Browse";
@@ -31,6 +32,7 @@ export { default } from "./SpotifyWebApi";
 export type { SpotifyRequestError } from "./errors/SpotifyError";
 export type { SpotifyWebApiCredentials, SpotifyWebApiOptions } from "./SpotifyWebApi";
 export type { SpotifyRetryConfig } from "./services/SpotifyRequest";
+export type { SpotifyNodeTelemetryOptions } from "./telemetry/SpotifyNodeTelemetry";
 export type {
   AuthorizationScope,
   GetRefreshableUserTokensResponse,

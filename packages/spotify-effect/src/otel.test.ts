@@ -1,22 +1,20 @@
-import * as NodeSdk from "@effect/opentelemetry/NodeSdk";
 import { InMemorySpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import * as Effect from "effect/Effect";
 import * as ManagedRuntime from "effect/ManagedRuntime";
 import { afterEach, describe, expect, it } from "vitest";
 import { SpotifyWebApi } from "./SpotifyWebApi";
 import { trackFixture } from "./fixtures/trackFixture";
+import { makeSpotifyNodeTelemetryLayer } from "./telemetry/SpotifyNodeTelemetry";
 import { makeTestHttpClient } from "./test/TestHttpClient";
 
 describe("OpenTelemetry integration", () => {
   const exporter = new InMemorySpanExporter();
 
-  const telemetryLayer = NodeSdk.layer(() => ({
-    resource: {
-      serviceName: "otel-test",
-      serviceVersion: "0.0.0",
-    },
-    spanProcessor: new SimpleSpanProcessor(exporter),
-  }));
+  const telemetryLayer = makeSpotifyNodeTelemetryLayer({
+    serviceName: "otel-test",
+    serviceVersion: "0.0.0",
+    exporter,
+  });
 
   const runtime = ManagedRuntime.make(telemetryLayer);
 
