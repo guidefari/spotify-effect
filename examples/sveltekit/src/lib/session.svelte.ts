@@ -1,8 +1,8 @@
 import {
   createPkceCodeChallenge,
   createPkceCodeVerifier,
+  getAuthorizationUrl,
   makeSpotifyBrowserSession,
-  SpotifyWebApi,
 } from "spotify-effect";
 import type { BrowserRefreshableTokens } from "spotify-effect";
 import * as Effect from "effect/Effect";
@@ -81,13 +81,12 @@ export class Session {
     const verifier = await Effect.runPromise(createPkceCodeVerifier());
     const challenge = await Effect.runPromise(createPkceCodeChallenge(verifier));
 
-    const spotify = new SpotifyWebApi({ clientId: this.clientId, redirectUri });
     const scopeList = scopes
       .split(/\s+/)
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const url = spotify.getAuthorizationCodePKCEUrl(this.clientId, {
+    const url = getAuthorizationUrl(this.clientId, redirectUri, "code", {
       ...(scopeList.length > 0 ? { scope: scopeList as never } : null),
       code_challenge: challenge,
       code_challenge_method: "S256",
@@ -173,6 +172,34 @@ export class Session {
       this.error = err instanceof Error ? err.message : String(err);
     } finally {
       this.isFetchingProfile = false;
+    }
+  }
+
+  async refreshTokens(): Promise<void> {
+    if (!this.tokens?.refreshToken) return;
+    const pkceState = this.getPkceState();
+
+    try {
+      const response = await fetch("/api/token/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: pkceState?.clientId ?? this.clientId,
+          redirectUri: pkceState?.redirectUri ?? `${window.location.origin}/`,
+          refreshToken: this.tokens.refreshToken,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message ?? "Token refresh failed");
+
+      this.setTokens({
+        accessToken: data.accessToken,
+        refreshToken: this.tokens.refreshToken,
+        accessTokenExpiresAt: Date.now() + data.expiresIn * 1000,
+      });
+    } catch (err) {
+      this.error = err instanceof Error ? err.message : String(err);
     }
   }
 

@@ -1,6 +1,8 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SpotifyWebApi } from "spotify-effect";
+import * as Effect from "effect/Effect";
+import { Personalization } from "spotify-effect";
+import { makeAccessTokenLayer } from "$lib/server/spotify";
 import { runTracedResult } from "$lib/server/telemetry";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -29,15 +31,20 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ message: "Missing required field: accessToken" }, { status: 400 });
   }
 
-  const spotify = new SpotifyWebApi({}, { accessToken });
-
+  const layer = makeAccessTokenLayer(accessToken);
   const [artists, tracks] = await Promise.all([
     runTracedResult(
-      spotify.personalization.getMyTopArtists({ limit, time_range: timeRange }),
+      Effect.gen(function* () {
+        const personalization = yield* Personalization;
+        return yield* personalization.getMyTopArtists({ limit, time_range: timeRange });
+      }).pipe(Effect.provide(layer)),
       "sveltekit.api.top.artists",
     ),
     runTracedResult(
-      spotify.personalization.getMyTopTracks({ limit, time_range: timeRange }),
+      Effect.gen(function* () {
+        const personalization = yield* Personalization;
+        return yield* personalization.getMyTopTracks({ limit, time_range: timeRange });
+      }).pipe(Effect.provide(layer)),
       "sveltekit.api.top.tracks",
     ),
   ]);

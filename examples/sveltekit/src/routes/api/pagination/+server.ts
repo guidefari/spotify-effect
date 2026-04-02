@@ -1,6 +1,8 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SpotifyWebApi, cursorPaginateAll, paginateAll } from "spotify-effect";
+import * as Effect from "effect/Effect";
+import { Follow, Playlists, cursorPaginateAll, paginateAll } from "spotify-effect";
+import { makeAccessTokenLayer } from "$lib/server/spotify";
 import { runTracedResult } from "$lib/server/telemetry";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -23,15 +25,20 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ message: "Missing required field: accessToken" }, { status: 400 });
   }
 
-  const spotify = new SpotifyWebApi({}, { accessToken });
-
+  const layer = makeAccessTokenLayer(accessToken);
   const [playlists, followedArtists] = await Promise.all([
     runTracedResult(
-      paginateAll((offset, limit) => spotify.playlists.getMyPlaylists({ offset, limit }), 10),
+      Effect.gen(function* () {
+        const playlists = yield* Playlists;
+        return yield* paginateAll((offset, limit) => playlists.getMyPlaylists({ offset, limit }), 10);
+      }).pipe(Effect.provide(layer)),
       "sveltekit.api.pagination.playlists",
     ),
     runTracedResult(
-      cursorPaginateAll((options) => spotify.follow.getFollowedArtists(options), 10),
+      Effect.gen(function* () {
+        const follow = yield* Follow;
+        return yield* cursorPaginateAll((options) => follow.getFollowedArtists(options), 10);
+      }).pipe(Effect.provide(layer)),
       "sveltekit.api.pagination.followed_artists",
     ),
   ]);

@@ -1,6 +1,6 @@
 import * as Data from "effect/Data";
 import { Console, Effect } from "effect";
-import { SpotifyWebApi } from "spotify-effect";
+import { makeSpotifyLayer, Tracks } from "spotify-effect";
 import { makeNodeTelemetryLayer } from "./nodeTelemetry";
 
 const usage = [
@@ -221,17 +221,20 @@ const resolveInputs = (args: ReadonlyArray<string>): Effect.Effect<Inputs, Examp
 
 const program = resolveInputs(process.argv.slice(2)).pipe(
   Effect.flatMap((inputs) => {
-    const spotify =
+    const spotifyLayer =
       inputs.authMode._tag === "AccessToken"
-        ? new SpotifyWebApi({}, { accessToken: inputs.authMode.accessToken })
-        : new SpotifyWebApi({
+        ? makeSpotifyLayer({}, { accessToken: inputs.authMode.accessToken })
+        : makeSpotifyLayer({
             clientId: inputs.authMode.clientId,
             clientSecret: inputs.authMode.clientSecret,
           });
 
-    return spotify.tracks
-      .getTrack(inputs.trackId)
-      .pipe(Effect.flatMap((track) => Console.log(JSON.stringify(track, null, 2))));
+    return Effect.gen(function* () {
+      const tracks = yield* Tracks;
+      const track = yield* tracks.getTrack(inputs.trackId);
+
+      yield* Console.log(JSON.stringify(track, null, 2));
+    }).pipe(Effect.provide(spotifyLayer));
   }),
   Effect.matchEffect({
     onFailure: (error: unknown) => Console.error(formatError(error)),

@@ -1,6 +1,8 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SpotifyWebApi } from "spotify-effect";
+import * as Effect from "effect/Effect";
+import { Playlists } from "spotify-effect";
+import { makeAccessTokenLayer } from "$lib/server/spotify";
 import { runTraced } from "$lib/server/telemetry";
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -17,13 +19,15 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ message: "Missing required field: accessToken" }, { status: 400 });
   }
 
-  const spotify = new SpotifyWebApi({}, { accessToken: b.accessToken });
   const limit = typeof b.limit === "number" ? b.limit : 50;
   const offset = typeof b.offset === "number" ? b.offset : 0;
 
   try {
     const results = await runTraced(
-      spotify.playlists.getMyPlaylists({ limit, offset }),
+      Effect.gen(function* () {
+        const playlists = yield* Playlists;
+        return yield* playlists.getMyPlaylists({ limit, offset });
+      }).pipe(Effect.provide(makeAccessTokenLayer(b.accessToken))),
       "sveltekit.api.playlists",
     );
     return json(results);

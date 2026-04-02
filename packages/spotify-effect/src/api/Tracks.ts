@@ -1,6 +1,7 @@
 import * as Effect from "effect/Effect";
-import type { HttpClient } from "effect/unstable/http";
-import type { SpotifyRequest, SpotifyRequestOptions } from "../services/SpotifyRequest";
+import * as Layer from "effect/Layer";
+import { Tracks } from "../services/Tracks";
+import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
 import type { AudioAnalysis, AudioFeatures, Track } from "../model/SpotifyObjects";
 import { TrackSchema } from "../model/SpotifyObjectSchemas";
@@ -27,12 +28,12 @@ const withTrackIdsQuery = (
 });
 
 export class TracksApi {
-  constructor(private readonly request: SpotifyRequest) {}
+  constructor(private readonly request: SpotifyRequestService) {}
 
   public getTrack(
     trackId: string,
     options?: MarketOptions,
-  ): Effect.Effect<Track, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Track, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       `/tracks/${trackId}`,
       TrackSchema,
@@ -43,7 +44,7 @@ export class TracksApi {
   public getTracks(
     trackIds: ReadonlyArray<string>,
     options?: MarketOptions,
-  ): Effect.Effect<GetTracksResponse["tracks"], SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<GetTracksResponse["tracks"], SpotifyRequestError> {
     return this.request
       .getJsonWithSchema("/tracks", GetTracksResponseSchema, withTrackIdsQuery(trackIds, options))
       .pipe(Effect.map((response) => response.tracks));
@@ -51,19 +52,19 @@ export class TracksApi {
 
   public getAudioAnalysisForTrack(
     trackId: string,
-  ): Effect.Effect<AudioAnalysis, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<AudioAnalysis, SpotifyRequestError> {
     return this.request.getJsonWithSchema(`/audio-analysis/${trackId}`, AudioAnalysisResponseSchema);
   }
 
   public getAudioFeaturesForTrack(
     trackId: string,
-  ): Effect.Effect<AudioFeatures, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<AudioFeatures, SpotifyRequestError> {
     return this.request.getJsonWithSchema(`/audio-features/${trackId}`, AudioFeaturesResponseSchema);
   }
 
   public getAudioFeaturesForTracks(
     trackIds: ReadonlyArray<string>,
-  ): Effect.Effect<GetAudioFeaturesForTracksResponse["audio_features"], SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<GetAudioFeaturesForTracksResponse["audio_features"], SpotifyRequestError> {
     return this.request
       .getJsonWithSchema("/audio-features", GetAudioFeaturesForTracksResponseSchema, {
         query: { ids: trackIds.join(",") },
@@ -71,3 +72,19 @@ export class TracksApi {
       .pipe(Effect.map((response) => response.audio_features));
   }
 }
+
+export const layer = Layer.effect(
+  Tracks,
+  Effect.gen(function* () {
+    const request = yield* SpotifyRequest;
+    const api = new TracksApi(request);
+
+    return {
+      getTrack: api.getTrack.bind(api),
+      getTracks: api.getTracks.bind(api),
+      getAudioAnalysisForTrack: api.getAudioAnalysisForTrack.bind(api),
+      getAudioFeaturesForTrack: api.getAudioFeaturesForTrack.bind(api),
+      getAudioFeaturesForTracks: api.getAudioFeaturesForTracks.bind(api),
+    };
+  }),
+);

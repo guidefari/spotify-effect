@@ -1,17 +1,34 @@
 export { cursorPaginateAll, cursorPaginateStream, paginateAll, paginateStream } from "./pagination/paginate";
 export { getOtlpTraceExporterUrl, makeSpotifyNodeTelemetryLayer } from "./telemetry/SpotifyNodeTelemetry";
-export { AlbumsApi } from "./api/Albums";
-export { ArtistsApi } from "./api/Artists";
-export { BrowseApi } from "./api/Browse";
-export { FollowApi } from "./api/Follow";
-export { LibraryApi } from "./api/Library";
-export { MarketsApi } from "./api/Markets";
-export { PersonalizationApi } from "./api/Personalization";
-export { PlayerApi } from "./api/Player";
-export { PlaylistsApi } from "./api/Playlists";
-export { SearchApi } from "./api/Search";
-export { TracksApi } from "./api/Tracks";
-export { UsersApi } from "./api/Users";
+export { makeSpotifyLayer } from "./makeSpotifyLayer";
+export { Albums } from "./services/Albums";
+export { Artists } from "./services/Artists";
+export { Browse } from "./services/Browse";
+export { Follow } from "./services/Follow";
+export { Library } from "./services/Library";
+export { Markets } from "./services/Markets";
+export { Personalization } from "./services/Personalization";
+export { Player } from "./services/Player";
+export { Playlists } from "./services/Playlists";
+export { Search } from "./services/Search";
+export { SpotifyAuth } from "./services/SpotifyAuth";
+export { SpotifyConfig, SpotifySessionConfig } from "./services/SpotifyConfig";
+export { SpotifyRequest } from "./services/SpotifyRequest";
+export { SpotifySession } from "./services/SpotifySession";
+export { Tracks } from "./services/Tracks";
+export { Users } from "./services/Users";
+export { layer as albumsLayer } from "./api/Albums";
+export { layer as artistsLayer } from "./api/Artists";
+export { layer as browseLayer } from "./api/Browse";
+export { layer as followLayer } from "./api/Follow";
+export { layer as libraryLayer } from "./api/Library";
+export { layer as marketsLayer } from "./api/Markets";
+export { layer as personalizationLayer } from "./api/Personalization";
+export { layer as playerLayer } from "./api/Player";
+export { layer as playlistsLayer } from "./api/Playlists";
+export { layer as searchLayer } from "./api/Search";
+export { layer as tracksLayer } from "./api/Tracks";
+export { layer as usersLayer } from "./api/Users";
 export {
   SpotifyConfigurationError,
   SpotifyHttpError,
@@ -27,11 +44,14 @@ export {
   makeSpotifyBrowserSession,
   readAuthorizationCallback,
 } from "./browser/SpotifyBrowserSession";
-export { SpotifyWebApi } from "./SpotifyWebApi";
-export { default } from "./SpotifyWebApi";
+export { getAuthorizationUrl } from "./utils/getAuthorizationUrl";
 export type { SpotifyRequestError } from "./errors/SpotifyError";
-export type { SpotifyWebApiCredentials, SpotifyWebApiOptions } from "./SpotifyWebApi";
-export type { SpotifyRetryConfig } from "./services/SpotifyRequest";
+export type {
+  SpotifyApiOptions,
+  SpotifyCredentials,
+  SpotifyLayerOptions,
+  SpotifyRetryConfig,
+} from "./services/SpotifyConfig";
 export type { SpotifyNodeTelemetryOptions } from "./telemetry/SpotifyNodeTelemetry";
 export type {
   AuthorizationScope,

@@ -1,20 +1,21 @@
-import type * as Effect from "effect/Effect";
-import type { HttpClient } from "effect/unstable/http";
+import * as Layer from "effect/Layer";
+import * as Effect from "effect/Effect";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
 import type { SearchType } from "../model/SpotifyObjects";
 import type { SearchOptions } from "../model/SpotifyOptions";
 import type { SearchResponse } from "../model/SpotifyResponses";
 import { SearchResponseSchema } from "../model/SpotifyResponseSchemas";
-import type { SpotifyRequest, SpotifyRequestOptions } from "../services/SpotifyRequest";
+import { Search } from "../services/Search";
+import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
 
 export class SearchApi {
-  constructor(private readonly request: SpotifyRequest) {}
+  constructor(private readonly request: SpotifyRequestService) {}
 
   public search(
     query: string,
     types: ReadonlyArray<SearchType>,
     options?: SearchOptions,
-  ): Effect.Effect<SearchResponse, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<SearchResponse, SpotifyRequestError> {
     const reqOptions: SpotifyRequestOptions = {
       query: {
         q: query,
@@ -30,3 +31,15 @@ export class SearchApi {
     return this.request.getJsonWithSchema("/search", SearchResponseSchema, reqOptions);
   }
 }
+
+export const layer = Layer.effect(
+  Search,
+  Effect.gen(function* () {
+    const request = yield* SpotifyRequest;
+    const api = new SearchApi(request);
+
+    return {
+      search: api.search.bind(api),
+    };
+  }),
+);

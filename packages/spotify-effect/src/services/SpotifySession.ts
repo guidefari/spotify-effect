@@ -1,6 +1,8 @@
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import * as SynchronizedRef from "effect/SynchronizedRef";
+import { ServiceMap } from "effect";
 import type { HttpClient } from "effect/unstable/http";
 import { SpotifyConfigurationError, type SpotifyRequestError } from "../errors/SpotifyError";
 import type {
@@ -8,13 +10,11 @@ import type {
   GetRefreshedAccessTokenResponse,
   GetTemporaryAppTokensResponse,
 } from "../model/SpotifyAuthorization";
-import type { SpotifyAuth } from "./SpotifyAuth";
+import { SpotifySessionConfig, type SpotifyCredentials } from "./SpotifyConfig";
+import { SpotifyAuth } from "./SpotifyAuth";
 
-export interface SpotifySessionOptions {
-  readonly accessToken?: string;
-  readonly accessTokenExpiresAt?: number;
-  readonly refreshToken?: string;
-}
+type SpotifyAuthService = ServiceMap.Service.Shape<typeof SpotifyAuth>;
+export type SpotifySessionService = ServiceMap.Service.Shape<typeof SpotifySession>;
 
 interface SpotifySessionState {
   readonly accessToken: string;
@@ -24,47 +24,24 @@ interface SpotifySessionState {
   readonly temporaryAppTokenExpiresAt?: number;
 }
 
-export interface SpotifySession {
-  readonly getAccessToken: (options: {
-    readonly auth: SpotifyAuth;
-    readonly canUseClientCredentials: boolean;
-  }) => Effect.Effect<string, SpotifyRequestError, HttpClient.HttpClient>;
-  readonly getTemporaryAppTokens: (
-    auth: SpotifyAuth,
-  ) => Effect.Effect<GetTemporaryAppTokensResponse, SpotifyRequestError, HttpClient.HttpClient>;
-  readonly setAccessToken: (accessToken: string) => Effect.Effect<void>;
-  readonly invalidateAccessToken: () => Effect.Effect<void>;
-  readonly setRefreshableUserTokens: (
-    tokens: GetRefreshableUserTokensResponse,
-  ) => Effect.Effect<void>;
-  readonly updateRefreshedAccessToken: (
-    refreshToken: string,
-    tokens: GetRefreshedAccessTokenResponse,
-  ) => Effect.Effect<void>;
-  readonly getStoredAccessToken: () => string;
-  readonly getStoredAccessTokenExpiresAt: () => number | undefined;
-  readonly getStoredRefreshToken: () => string | undefined;
-}
-
-const initialState = (options: SpotifySessionOptions): SpotifySessionState => ({
-  accessToken: options.accessToken ?? "",
-  ...(options.accessTokenExpiresAt === undefined
+const initialState = (credentials: SpotifyCredentials): SpotifySessionState => ({
+  accessToken: credentials.accessToken ?? "",
+  ...(credentials.accessTokenExpiresAt === undefined
     ? null
-    : { accessTokenExpiresAt: options.accessTokenExpiresAt }),
-  ...(options.refreshToken === undefined ? null : { refreshToken: options.refreshToken }),
+    : { accessTokenExpiresAt: credentials.accessTokenExpiresAt }),
+  ...(credentials.refreshToken === undefined ? null : { refreshToken: credentials.refreshToken }),
 });
 
 const hasUnexpiredToken = (now: number, expiresAt: number | undefined, token: string): boolean =>
   token.length > 0 && (expiresAt === undefined || now < expiresAt);
 
-const expiresAtFromNow = (now: number, expiresInSeconds: number): number =>
-  now + expiresInSeconds * 1000;
+const expiresAtFromNow = (now: number, expiresInSeconds: number): number => now + expiresInSeconds * 1000;
 
 const getCurrentTimeMillis = (): Effect.Effect<number> =>
   Clock.clockWith((clock) => Effect.sync(() => clock.currentTimeMillisUnsafe()));
 
-export const makeSpotifySession = (options: SpotifySessionOptions = {}): SpotifySession => {
-  const stateRef = SynchronizedRef.makeUnsafe(initialState(options));
+export const makeSpotifySession = (credentials: SpotifyCredentials = {}) => {
+  const stateRef = SynchronizedRef.makeUnsafe(initialState(credentials));
 
   const setAccessTokenState = (accessToken: string): Effect.Effect<void> =>
     SynchronizedRef.modify(stateRef, (state) => [
@@ -73,9 +50,7 @@ export const makeSpotifySession = (options: SpotifySessionOptions = {}): Spotify
         ...state,
         accessToken,
         ...(state.refreshToken === undefined ? null : { refreshToken: state.refreshToken }),
-        ...(state.temporaryAppTokens === undefined
-          ? null
-          : { temporaryAppTokens: state.temporaryAppTokens }),
+        ...(state.temporaryAppTokens === undefined ? null : { temporaryAppTokens: state.temporaryAppTokens }),
         ...(state.temporaryAppTokenExpiresAt === undefined
           ? null
           : { temporaryAppTokenExpiresAt: state.temporaryAppTokenExpiresAt }),
@@ -87,9 +62,7 @@ export const makeSpotifySession = (options: SpotifySessionOptions = {}): Spotify
       undefined,
       {
         ...(state.refreshToken === undefined ? null : { refreshToken: state.refreshToken }),
-        ...(state.temporaryAppTokens === undefined
-          ? null
-          : { temporaryAppTokens: state.temporaryAppTokens }),
+        ...(state.temporaryAppTokens === undefined ? null : { temporaryAppTokens: state.temporaryAppTokens }),
         ...(state.temporaryAppTokenExpiresAt === undefined
           ? null
           : { temporaryAppTokenExpiresAt: state.temporaryAppTokenExpiresAt }),
@@ -98,7 +71,7 @@ export const makeSpotifySession = (options: SpotifySessionOptions = {}): Spotify
     ]);
 
   return {
-    getAccessToken: ({ auth, canUseClientCredentials }) =>
+    getAccessToken: ({ auth, canUseClientCredentials }: { readonly auth: SpotifyAuthService; readonly canUseClientCredentials: boolean }) =>
       SynchronizedRef.modifyEffect(stateRef, (state) =>
         Effect.gen(function* () {
           const now = yield* getCurrentTimeMillis();
@@ -142,7 +115,7 @@ export const makeSpotifySession = (options: SpotifySessionOptions = {}): Spotify
           });
         }),
       ),
-    getTemporaryAppTokens: (auth) =>
+    getTemporaryAppTokens: (auth: SpotifyAuthService) =>
       SynchronizedRef.modifyEffect(stateRef, (state) =>
         Effect.gen(function* () {
           const now = yield* getCurrentTimeMillis();
@@ -167,7 +140,7 @@ export const makeSpotifySession = (options: SpotifySessionOptions = {}): Spotify
       ),
     setAccessToken: setAccessTokenState,
     invalidateAccessToken,
-    setRefreshableUserTokens: (tokens) =>
+    setRefreshableUserTokens: (tokens: GetRefreshableUserTokensResponse) =>
       Effect.gen(function* () {
         const now = yield* getCurrentTimeMillis();
 
@@ -178,7 +151,7 @@ export const makeSpotifySession = (options: SpotifySessionOptions = {}): Spotify
           refreshToken: tokens.refresh_token,
         });
       }),
-    updateRefreshedAccessToken: (refreshToken, tokens) =>
+    updateRefreshedAccessToken: (refreshToken: string, tokens: GetRefreshedAccessTokenResponse) =>
       Effect.gen(function* () {
         const now = yield* getCurrentTimeMillis();
 
@@ -194,3 +167,33 @@ export const makeSpotifySession = (options: SpotifySessionOptions = {}): Spotify
     getStoredRefreshToken: () => SynchronizedRef.getUnsafe(stateRef).refreshToken,
   };
 };
+
+export class SpotifySession extends ServiceMap.Service<SpotifySession, {
+  readonly getAccessToken: (options: {
+    readonly auth: SpotifyAuthService;
+    readonly canUseClientCredentials: boolean;
+  }) => Effect.Effect<string, SpotifyRequestError>;
+  readonly getTemporaryAppTokens: (
+    auth: SpotifyAuthService,
+  ) => Effect.Effect<GetTemporaryAppTokensResponse, SpotifyRequestError>;
+  readonly setAccessToken: (accessToken: string) => Effect.Effect<void>;
+  readonly invalidateAccessToken: () => Effect.Effect<void>;
+  readonly setRefreshableUserTokens: (
+    tokens: GetRefreshableUserTokensResponse,
+  ) => Effect.Effect<void>;
+  readonly updateRefreshedAccessToken: (
+    refreshToken: string,
+    tokens: GetRefreshedAccessTokenResponse,
+  ) => Effect.Effect<void>;
+  readonly getStoredAccessToken: () => string;
+  readonly getStoredAccessTokenExpiresAt: () => number | undefined;
+  readonly getStoredRefreshToken: () => string | undefined;
+}>()("spotify-effect/SpotifySession", {
+  make: Effect.gen(function* () {
+    const credentials = yield* SpotifySessionConfig;
+
+    return makeSpotifySession(credentials);
+  }),
+}) {
+  static readonly layer = Layer.effect(this)(this.make);
+}

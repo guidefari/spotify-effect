@@ -1,6 +1,8 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SpotifyWebApi } from "spotify-effect";
+import * as Effect from "effect/Effect";
+import { Tracks } from "spotify-effect";
+import { makeAccessTokenLayer } from "$lib/server/spotify";
 import { runTraced } from "$lib/server/telemetry";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -25,12 +27,23 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ message: "Missing required fields: accessToken, trackId" }, { status: 400 });
   }
 
-  const spotify = new SpotifyWebApi({}, { accessToken });
-
   try {
+    const layer = makeAccessTokenLayer(accessToken);
     const [features, analysis] = await Promise.all([
-      runTraced(spotify.tracks.getAudioFeaturesForTrack(trackId), "sveltekit.api.track.audio_features"),
-      runTraced(spotify.tracks.getAudioAnalysisForTrack(trackId), "sveltekit.api.track.audio_analysis"),
+      runTraced(
+        Effect.gen(function* () {
+          const tracks = yield* Tracks;
+          return yield* tracks.getAudioFeaturesForTrack(trackId);
+        }).pipe(Effect.provide(layer)),
+        "sveltekit.api.track.audio_features",
+      ),
+      runTraced(
+        Effect.gen(function* () {
+          const tracks = yield* Tracks;
+          return yield* tracks.getAudioAnalysisForTrack(trackId);
+        }).pipe(Effect.provide(layer)),
+        "sveltekit.api.track.audio_analysis",
+      ),
     ]);
 
     return json({ features, analysis });

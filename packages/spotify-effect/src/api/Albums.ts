@@ -1,5 +1,5 @@
 import * as Effect from "effect/Effect";
-import type { HttpClient } from "effect/unstable/http";
+import * as Layer from "effect/Layer";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
 import type { Album, Paging, SimplifiedTrack } from "../model/SpotifyObjects";
 import { AlbumSchema } from "../model/SpotifyObjectSchemas";
@@ -9,7 +9,8 @@ import {
   GetAlbumTracksResponseSchema,
   GetAlbumsResponseSchema,
 } from "../model/SpotifyResponseSchemas";
-import type { SpotifyRequest, SpotifyRequestOptions } from "../services/SpotifyRequest";
+import { Albums } from "../services/Albums";
+import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
 
 const withMarketQuery = (options?: MarketOptions): SpotifyRequestOptions | undefined =>
   options?.market === undefined ? undefined : { query: { market: options.market } };
@@ -36,12 +37,12 @@ const withAlbumTracksQuery = (
 };
 
 export class AlbumsApi {
-  constructor(private readonly request: SpotifyRequest) {}
+  constructor(private readonly request: SpotifyRequestService) {}
 
   public getAlbum(
     albumId: string,
     options?: MarketOptions,
-  ): Effect.Effect<Album, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Album, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       `/albums/${albumId}`,
       AlbumSchema,
@@ -52,7 +53,7 @@ export class AlbumsApi {
   public getAlbums(
     albumIds: ReadonlyArray<string>,
     options?: MarketOptions,
-  ): Effect.Effect<GetAlbumsResponse["albums"], SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<GetAlbumsResponse["albums"], SpotifyRequestError> {
     return this.request
       .getJsonWithSchema("/albums", GetAlbumsResponseSchema, withAlbumIdsQuery(albumIds, options))
       .pipe(Effect.map((response) => response.albums));
@@ -61,7 +62,7 @@ export class AlbumsApi {
   public getAlbumTracks(
     albumId: string,
     options?: GetAlbumTracksOptions,
-  ): Effect.Effect<Paging<SimplifiedTrack>, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Paging<SimplifiedTrack>, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       `/albums/${albumId}/tracks`,
       GetAlbumTracksResponseSchema,
@@ -69,3 +70,17 @@ export class AlbumsApi {
     );
   }
 }
+
+export const layer = Layer.effect(
+  Albums,
+  Effect.gen(function* () {
+    const request = yield* SpotifyRequest;
+    const api = new AlbumsApi(request);
+
+    return {
+      getAlbum: api.getAlbum.bind(api),
+      getAlbums: api.getAlbums.bind(api),
+      getAlbumTracks: api.getAlbumTracks.bind(api),
+    };
+  }),
+);

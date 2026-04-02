@@ -1,6 +1,8 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SpotifyWebApi } from "spotify-effect";
+import * as Effect from "effect/Effect";
+import { Player } from "spotify-effect";
+import { makeAccessTokenLayer } from "$lib/server/spotify";
 import { runTracedResult } from "$lib/server/telemetry";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -23,27 +25,41 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ message: "Missing required field: accessToken" }, { status: 400 });
   }
 
-  const spotify = new SpotifyWebApi({}, { accessToken });
-
+  const layer = makeAccessTokenLayer(accessToken);
   const [playback, currentlyPlaying, devices, recent, queue] = await Promise.all([
     runTracedResult(
-      spotify.player.getPlaybackInfo(),
+      Effect.gen(function* () {
+        const player = yield* Player;
+        return yield* player.getPlaybackInfo();
+      }).pipe(Effect.provide(layer)),
       "sveltekit.api.player.playback",
     ),
     runTracedResult(
-      spotify.player.getCurrentlyPlayingTrack(),
+      Effect.gen(function* () {
+        const player = yield* Player;
+        return yield* player.getCurrentlyPlayingTrack();
+      }).pipe(Effect.provide(layer)),
       "sveltekit.api.player.currently_playing",
     ),
     runTracedResult(
-      spotify.player.getMyDevices(),
+      Effect.gen(function* () {
+        const player = yield* Player;
+        return yield* player.getMyDevices();
+      }).pipe(Effect.provide(layer)),
       "sveltekit.api.player.devices",
     ),
     runTracedResult(
-      spotify.player.getRecentlyPlayedTracks({ limit: 6 }),
+      Effect.gen(function* () {
+        const player = yield* Player;
+        return yield* player.getRecentlyPlayedTracks({ limit: 6 });
+      }).pipe(Effect.provide(layer)),
       "sveltekit.api.player.recent",
     ),
     runTracedResult(
-      spotify.player.getQueue(),
+      Effect.gen(function* () {
+        const player = yield* Player;
+        return yield* player.getQueue();
+      }).pipe(Effect.provide(layer)),
       "sveltekit.api.player.queue",
     ),
   ]);

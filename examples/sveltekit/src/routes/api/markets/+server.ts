@@ -1,13 +1,19 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SpotifyWebApi } from "spotify-effect";
+import * as Effect from "effect/Effect";
+import { Markets } from "spotify-effect";
+import { makeConfiguredSpotifyLayer } from "$lib/server/spotify";
 import { runTraced } from "$lib/server/telemetry";
 
 export const POST: RequestHandler = async () => {
-  const spotify = new SpotifyWebApi();
-
   try {
-    const markets = await runTraced(spotify.markets.getMarkets(), "sveltekit.api.markets");
+    const markets = await runTraced(
+      Effect.gen(function* () {
+        const markets = yield* Markets;
+        return yield* markets.getMarkets();
+      }).pipe(Effect.provide(makeConfiguredSpotifyLayer())),
+      "sveltekit.api.markets",
+    );
     return json({ markets });
   } catch (err) {
     return json(err, { status: 500 });

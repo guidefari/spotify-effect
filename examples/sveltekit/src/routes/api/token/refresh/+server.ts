@@ -18,11 +18,10 @@ export const POST: RequestHandler = async ({ request }) => {
   if (
     typeof b.clientId !== "string" ||
     typeof b.redirectUri !== "string" ||
-    typeof b.code !== "string" ||
-    typeof b.codeVerifier !== "string"
+    typeof b.refreshToken !== "string"
   ) {
     return json(
-      { message: "Missing required fields: clientId, redirectUri, code, codeVerifier" },
+      { message: "Missing required fields: clientId, redirectUri, refreshToken" },
       { status: 400 },
     );
   }
@@ -31,15 +30,15 @@ export const POST: RequestHandler = async ({ request }) => {
     const tokens = await runTraced(
       Effect.gen(function* () {
         const auth = yield* SpotifyAuth;
-        return yield* auth.getRefreshableUserTokensWithPkce({
-          clientId: b.clientId,
-          code: b.code,
-          codeVerifier: b.codeVerifier,
-        });
+        return yield* auth.getRefreshedAccessToken(b.refreshToken);
       }).pipe(Effect.provide(makeConfiguredSpotifyLayer({ clientId: b.clientId, redirectUri: b.redirectUri }))),
-      "sveltekit.api.pkce.exchange",
+      "sveltekit.api.token.refresh",
     );
-    return json(tokens);
+
+    return json({
+      accessToken: tokens.access_token,
+      expiresIn: tokens.expires_in,
+    });
   } catch (err) {
     return json(err, { status: 500 });
   }

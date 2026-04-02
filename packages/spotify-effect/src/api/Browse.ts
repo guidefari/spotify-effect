@@ -1,5 +1,5 @@
 import * as Effect from "effect/Effect";
-import type { HttpClient } from "effect/unstable/http";
+import * as Layer from "effect/Layer";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
 import type {
   Category,
@@ -29,7 +29,8 @@ import {
   GetFeaturedPlaylistsResponseSchema,
   GetNewReleasesResponseSchema,
 } from "../model/SpotifyResponseSchemas";
-import type { SpotifyRequest, SpotifyRequestOptions } from "../services/SpotifyRequest";
+import { Browse } from "../services/Browse";
+import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
 
 const buildQuery = (
   options: Record<string, string | number | undefined> | undefined,
@@ -43,7 +44,7 @@ const buildQuery = (
 };
 
 export class BrowseApi {
-  constructor(private readonly request: SpotifyRequest) {}
+  constructor(private readonly request: SpotifyRequestService) {}
 
   public getCategories(
     options?: GetCategoriesOptions,
@@ -60,7 +61,7 @@ export class BrowseApi {
   public getCategory(
     categoryId: string,
     options?: GetCategoryOptions,
-  ): Effect.Effect<Category, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Category, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       `/browse/categories/${categoryId}`,
       CategorySchema,
@@ -87,7 +88,7 @@ export class BrowseApi {
 
   public getFeaturedPlaylists(
     options?: GetFeaturedPlaylistsOptions,
-  ): Effect.Effect<GetFeaturedPlaylistsResponse, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<GetFeaturedPlaylistsResponse, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       "/browse/featured-playlists",
       GetFeaturedPlaylistsResponseSchema,
@@ -97,7 +98,7 @@ export class BrowseApi {
 
   public getNewReleases(
     options?: GetNewReleasesOptions,
-  ): Effect.Effect<GetNewReleasesResponse["albums"], SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<GetNewReleasesResponse["albums"], SpotifyRequestError> {
     return this.request
       .getJsonWithSchema("/browse/new-releases", GetNewReleasesResponseSchema, buildQuery(options))
       .pipe(Effect.map((response) => response.albums));
@@ -116,3 +117,20 @@ export class BrowseApi {
       .pipe(Effect.map((response) => response.genres));
   }
 }
+
+export const layer = Layer.effect(
+  Browse,
+  Effect.gen(function* () {
+    const request = yield* SpotifyRequest;
+    const api = new BrowseApi(request);
+
+    return {
+      getCategories: api.getCategories.bind(api),
+      getCategory: api.getCategory.bind(api),
+      getCategoryPlaylists: api.getCategoryPlaylists.bind(api),
+      getFeaturedPlaylists: api.getFeaturedPlaylists.bind(api),
+      getNewReleases: api.getNewReleases.bind(api),
+      getAvailableGenreSeeds: api.getAvailableGenreSeeds.bind(api),
+    };
+  }),
+);

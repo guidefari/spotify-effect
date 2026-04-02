@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
 import type { Artist, Paging, Track } from "../model/SpotifyObjects";
 import type { PersonalizationOptions } from "../model/SpotifyOptions";
@@ -6,8 +7,8 @@ import {
   GetMyTopArtistsResponseSchema,
   GetMyTopTracksResponseSchema,
 } from "../model/SpotifyResponseSchemas";
-import type { SpotifyRequest, SpotifyRequestOptions } from "../services/SpotifyRequest";
-import { HttpClient } from "effect/unstable/http";
+import { Personalization } from "../services/Personalization";
+import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
 
 const buildQuery = (options?: Record<string, unknown>): SpotifyRequestOptions | undefined => {
   if (options === undefined) return undefined;
@@ -21,15 +22,15 @@ const buildQuery = (options?: Record<string, unknown>): SpotifyRequestOptions | 
 };
 
 export class PersonalizationApi {
-  private readonly request: SpotifyRequest;
+  private readonly request: SpotifyRequestService;
 
-  public constructor(request: SpotifyRequest) {
+  public constructor(request: SpotifyRequestService) {
     this.request = request;
   }
 
   public getMyTopArtists(
     options?: PersonalizationOptions,
-  ): Effect.Effect<Paging<Artist>, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Paging<Artist>, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       "/me/top/artists",
       GetMyTopArtistsResponseSchema,
@@ -39,7 +40,7 @@ export class PersonalizationApi {
 
   public getMyTopTracks(
     options?: PersonalizationOptions,
-  ): Effect.Effect<Paging<Track>, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Paging<Track>, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       "/me/top/tracks",
       GetMyTopTracksResponseSchema,
@@ -47,3 +48,16 @@ export class PersonalizationApi {
     );
   }
 }
+
+export const layer = Layer.effect(
+  Personalization,
+  Effect.gen(function* () {
+    const request = yield* SpotifyRequest;
+    const api = new PersonalizationApi(request);
+
+    return {
+      getMyTopArtists: api.getMyTopArtists.bind(api),
+      getMyTopTracks: api.getMyTopTracks.bind(api),
+    };
+  }),
+);

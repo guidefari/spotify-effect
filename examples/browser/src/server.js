@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { SpotifyWebApi } from "spotify-effect";
+import { makeSpotifyAuth, makeSpotifyLayer, SpotifySession, Tracks, Users } from "spotify-effect";
 import { makeNodeTelemetryLayer } from "./nodeTelemetry";
 
 const appEntry = new URL("./app.ts", import.meta.url);
@@ -115,13 +115,15 @@ const server = Bun.serve({
         return json({ message: "Invalid PKCE exchange request body" }, { status: 400 });
       }
 
-      const spotify = new SpotifyWebApi({
-        clientId: body.clientId,
-        redirectUri: body.redirectUri,
-      });
-
       return runEffect(
-        spotify.getTokenWithAuthenticateCodePKCE(body.code, body.codeVerifier, body.clientId),
+        makeSpotifyAuth({
+          clientId: body.clientId,
+          redirectUri: body.redirectUri,
+        }).getRefreshableUserTokensWithPkce({
+          clientId: body.clientId,
+          code: body.code,
+          codeVerifier: body.codeVerifier,
+        }),
       );
     }
 
@@ -139,7 +141,7 @@ const server = Bun.serve({
         return json({ message: "Invalid profile request body" }, { status: 400 });
       }
 
-      const spotify = new SpotifyWebApi(
+      const spotifyLayer = makeSpotifyLayer(
         {
           clientId: body.clientId,
           redirectUri: body.redirectUri,
@@ -152,16 +154,20 @@ const server = Bun.serve({
       );
 
       return runEffect(
-        spotify.users.getCurrentUserProfile().pipe(
-          Effect.map((profile) => ({
+        Effect.gen(function* () {
+          const users = yield* Users;
+          const session = yield* SpotifySession;
+          const profile = yield* users.getCurrentUserProfile();
+
+          return {
             profile,
             credentials: {
-              accessToken: spotify.getAccessToken(),
-              accessTokenExpiresAt: spotify.getAccessTokenExpiresAt(),
-              refreshToken: spotify.getRefreshToken(),
+              accessToken: session.getStoredAccessToken(),
+              accessTokenExpiresAt: session.getStoredAccessTokenExpiresAt(),
+              refreshToken: session.getStoredRefreshToken(),
             },
-          })),
-        ),
+          };
+        }).pipe(Effect.provide(spotifyLayer)),
       );
     }
 
@@ -176,9 +182,13 @@ const server = Bun.serve({
         return json({ message: "Invalid track request body" }, { status: 400 });
       }
 
-      const spotify = new SpotifyWebApi({}, { accessToken: body.accessToken });
+      return runEffect(
+        Effect.gen(function* () {
+          const tracks = yield* Tracks;
 
-      return runEffect(spotify.tracks.getTrack(body.trackId));
+          return yield* tracks.getTrack(body.trackId);
+        }).pipe(Effect.provide(makeSpotifyLayer({}, { accessToken: body.accessToken }))),
+      );
     }
 
     return new Response("Not found", { status: 404 });

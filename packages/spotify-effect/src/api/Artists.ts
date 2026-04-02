@@ -1,5 +1,5 @@
 import * as Effect from "effect/Effect";
-import type { HttpClient } from "effect/unstable/http";
+import * as Layer from "effect/Layer";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
 import type { Artist, Paging, SimplifiedAlbum, Track } from "../model/SpotifyObjects";
 import { ArtistSchema } from "../model/SpotifyObjectSchemas";
@@ -16,7 +16,8 @@ import {
   GetArtistTopTracksResponseSchema,
   GetRelatedArtistsResponseSchema,
 } from "../model/SpotifyResponseSchemas";
-import type { SpotifyRequest, SpotifyRequestOptions } from "../services/SpotifyRequest";
+import { Artists } from "../services/Artists";
+import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
 
 const withArtistAlbumsQuery = (
   options?: GetArtistAlbumsOptions,
@@ -31,17 +32,17 @@ const withArtistAlbumsQuery = (
 };
 
 export class ArtistsApi {
-  constructor(private readonly request: SpotifyRequest) {}
+  constructor(private readonly request: SpotifyRequestService) {}
 
   public getArtist(
     artistId: string,
-  ): Effect.Effect<Artist, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Artist, SpotifyRequestError> {
     return this.request.getJsonWithSchema(`/artists/${artistId}`, ArtistSchema);
   }
 
   public getArtists(
     artistIds: ReadonlyArray<string>,
-  ): Effect.Effect<GetArtistsResponse["artists"], SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<GetArtistsResponse["artists"], SpotifyRequestError> {
     return this.request
       .getJsonWithSchema("/artists", GetArtistsResponseSchema, {
         query: { ids: artistIds.join(",") },
@@ -52,7 +53,7 @@ export class ArtistsApi {
   public getArtistAlbums(
     artistId: string,
     options?: GetArtistAlbumsOptions,
-  ): Effect.Effect<Paging<SimplifiedAlbum>, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Paging<SimplifiedAlbum>, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       `/artists/${artistId}/albums`,
       GetArtistAlbumsResponseSchema,
@@ -87,3 +88,19 @@ export class ArtistsApi {
       .pipe(Effect.map((response) => response.artists));
   }
 }
+
+export const layer = Layer.effect(
+  Artists,
+  Effect.gen(function* () {
+    const request = yield* SpotifyRequest;
+    const api = new ArtistsApi(request);
+
+    return {
+      getArtist: api.getArtist.bind(api),
+      getArtists: api.getArtists.bind(api),
+      getArtistAlbums: api.getArtistAlbums.bind(api),
+      getArtistTopTracks: api.getArtistTopTracks.bind(api),
+      getRelatedArtists: api.getRelatedArtists.bind(api),
+    };
+  }),
+);

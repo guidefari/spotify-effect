@@ -1,8 +1,8 @@
 import * as Effect from "effect/Effect";
 import {
-  SpotifyWebApi,
   createPkceCodeChallenge,
   createPkceCodeVerifier,
+  getAuthorizationUrl,
   makeSpotifyBrowserSession,
   readAuthorizationCallback,
 } from "spotify-effect";
@@ -208,12 +208,7 @@ const generateAuthorizationCodeUrl = (): void => {
     return;
   }
 
-  const spotify = new SpotifyWebApi({
-    clientId: inputs.clientId,
-    redirectUri: inputs.redirectUri,
-  });
-
-  setOutput(authOutput, spotify.getAuthorizationCodeUrl(inputs));
+  setOutput(authOutput, getAuthorizationUrl(inputs.clientId, inputs.redirectUri, "code", inputs));
 };
 
 const pingServer = async (): Promise<void> => {
@@ -248,11 +243,7 @@ const startPkceLogin = async (): Promise<void> => {
 
   const verifier = await Effect.runPromise(createPkceCodeVerifier());
   const challenge = await Effect.runPromise(createPkceCodeChallenge(verifier));
-  const spotify = new SpotifyWebApi({
-    clientId: inputs.clientId,
-    redirectUri: inputs.redirectUri,
-  });
-  const url = spotify.getAuthorizationCodePKCEUrl(inputs.clientId, {
+  const url = getAuthorizationUrl(inputs.clientId, inputs.redirectUri, "code", {
     ...inputs,
     code_challenge: challenge,
     code_challenge_method: "S256",

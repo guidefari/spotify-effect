@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
 import type {
   CurrentlyPlaying,
@@ -24,8 +25,8 @@ import {
   GetQueueResponseSchema,
   GetRecentlyPlayedTracksResponseSchema,
 } from "../model/SpotifyResponseSchemas";
-import type { SpotifyRequest, SpotifyRequestOptions } from "../services/SpotifyRequest";
-import { HttpClient } from "effect/unstable/http";
+import { Player } from "../services/Player";
+import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
 
 const buildQuery = (options?: Record<string, unknown>): SpotifyRequestOptions | undefined => {
   if (options === undefined) return undefined;
@@ -43,15 +44,15 @@ const buildQuery = (options?: Record<string, unknown>): SpotifyRequestOptions | 
 };
 
 export class PlayerApi {
-  private readonly request: SpotifyRequest;
+  private readonly request: SpotifyRequestService;
 
-  public constructor(request: SpotifyRequest) {
+  public constructor(request: SpotifyRequestService) {
     this.request = request;
   }
 
   public getPlaybackInfo(
     options?: GetPlaybackInfoOptions,
-  ): Effect.Effect<CurrentlyPlayingContext, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<CurrentlyPlayingContext, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       "/me/player",
       GetPlaybackInfoResponseSchema,
@@ -59,7 +60,7 @@ export class PlayerApi {
     );
   }
 
-  public getMyDevices(): Effect.Effect<Device[], SpotifyRequestError, HttpClient.HttpClient> {
+  public getMyDevices(): Effect.Effect<Device[], SpotifyRequestError> {
     return this.request
       .getJsonWithSchema("/me/player/devices", GetMyDevicesResponseSchema)
       .pipe(Effect.map((r) => r.devices));
@@ -67,7 +68,7 @@ export class PlayerApi {
 
   public getCurrentlyPlayingTrack(
     options?: GetCurrentlyPlayingTrackOptions,
-  ): Effect.Effect<CurrentlyPlaying, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<CurrentlyPlaying, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       "/me/player/currently-playing",
       GetCurrentlyPlayingTrackResponseSchema,
@@ -77,7 +78,7 @@ export class PlayerApi {
 
   public getRecentlyPlayedTracks(
     options?: GetRecentlyPlayedTracksOptions,
-  ): Effect.Effect<CursorBasedPaging<PlayHistory>, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<CursorBasedPaging<PlayHistory>, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       "/me/player/recently-played",
       GetRecentlyPlayedTracksResponseSchema,
@@ -85,14 +86,14 @@ export class PlayerApi {
     );
   }
 
-  public getQueue(): Effect.Effect<QueueObject, SpotifyRequestError, HttpClient.HttpClient> {
+  public getQueue(): Effect.Effect<QueueObject, SpotifyRequestError> {
     return this.request.getJsonWithSchema("/me/player/queue", GetQueueResponseSchema);
   }
 
   public transferPlayback(
     deviceId: string,
     options?: TransferPlaybackOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson("/me/player", {
       body: {
         device_ids: [deviceId],
@@ -103,7 +104,7 @@ export class PlayerApi {
 
   public play(
     options?: PlayOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<void, SpotifyRequestError> {
     if (options === undefined) {
       return this.request.putJson("/me/player/play");
     }
@@ -120,14 +121,14 @@ export class PlayerApi {
 
   public pause(
     options?: DeviceIdOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson("/me/player/pause", buildQuery(options));
   }
 
   public seek(
     positionMs: number,
     options?: DeviceIdOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson("/me/player/seek", {
       query: { position_ms: positionMs, ...options },
     });
@@ -136,7 +137,7 @@ export class PlayerApi {
   public setRepeat(
     state: RepeatState,
     options?: DeviceIdOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson("/me/player/repeat", {
       query: { state, ...options },
     });
@@ -145,7 +146,7 @@ export class PlayerApi {
   public setVolume(
     volumePercent: number,
     options?: DeviceIdOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson("/me/player/volume", {
       query: { volume_percent: volumePercent, ...options },
     });
@@ -154,7 +155,7 @@ export class PlayerApi {
   public setShuffle(
     state: boolean,
     options?: DeviceIdOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson("/me/player/shuffle", {
       query: { state, ...options },
     });
@@ -162,22 +163,48 @@ export class PlayerApi {
 
   public skipToNext(
     options?: DeviceIdOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<void, SpotifyRequestError> {
     return this.request.postJson("/me/player/next", buildQuery(options));
   }
 
   public skipToPrevious(
     options?: DeviceIdOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<void, SpotifyRequestError> {
     return this.request.postJson("/me/player/previous", buildQuery(options));
   }
 
   public addToQueue(
     uri: string,
     options?: DeviceIdOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<void, SpotifyRequestError> {
     return this.request.postJson("/me/player/queue", {
       query: { uri, ...options },
     });
   }
 }
+
+export const layer = Layer.effect(
+  Player,
+  Effect.gen(function* () {
+    const request = yield* SpotifyRequest;
+    const api = new PlayerApi(request);
+
+    return {
+      getPlaybackInfo: api.getPlaybackInfo.bind(api),
+      getMyDevices: api.getMyDevices.bind(api),
+      getCurrentlyPlayingTrack: api.getCurrentlyPlayingTrack.bind(api),
+      getRecentlyPlayedTracks: api.getRecentlyPlayedTracks.bind(api),
+      getQueue: api.getQueue.bind(api),
+      transferPlayback: api.transferPlayback.bind(api),
+      play: api.play.bind(api),
+      pause: api.pause.bind(api),
+      seek: api.seek.bind(api),
+      setRepeat: api.setRepeat.bind(api),
+      setVolume: api.setVolume.bind(api),
+      setShuffle: api.setShuffle.bind(api),
+      skipToNext: api.skipToNext.bind(api),
+      skipToPrevious: api.skipToPrevious.bind(api),
+      addToQueue: api.addToQueue.bind(api),
+    };
+  }),
+);

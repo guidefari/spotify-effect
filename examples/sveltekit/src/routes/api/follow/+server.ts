@@ -1,6 +1,8 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SpotifyWebApi } from "spotify-effect";
+import * as Effect from "effect/Effect";
+import { Follow, Users } from "spotify-effect";
+import { makeAccessTokenLayer } from "$lib/server/spotify";
 import { runTraced } from "$lib/server/telemetry";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -30,13 +32,16 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ message: "Missing required fields: accessToken, action" }, { status: 400 });
   }
 
-  const spotify = new SpotifyWebApi({}, { accessToken });
+  const layer = makeAccessTokenLayer(accessToken);
 
   try {
     if (action === "load_followed_artists") {
       const after = typeof body.after === "string" ? body.after : undefined;
       const artists = await runTraced(
-        spotify.follow.getFollowedArtists({ limit: 10, after }),
+        Effect.gen(function* () {
+          const follow = yield* Follow;
+          return yield* follow.getFollowedArtists({ limit: 10, after });
+        }).pipe(Effect.provide(layer)),
         "sveltekit.api.follow.load_followed_artists",
       );
       return json(artists);
@@ -52,7 +57,10 @@ export const POST: RequestHandler = async ({ request }) => {
 
       if (targetType === "artist") {
         const result = await runTraced(
-          spotify.follow.isFollowingArtists(ids),
+          Effect.gen(function* () {
+            const follow = yield* Follow;
+            return yield* follow.isFollowingArtists(ids);
+          }).pipe(Effect.provide(layer)),
           "sveltekit.api.follow.check_artists",
         );
         return json({ following: result });
@@ -60,18 +68,27 @@ export const POST: RequestHandler = async ({ request }) => {
 
       if (targetType === "user") {
         const result = await runTraced(
-          spotify.follow.isFollowingUsers(ids),
+          Effect.gen(function* () {
+            const follow = yield* Follow;
+            return yield* follow.isFollowingUsers(ids);
+          }).pipe(Effect.provide(layer)),
           "sveltekit.api.follow.check_users",
         );
         return json({ following: result });
       }
 
       const currentUser = await runTraced(
-        spotify.users.getCurrentUserProfile(),
+        Effect.gen(function* () {
+          const users = yield* Users;
+          return yield* users.getCurrentUserProfile();
+        }).pipe(Effect.provide(layer)),
         "sveltekit.api.follow.current_user",
       );
       const result = await runTraced(
-        spotify.follow.areFollowingPlaylist(ids[0], [currentUser.id]),
+        Effect.gen(function* () {
+          const follow = yield* Follow;
+          return yield* follow.areFollowingPlaylist(ids[0], [currentUser.id]);
+        }).pipe(Effect.provide(layer)),
         "sveltekit.api.follow.check_playlist",
       );
       return json({ following: result });
@@ -92,7 +109,10 @@ export const POST: RequestHandler = async ({ request }) => {
 
       if (targetType === "artist") {
         await runTraced(
-          mode === "follow" ? spotify.follow.followArtists(ids) : spotify.follow.unfollowArtists(ids),
+          Effect.gen(function* () {
+            const follow = yield* Follow;
+            return yield* (mode === "follow" ? follow.followArtists(ids) : follow.unfollowArtists(ids));
+          }).pipe(Effect.provide(layer)),
           `sveltekit.api.follow.${mode}_artists`,
         );
         return json({ ok: true });
@@ -100,16 +120,22 @@ export const POST: RequestHandler = async ({ request }) => {
 
       if (targetType === "user") {
         await runTraced(
-          mode === "follow" ? spotify.follow.followUsers(ids) : spotify.follow.unfollowUsers(ids),
+          Effect.gen(function* () {
+            const follow = yield* Follow;
+            return yield* (mode === "follow" ? follow.followUsers(ids) : follow.unfollowUsers(ids));
+          }).pipe(Effect.provide(layer)),
           `sveltekit.api.follow.${mode}_users`,
         );
         return json({ ok: true });
       }
 
       await runTraced(
-        mode === "follow"
-          ? spotify.follow.followPlaylist(ids[0], { public: body.public === true })
-          : spotify.follow.unfollowPlaylist(ids[0]),
+        Effect.gen(function* () {
+          const follow = yield* Follow;
+          return yield* (mode === "follow"
+            ? follow.followPlaylist(ids[0], { public: body.public === true })
+            : follow.unfollowPlaylist(ids[0]));
+        }).pipe(Effect.provide(layer)),
         `sveltekit.api.follow.${mode}_playlist`,
       );
       return json({ ok: true });

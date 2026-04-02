@@ -1,6 +1,8 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SpotifyWebApi } from "spotify-effect";
+import * as Effect from "effect/Effect";
+import { SpotifySession, Users } from "spotify-effect";
+import { makeConfiguredSpotifyLayer } from "$lib/server/spotify";
 import { runTraced } from "$lib/server/telemetry";
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -29,7 +31,7 @@ export const POST: RequestHandler = async ({ request }) => {
     );
   }
 
-  const spotify = new SpotifyWebApi(
+  const layer = makeConfiguredSpotifyLayer(
     { clientId: b.clientId, redirectUri: b.redirectUri },
     {
       accessToken: b.accessToken,
@@ -39,15 +41,24 @@ export const POST: RequestHandler = async ({ request }) => {
   );
 
   try {
-    const profile = await runTraced(spotify.users.getCurrentUserProfile(), "sveltekit.api.profile");
-    return json({
-      profile,
-      credentials: {
-        accessToken: spotify.getAccessToken(),
-        accessTokenExpiresAt: spotify.getAccessTokenExpiresAt(),
-        refreshToken: spotify.getRefreshToken(),
-      },
-    });
+    const result = await runTraced(
+      Effect.gen(function* () {
+        const users = yield* Users;
+        const session = yield* SpotifySession;
+        const profile = yield* users.getCurrentUserProfile();
+
+        return {
+          profile,
+          credentials: {
+            accessToken: session.getStoredAccessToken(),
+            accessTokenExpiresAt: session.getStoredAccessTokenExpiresAt(),
+            refreshToken: session.getStoredRefreshToken(),
+          },
+        };
+      }).pipe(Effect.provide(layer)),
+      "sveltekit.api.profile",
+    );
+    return json(result);
   } catch (err) {
     return json(err, { status: 500 });
   }

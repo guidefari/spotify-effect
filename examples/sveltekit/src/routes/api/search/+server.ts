@@ -1,8 +1,10 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SpotifyWebApi } from "spotify-effect";
-import { runTraced } from "$lib/server/telemetry";
+import * as Effect from "effect/Effect";
+import { Search } from "spotify-effect";
 import type { SearchType } from "spotify-effect";
+import { makeAccessTokenLayer } from "$lib/server/spotify";
+import { runTraced } from "$lib/server/telemetry";
 
 export const POST: RequestHandler = async ({ request }) => {
   let body: unknown;
@@ -18,11 +20,12 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ message: "Missing required fields: accessToken, query, types" }, { status: 400 });
   }
 
-  const spotify = new SpotifyWebApi({}, { accessToken: b.accessToken });
-
   try {
     const results = await runTraced(
-      spotify.search.search(b.query, b.types as ReadonlyArray<SearchType>),
+      Effect.gen(function* () {
+        const search = yield* Search;
+        return yield* search.search(b.query, b.types as ReadonlyArray<SearchType>);
+      }).pipe(Effect.provide(makeAccessTokenLayer(b.accessToken))),
       "sveltekit.api.search",
     );
     return json(results);

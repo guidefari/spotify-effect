@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
 import type {
   Paging,
@@ -23,8 +24,8 @@ import {
   PlaylistSchema,
   SnapshotIdResponseSchema,
 } from "../model/SpotifyResponseSchemas";
-import type { SpotifyRequest, SpotifyRequestOptions } from "../services/SpotifyRequest";
-import { HttpClient } from "effect/unstable/http";
+import { Playlists } from "../services/Playlists";
+import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
 
 const buildQuery = (options?: Record<string, unknown>): SpotifyRequestOptions | undefined => {
   if (options === undefined) return undefined;
@@ -42,16 +43,16 @@ const buildQuery = (options?: Record<string, unknown>): SpotifyRequestOptions | 
 };
 
 export class PlaylistsApi {
-  private readonly request: SpotifyRequest;
+  private readonly request: SpotifyRequestService;
 
-  public constructor(request: SpotifyRequest) {
+  public constructor(request: SpotifyRequestService) {
     this.request = request;
   }
 
   public getPlaylist(
     playlistId: string,
     options?: GetPlaylistOptions,
-  ): Effect.Effect<Playlist, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Playlist, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       `/playlists/${playlistId}`,
       PlaylistSchema,
@@ -62,7 +63,7 @@ export class PlaylistsApi {
   public getPlaylistItems(
     playlistId: string,
     options?: GetPlaylistItemsOptions,
-  ): Effect.Effect<Paging<PlaylistItem>, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Paging<PlaylistItem>, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       `/playlists/${playlistId}/tracks`,
       GetPlaylistItemsResponseSchema,
@@ -72,7 +73,7 @@ export class PlaylistsApi {
 
   public getMyPlaylists(
     options?: GetMyPlaylistsOptions,
-  ): Effect.Effect<Paging<SimplifiedPlaylist>, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Paging<SimplifiedPlaylist>, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       "/me/playlists",
       GetMyPlaylistsResponseSchema,
@@ -83,7 +84,7 @@ export class PlaylistsApi {
   public getUserPlaylists(
     userId: string,
     options?: GetUserPlaylistsOptions,
-  ): Effect.Effect<Paging<SimplifiedPlaylist>, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Paging<SimplifiedPlaylist>, SpotifyRequestError> {
     return this.request.getJsonWithSchema(
       `/users/${userId}/playlists`,
       GetUserPlaylistsResponseSchema,
@@ -95,7 +96,7 @@ export class PlaylistsApi {
     userId: string,
     name: string,
     options?: CreatePlaylistOptions,
-  ): Effect.Effect<Playlist, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<Playlist, SpotifyRequestError> {
     return this.request.postJsonWithSchema(
       `/users/${userId}/playlists`,
       PlaylistSchema,
@@ -112,7 +113,7 @@ export class PlaylistsApi {
     playlistId: string,
     uris: ReadonlyArray<string>,
     options?: AddItemsToPlaylistOptions,
-  ): Effect.Effect<SnapshotIdResponse, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<SnapshotIdResponse, SpotifyRequestError> {
     return this.request.postJsonWithSchema(
       `/playlists/${playlistId}/tracks`,
       SnapshotIdResponseSchema,
@@ -129,7 +130,7 @@ export class PlaylistsApi {
     playlistId: string,
     uris: ReadonlyArray<string>,
     snapshotId?: string,
-  ): Effect.Effect<SnapshotIdResponse, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<SnapshotIdResponse, SpotifyRequestError> {
     return this.request.deleteJson(
       `/playlists/${playlistId}/tracks`,
       SnapshotIdResponseSchema,
@@ -145,7 +146,26 @@ export class PlaylistsApi {
   public changePlaylistDetails(
     playlistId: string,
     details: PlaylistDetails,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient> {
+  ): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson(`/playlists/${playlistId}`, { body: details });
   }
 }
+
+export const layer = Layer.effect(
+  Playlists,
+  Effect.gen(function* () {
+    const request = yield* SpotifyRequest;
+    const api = new PlaylistsApi(request);
+
+    return {
+      getPlaylist: api.getPlaylist.bind(api),
+      getPlaylistItems: api.getPlaylistItems.bind(api),
+      getMyPlaylists: api.getMyPlaylists.bind(api),
+      getUserPlaylists: api.getUserPlaylists.bind(api),
+      createPlaylist: api.createPlaylist.bind(api),
+      addItemsToPlaylist: api.addItemsToPlaylist.bind(api),
+      removePlaylistItems: api.removePlaylistItems.bind(api),
+      changePlaylistDetails: api.changePlaylistDetails.bind(api),
+    };
+  }),
+);

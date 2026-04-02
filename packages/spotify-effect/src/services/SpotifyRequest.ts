@@ -1,6 +1,8 @@
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
+import { ServiceMap } from "effect";
 import { HttpClient, HttpClientRequest, type HttpClientResponse } from "effect/unstable/http";
 import {
   SpotifyHttpError,
@@ -12,68 +14,32 @@ import {
   type SpotifyRequestError,
 } from "../errors/SpotifyError";
 import { decodeSpotifyApiErrorBody } from "../model/SpotifyErrorSchemas";
+import { SpotifyAuth } from "./SpotifyAuth";
+import { SpotifyConfig, type SpotifyRetryConfig } from "./SpotifyConfig";
+import { SpotifySession } from "./SpotifySession";
 
 const spotifyApiBaseUrl = "https://api.spotify.com/v1";
 
 type QueryValue = string | number | boolean | ReadonlyArray<string | number | boolean> | undefined;
 type SyncDecodableSchema = Schema.Top & { readonly DecodingServices: never };
 type DecodableSchema<A> = Schema.Top & { readonly Type: A };
+type SpotifyAuthService = ServiceMap.Service.Shape<typeof SpotifyAuth>;
+type SpotifySessionService = ServiceMap.Service.Shape<typeof SpotifySession>;
+
+export type { SpotifyRetryConfig };
 
 export interface SpotifyRequestOptions {
   readonly query?: Readonly<Record<string, QueryValue>>;
   readonly body?: unknown;
 }
 
-export interface SpotifyRetryConfig {
-  readonly maxRetries?: number;
-  readonly baseDelayMs?: number;
-  readonly maxDelayMs?: number;
-}
+export type SpotifyRequestService = ServiceMap.Service.Shape<typeof SpotifyRequest>;
 
-const defaultRetryConfig: Required<SpotifyRetryConfig> = {
+const defaultRetryConfig = {
   maxRetries: 3,
   baseDelayMs: 1000,
   maxDelayMs: 30000,
 };
-
-export interface SpotifyRequest {
-  getJson<A>(
-    path: string,
-    options?: SpotifyRequestOptions,
-  ): Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>;
-  getJsonWithSchema<A>(
-    path: string,
-    schema: DecodableSchema<A>,
-    options?: SpotifyRequestOptions,
-  ): Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>;
-  postJsonWithSchema<A>(
-    path: string,
-    schema: DecodableSchema<A>,
-    options?: SpotifyRequestOptions,
-  ): Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>;
-  postJson(
-    path: string,
-    options?: SpotifyRequestOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient>;
-  putJson(
-    path: string,
-    options?: SpotifyRequestOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient>;
-  deleteJson<A>(
-    path: string,
-    schema: DecodableSchema<A>,
-    options?: SpotifyRequestOptions,
-  ): Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>;
-  deleteVoid(
-    path: string,
-    options?: SpotifyRequestOptions,
-  ): Effect.Effect<void, SpotifyRequestError, HttpClient.HttpClient>;
-}
-
-export interface AccessTokenResolver {
-  getAccessToken(): Effect.Effect<string, SpotifyRequestError, HttpClient.HttpClient>;
-  invalidateAccessToken(): Effect.Effect<void>;
-}
 
 const buildUrl = (path: string): string =>
   new URL(path.startsWith("/") ? path.slice(1) : path, `${spotifyApiBaseUrl}/`).toString();
@@ -144,6 +110,16 @@ const decodeFailureResponse = (
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
+export interface AccessTokenResolver {
+  getAccessToken(): Effect.Effect<string, SpotifyRequestError, HttpClient.HttpClient>;
+  invalidateAccessToken(): Effect.Effect<void>;
+}
+
+const setUrlParams = (
+  request: HttpClientRequest.HttpClientRequest,
+  query: Readonly<Record<string, QueryValue>>,
+) => HttpClientRequest.setUrlParams(request, query as Record<string, string>);
+
 const sendRequest = (
   accessToken: string,
   path: string,
@@ -162,8 +138,10 @@ const sendRequest = (
     }).pipe(Effect.mapError(mapHttpClientError));
   }
 
-  const makeReq = method === "POST" ? HttpClientRequest.post
-    : method === "PUT" ? HttpClientRequest.put
+  const makeReq = method === "POST"
+    ? HttpClientRequest.post
+    : method === "PUT"
+    ? HttpClientRequest.put
     : HttpClientRequest.delete;
 
   let request = makeReq(buildUrl(path)).pipe(
@@ -172,7 +150,7 @@ const sendRequest = (
   );
 
   if (options?.query) {
-    request = HttpClientRequest.setUrlParams(request, options.query as Record<string, string>);
+    request = setUrlParams(request, options.query);
   }
 
   if (options?.body !== undefined) {
@@ -230,7 +208,7 @@ const executeRequest = <A>(
 
 const withRetry = <A, R>(
   effect: Effect.Effect<A, SpotifyRequestError, R>,
-  retryConfig: Required<SpotifyRetryConfig>,
+  retryConfig: typeof defaultRetryConfig,
   attemptRef: Ref.Ref<number>,
 ): Effect.Effect<A, SpotifyRequestError, R> =>
   Effect.gen(function* () {
@@ -283,7 +261,7 @@ const makeRequestWithAuthRetry = <A>(
   accessTokenResolver: AccessTokenResolver,
   path: string,
   decode: DecodeFn<A>,
-  retryConfig: Required<SpotifyRetryConfig>,
+  retryConfig: typeof defaultRetryConfig,
   method: HttpMethod = "GET",
   options?: SpotifyRequestOptions,
 ): Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient> =>
@@ -305,10 +283,7 @@ const makeRequestWithAuthRetry = <A>(
     if (result._tag === "Error") {
       if (result.error._tag === "SpotifyHttpError" && result.error.status === 401) {
         yield* Effect.annotateCurrentSpan({ "spotify.auth.retry_on_unauthorized": true });
-        yield* Effect.withSpan(
-          accessTokenResolver.invalidateAccessToken(),
-          "spotify.auth.invalidate",
-        );
+        yield* Effect.withSpan(accessTokenResolver.invalidateAccessToken(), "spotify.auth.invalidate");
 
         const freshToken = yield* accessTokenResolver.getAccessToken();
         return yield* tryWithToken(freshToken);
@@ -319,66 +294,202 @@ const makeRequestWithAuthRetry = <A>(
     return result.value;
   });
 
+export class SpotifyRequest extends ServiceMap.Service<SpotifyRequest, {
+  readonly getJson: <A>(
+    path: string,
+    options?: SpotifyRequestOptions,
+  ) => Effect.Effect<A, SpotifyRequestError>;
+  readonly getJsonWithSchema: <A>(
+    path: string,
+    schema: DecodableSchema<A>,
+    options?: SpotifyRequestOptions,
+  ) => Effect.Effect<A, SpotifyRequestError>;
+  readonly postJsonWithSchema: <A>(
+    path: string,
+    schema: DecodableSchema<A>,
+    options?: SpotifyRequestOptions,
+  ) => Effect.Effect<A, SpotifyRequestError>;
+  readonly postJson: (
+    path: string,
+    options?: SpotifyRequestOptions,
+  ) => Effect.Effect<void, SpotifyRequestError>;
+  readonly putJson: (
+    path: string,
+    options?: SpotifyRequestOptions,
+  ) => Effect.Effect<void, SpotifyRequestError>;
+  readonly deleteJson: <A>(
+    path: string,
+    schema: DecodableSchema<A>,
+    options?: SpotifyRequestOptions,
+  ) => Effect.Effect<A, SpotifyRequestError>;
+  readonly deleteVoid: (
+    path: string,
+    options?: SpotifyRequestOptions,
+  ) => Effect.Effect<void, SpotifyRequestError>;
+}>()("spotify-effect/SpotifyRequest", {
+  make: Effect.gen(function* () {
+    const auth = yield* SpotifyAuth;
+    const client = yield* HttpClient.HttpClient;
+    const config = yield* SpotifyConfig;
+    const session = yield* SpotifySession;
+    const canUseClientCredentials = config.clientId.length > 0 && config.clientSecret.length > 0;
+    const provideClient = <A>(effect: Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>) =>
+      Effect.provideService(effect, HttpClient.HttpClient, client);
+    const request = makeSpotifyRequest(
+      {
+        getAccessToken: () =>
+          session.getAccessToken({
+            auth,
+            canUseClientCredentials,
+          }),
+        invalidateAccessToken: () => session.invalidateAccessToken(),
+      },
+      config.retry,
+    );
+
+    return {
+      getJson: (path, options) => provideClient(request.getJson(path, options)),
+      getJsonWithSchema: (path, schema, options) =>
+        provideClient(request.getJsonWithSchema(path, schema, options)),
+      postJsonWithSchema: (path, schema, options) =>
+        provideClient(request.postJsonWithSchema(path, schema, options)),
+      postJson: (path, options) => provideClient(request.postJson(path, options)),
+      putJson: (path, options) => provideClient(request.putJson(path, options)),
+      deleteJson: (path, schema, options) =>
+        provideClient(request.deleteJson(path, schema, options)),
+      deleteVoid: (path, options) => provideClient(request.deleteVoid(path, options)),
+    };
+  }),
+}) {
+  static readonly layer = Layer.effect(this)(this.make);
+}
+
 export const makeSpotifyRequest = (
   accessTokenResolver: AccessTokenResolver,
-  retryConfig?: SpotifyRetryConfig,
-): SpotifyRequest => {
-  const config: Required<SpotifyRetryConfig> = {
+  retry?: SpotifyRetryConfig,
+) => {
+  const retryConfig = {
     ...defaultRetryConfig,
-    ...retryConfig,
+    ...retry,
   };
 
-  const withSpanAttrs = (path: string, method: HttpMethod, options?: SpotifyRequestOptions, usesSchema = false) => ({
-    attributes: {
-      "spotify.request.path": path,
-      "spotify.request.method": method,
-      "spotify.request.has_query": options?.query !== undefined,
-      ...(usesSchema ? { "spotify.request.uses_schema": true } : null),
-    },
-  });
+    const withSpanAttrs = (
+      path: string,
+      method: HttpMethod,
+      options?: SpotifyRequestOptions,
+      usesSchema = false,
+    ) => ({
+      attributes: {
+        "spotify.request.path": path,
+        "spotify.request.method": method,
+        "spotify.request.has_query": options?.query !== undefined,
+        ...(usesSchema ? { "spotify.request.uses_schema": true } : null),
+      },
+    });
 
-  return {
-    getJson: <A>(path: string, options?: SpotifyRequestOptions) =>
-      Effect.withSpan(
-        makeRequestWithAuthRetry(accessTokenResolver, path, decodeSuccessResponse<A>, config, "GET", options),
-        `spotify.request GET ${path}`,
-        withSpanAttrs(path, "GET", options),
-      ),
-    getJsonWithSchema: <A>(path: string, schema: DecodableSchema<A>, options?: SpotifyRequestOptions) =>
-      Effect.withSpan(
-        makeRequestWithAuthRetry(accessTokenResolver, path, (r) => decodeSuccessResponseWithSchema(r, schema), config, "GET", options),
-        `spotify.request GET ${path}`,
-        withSpanAttrs(path, "GET", options, true),
-      ),
-    postJsonWithSchema: <A>(path: string, schema: DecodableSchema<A>, options?: SpotifyRequestOptions) =>
-      Effect.withSpan(
-        makeRequestWithAuthRetry(accessTokenResolver, path, (r) => decodeSuccessResponseWithSchema(r, schema), config, "POST", options),
-        `spotify.request POST ${path}`,
-        withSpanAttrs(path, "POST", options, true),
-      ),
-    postJson: (path: string, options?: SpotifyRequestOptions) =>
-      Effect.withSpan(
-        makeRequestWithAuthRetry(accessTokenResolver, path, decodeVoidResponse, config, "POST", options),
-        `spotify.request POST ${path}`,
-        withSpanAttrs(path, "POST", options),
-      ),
-    putJson: (path: string, options?: SpotifyRequestOptions) =>
-      Effect.withSpan(
-        makeRequestWithAuthRetry(accessTokenResolver, path, decodeVoidResponse, config, "PUT", options),
-        `spotify.request PUT ${path}`,
-        withSpanAttrs(path, "PUT", options),
-      ),
-    deleteJson: <A>(path: string, schema: DecodableSchema<A>, options?: SpotifyRequestOptions) =>
-      Effect.withSpan(
-        makeRequestWithAuthRetry(accessTokenResolver, path, (r) => decodeSuccessResponseWithSchema(r, schema), config, "DELETE", options),
-        `spotify.request DELETE ${path}`,
-        withSpanAttrs(path, "DELETE", options, true),
-      ),
-    deleteVoid: (path: string, options?: SpotifyRequestOptions) =>
-      Effect.withSpan(
-        makeRequestWithAuthRetry(accessTokenResolver, path, decodeVoidResponse, config, "DELETE", options),
-        `spotify.request DELETE ${path}`,
-        withSpanAttrs(path, "DELETE", options),
-      ),
-  };
+    return {
+      getJson: <A>(path: string, options?: SpotifyRequestOptions) =>
+        Effect.withSpan(
+          makeRequestWithAuthRetry(
+            accessTokenResolver,
+            path,
+            decodeSuccessResponse<A>,
+            retryConfig,
+            "GET",
+            options,
+          ),
+          `spotify.request GET ${path}`,
+          withSpanAttrs(path, "GET", options),
+        ),
+      getJsonWithSchema: <A>(
+        path: string,
+        schema: DecodableSchema<A>,
+        options?: SpotifyRequestOptions,
+      ) =>
+        Effect.withSpan(
+          makeRequestWithAuthRetry(
+            accessTokenResolver,
+            path,
+            (response) => decodeSuccessResponseWithSchema(response, schema),
+            retryConfig,
+            "GET",
+            options,
+          ),
+          `spotify.request GET ${path}`,
+          withSpanAttrs(path, "GET", options, true),
+        ),
+      postJsonWithSchema: <A>(
+        path: string,
+        schema: DecodableSchema<A>,
+        options?: SpotifyRequestOptions,
+      ) =>
+        Effect.withSpan(
+          makeRequestWithAuthRetry(
+            accessTokenResolver,
+            path,
+            (response) => decodeSuccessResponseWithSchema(response, schema),
+            retryConfig,
+            "POST",
+            options,
+          ),
+          `spotify.request POST ${path}`,
+          withSpanAttrs(path, "POST", options, true),
+        ),
+      postJson: (path: string, options?: SpotifyRequestOptions) =>
+        Effect.withSpan(
+          makeRequestWithAuthRetry(
+            accessTokenResolver,
+            path,
+            decodeVoidResponse,
+            retryConfig,
+            "POST",
+            options,
+          ),
+          `spotify.request POST ${path}`,
+          withSpanAttrs(path, "POST", options),
+        ),
+      putJson: (path: string, options?: SpotifyRequestOptions) =>
+        Effect.withSpan(
+          makeRequestWithAuthRetry(
+            accessTokenResolver,
+            path,
+            decodeVoidResponse,
+            retryConfig,
+            "PUT",
+            options,
+          ),
+          `spotify.request PUT ${path}`,
+          withSpanAttrs(path, "PUT", options),
+        ),
+      deleteJson: <A>(
+        path: string,
+        schema: DecodableSchema<A>,
+        options?: SpotifyRequestOptions,
+      ) =>
+        Effect.withSpan(
+          makeRequestWithAuthRetry(
+            accessTokenResolver,
+            path,
+            (response) => decodeSuccessResponseWithSchema(response, schema),
+            retryConfig,
+            "DELETE",
+            options,
+          ),
+          `spotify.request DELETE ${path}`,
+          withSpanAttrs(path, "DELETE", options, true),
+        ),
+      deleteVoid: (path: string, options?: SpotifyRequestOptions) =>
+        Effect.withSpan(
+          makeRequestWithAuthRetry(
+            accessTokenResolver,
+            path,
+            decodeVoidResponse,
+            retryConfig,
+            "DELETE",
+            options,
+          ),
+          `spotify.request DELETE ${path}`,
+          withSpanAttrs(path, "DELETE", options),
+        ),
+    };
 };

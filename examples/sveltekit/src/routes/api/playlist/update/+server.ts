@@ -1,6 +1,8 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SpotifyWebApi } from "spotify-effect";
+import * as Effect from "effect/Effect";
+import { Playlists } from "spotify-effect";
+import { makeAccessTokenLayer } from "$lib/server/spotify";
 import { runTraced } from "$lib/server/telemetry";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -38,16 +40,17 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ message: "Provide at least one playlist field to update" }, { status: 400 });
   }
 
-  const spotify = new SpotifyWebApi({}, { accessToken });
-
   try {
     await runTraced(
-      spotify.playlists.changePlaylistDetails(playlistId, {
-        name,
-        description,
-        public: isPublic,
-        collaborative,
-      }),
+      Effect.gen(function* () {
+        const playlists = yield* Playlists;
+        return yield* playlists.changePlaylistDetails(playlistId, {
+          name,
+          description,
+          public: isPublic,
+          collaborative,
+        });
+      }).pipe(Effect.provide(makeAccessTokenLayer(accessToken))),
       "sveltekit.api.playlist.update",
     );
     return json({ ok: true });

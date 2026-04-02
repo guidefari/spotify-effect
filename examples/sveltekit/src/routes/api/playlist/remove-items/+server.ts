@@ -1,6 +1,8 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { SpotifyWebApi } from "spotify-effect";
+import * as Effect from "effect/Effect";
+import { Playlists } from "spotify-effect";
+import { makeAccessTokenLayer } from "$lib/server/spotify";
 import { runTraced } from "$lib/server/telemetry";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -29,11 +31,12 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ message: "Missing required fields: accessToken, playlistId, uris" }, { status: 400 });
   }
 
-  const spotify = new SpotifyWebApi({}, { accessToken });
-
   try {
     const response = await runTraced(
-      spotify.playlists.removePlaylistItems(playlistId, uris, snapshotId),
+      Effect.gen(function* () {
+        const playlists = yield* Playlists;
+        return yield* playlists.removePlaylistItems(playlistId, uris, snapshotId);
+      }).pipe(Effect.provide(makeAccessTokenLayer(accessToken))),
       "sveltekit.api.playlist.remove_items",
     );
     return json(response);
