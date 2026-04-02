@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { session } from '$lib/session.svelte';
+	import { startAutoRefresh, stopAutoRefresh } from '$lib/token-refresh';
 
 	let { children } = $props();
 	let mobileNavOpen = $state(false);
@@ -72,6 +73,15 @@
 			links: [{ href: '/playlists', label: 'my playlists', hint: 'create + manage lists' }]
 		}
 	];
+
+	$effect(() => {
+		if (session.isLoggedIn) {
+			startAutoRefresh(session);
+		} else {
+			stopAutoRefresh();
+		}
+		return () => stopAutoRefresh();
+	});
 
 	const currentPath = $derived(page.url.pathname);
 	const currentLabel = $derived(
