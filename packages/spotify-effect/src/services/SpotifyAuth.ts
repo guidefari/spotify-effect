@@ -21,7 +21,7 @@ import {
   GetRefreshedAccessTokenResponseSchema,
   GetTemporaryAppTokensResponseSchema,
 } from "../model/SpotifyAuthorizationSchema";
-import { SpotifyConfig, type SpotifyApiOptions } from "./SpotifyConfig";
+import { SpotifyConfig } from "./SpotifyConfig";
 
 export type SpotifyAuthService = ServiceMap.Service.Shape<typeof SpotifyAuth>;
 
@@ -158,7 +158,7 @@ const requestToken = <A>(options: {
     "spotify.auth.token",
   );
 
-const makeSpotifyAuthService = (config: {
+const createSpotifyAuth = (config: {
   readonly clientId: string;
   readonly clientSecret: string;
   readonly redirectUri: string;
@@ -236,13 +236,6 @@ const makeSpotifyAuthService = (config: {
     }),
 });
 
-export const makeSpotifyAuth = (options: SpotifyApiOptions = {}) =>
-  makeSpotifyAuthService({
-    clientId: options.clientId ?? "",
-    clientSecret: options.clientSecret ?? "",
-    redirectUri: options.redirectUri ?? "",
-  });
-
 export class SpotifyAuth extends ServiceMap.Service<SpotifyAuth, {
   readonly getRefreshableUserTokens: (
     code: string,
@@ -263,7 +256,7 @@ export class SpotifyAuth extends ServiceMap.Service<SpotifyAuth, {
   make: Effect.gen(function* () {
     const client = yield* HttpClient.HttpClient;
     const config = yield* SpotifyConfig;
-    const auth = makeSpotifyAuthService(config);
+    const auth = createSpotifyAuth(config);
     const provideClient = <A>(effect: Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>) =>
       Effect.provideService(effect, HttpClient.HttpClient, client);
 

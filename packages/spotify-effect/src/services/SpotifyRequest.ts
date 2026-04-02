@@ -294,6 +294,136 @@ const makeRequestWithAuthRetry = <A>(
     return result.value;
   });
 
+const createSpotifyRequest = (
+  accessTokenResolver: AccessTokenResolver,
+  retry?: SpotifyRetryConfig,
+) => {
+  const retryConfig = {
+    ...defaultRetryConfig,
+    ...retry,
+  };
+
+  const withSpanAttrs = (
+    path: string,
+    method: HttpMethod,
+    options?: SpotifyRequestOptions,
+    usesSchema = false,
+  ) => ({
+    attributes: {
+      "spotify.request.path": path,
+      "spotify.request.method": method,
+      "spotify.request.has_query": options?.query !== undefined,
+      ...(usesSchema ? { "spotify.request.uses_schema": true } : null),
+    },
+  });
+
+  return {
+    getJson: <A>(path: string, options?: SpotifyRequestOptions) =>
+      Effect.withSpan(
+        makeRequestWithAuthRetry(
+          accessTokenResolver,
+          path,
+          decodeSuccessResponse<A>,
+          retryConfig,
+          "GET",
+          options,
+        ),
+        `spotify.request GET ${path}`,
+        withSpanAttrs(path, "GET", options),
+      ),
+    getJsonWithSchema: <A>(
+      path: string,
+      schema: DecodableSchema<A>,
+      options?: SpotifyRequestOptions,
+    ) =>
+      Effect.withSpan(
+        makeRequestWithAuthRetry(
+          accessTokenResolver,
+          path,
+          (response) => decodeSuccessResponseWithSchema(response, schema),
+          retryConfig,
+          "GET",
+          options,
+        ),
+        `spotify.request GET ${path}`,
+        withSpanAttrs(path, "GET", options, true),
+      ),
+    postJsonWithSchema: <A>(
+      path: string,
+      schema: DecodableSchema<A>,
+      options?: SpotifyRequestOptions,
+    ) =>
+      Effect.withSpan(
+        makeRequestWithAuthRetry(
+          accessTokenResolver,
+          path,
+          (response) => decodeSuccessResponseWithSchema(response, schema),
+          retryConfig,
+          "POST",
+          options,
+        ),
+        `spotify.request POST ${path}`,
+        withSpanAttrs(path, "POST", options, true),
+      ),
+    postJson: (path: string, options?: SpotifyRequestOptions) =>
+      Effect.withSpan(
+        makeRequestWithAuthRetry(
+          accessTokenResolver,
+          path,
+          decodeVoidResponse,
+          retryConfig,
+          "POST",
+          options,
+        ),
+        `spotify.request POST ${path}`,
+        withSpanAttrs(path, "POST", options),
+      ),
+    putJson: (path: string, options?: SpotifyRequestOptions) =>
+      Effect.withSpan(
+        makeRequestWithAuthRetry(
+          accessTokenResolver,
+          path,
+          decodeVoidResponse,
+          retryConfig,
+          "PUT",
+          options,
+        ),
+        `spotify.request PUT ${path}`,
+        withSpanAttrs(path, "PUT", options),
+      ),
+    deleteJson: <A>(
+      path: string,
+      schema: DecodableSchema<A>,
+      options?: SpotifyRequestOptions,
+    ) =>
+      Effect.withSpan(
+        makeRequestWithAuthRetry(
+          accessTokenResolver,
+          path,
+          (response) => decodeSuccessResponseWithSchema(response, schema),
+          retryConfig,
+          "DELETE",
+          options,
+        ),
+        `spotify.request DELETE ${path}`,
+        withSpanAttrs(path, "DELETE", options, true),
+      ),
+    deleteVoid: (path: string, options?: SpotifyRequestOptions) =>
+      Effect.withSpan(
+        makeRequestWithAuthRetry(
+          accessTokenResolver,
+          path,
+          decodeVoidResponse,
+          retryConfig,
+          "DELETE",
+          options,
+        ),
+        `spotify.request DELETE ${path}`,
+        withSpanAttrs(path, "DELETE", options),
+      ),
+  };
+};
+
 export class SpotifyRequest extends ServiceMap.Service<SpotifyRequest, {
   readonly getJson: <A>(
     path: string,
@@ -335,7 +465,7 @@ export class SpotifyRequest extends ServiceMap.Service<SpotifyRequest, {
     const canUseClientCredentials = config.clientId.length > 0 && config.clientSecret.length > 0;
     const provideClient = <A>(effect: Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>) =>
       Effect.provideService(effect, HttpClient.HttpClient, client);
-    const request = makeSpotifyRequest(
+    const request = createSpotifyRequest(
       {
         getAccessToken: () =>
           session.getAccessToken({
@@ -363,133 +493,3 @@ export class SpotifyRequest extends ServiceMap.Service<SpotifyRequest, {
 }) {
   static readonly layer = Layer.effect(this)(this.make);
 }
-
-export const makeSpotifyRequest = (
-  accessTokenResolver: AccessTokenResolver,
-  retry?: SpotifyRetryConfig,
-) => {
-  const retryConfig = {
-    ...defaultRetryConfig,
-    ...retry,
-  };
-
-    const withSpanAttrs = (
-      path: string,
-      method: HttpMethod,
-      options?: SpotifyRequestOptions,
-      usesSchema = false,
-    ) => ({
-      attributes: {
-        "spotify.request.path": path,
-        "spotify.request.method": method,
-        "spotify.request.has_query": options?.query !== undefined,
-        ...(usesSchema ? { "spotify.request.uses_schema": true } : null),
-      },
-    });
-
-    return {
-      getJson: <A>(path: string, options?: SpotifyRequestOptions) =>
-        Effect.withSpan(
-          makeRequestWithAuthRetry(
-            accessTokenResolver,
-            path,
-            decodeSuccessResponse<A>,
-            retryConfig,
-            "GET",
-            options,
-          ),
-          `spotify.request GET ${path}`,
-          withSpanAttrs(path, "GET", options),
-        ),
-      getJsonWithSchema: <A>(
-        path: string,
-        schema: DecodableSchema<A>,
-        options?: SpotifyRequestOptions,
-      ) =>
-        Effect.withSpan(
-          makeRequestWithAuthRetry(
-            accessTokenResolver,
-            path,
-            (response) => decodeSuccessResponseWithSchema(response, schema),
-            retryConfig,
-            "GET",
-            options,
-          ),
-          `spotify.request GET ${path}`,
-          withSpanAttrs(path, "GET", options, true),
-        ),
-      postJsonWithSchema: <A>(
-        path: string,
-        schema: DecodableSchema<A>,
-        options?: SpotifyRequestOptions,
-      ) =>
-        Effect.withSpan(
-          makeRequestWithAuthRetry(
-            accessTokenResolver,
-            path,
-            (response) => decodeSuccessResponseWithSchema(response, schema),
-            retryConfig,
-            "POST",
-            options,
-          ),
-          `spotify.request POST ${path}`,
-          withSpanAttrs(path, "POST", options, true),
-        ),
-      postJson: (path: string, options?: SpotifyRequestOptions) =>
-        Effect.withSpan(
-          makeRequestWithAuthRetry(
-            accessTokenResolver,
-            path,
-            decodeVoidResponse,
-            retryConfig,
-            "POST",
-            options,
-          ),
-          `spotify.request POST ${path}`,
-          withSpanAttrs(path, "POST", options),
-        ),
-      putJson: (path: string, options?: SpotifyRequestOptions) =>
-        Effect.withSpan(
-          makeRequestWithAuthRetry(
-            accessTokenResolver,
-            path,
-            decodeVoidResponse,
-            retryConfig,
-            "PUT",
-            options,
-          ),
-          `spotify.request PUT ${path}`,
-          withSpanAttrs(path, "PUT", options),
-        ),
-      deleteJson: <A>(
-        path: string,
-        schema: DecodableSchema<A>,
-        options?: SpotifyRequestOptions,
-      ) =>
-        Effect.withSpan(
-          makeRequestWithAuthRetry(
-            accessTokenResolver,
-            path,
-            (response) => decodeSuccessResponseWithSchema(response, schema),
-            retryConfig,
-            "DELETE",
-            options,
-          ),
-          `spotify.request DELETE ${path}`,
-          withSpanAttrs(path, "DELETE", options, true),
-        ),
-      deleteVoid: (path: string, options?: SpotifyRequestOptions) =>
-        Effect.withSpan(
-          makeRequestWithAuthRetry(
-            accessTokenResolver,
-            path,
-            decodeVoidResponse,
-            retryConfig,
-            "DELETE",
-            options,
-          ),
-          `spotify.request DELETE ${path}`,
-          withSpanAttrs(path, "DELETE", options),
-        ),
-    };
-};

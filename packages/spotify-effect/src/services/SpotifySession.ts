@@ -40,7 +40,7 @@ const expiresAtFromNow = (now: number, expiresInSeconds: number): number => now 
 const getCurrentTimeMillis = (): Effect.Effect<number> =>
   Clock.clockWith((clock) => Effect.sync(() => clock.currentTimeMillisUnsafe()));
 
-export const makeSpotifySession = (credentials: SpotifyCredentials = {}) => {
+const createSpotifySession = (credentials: SpotifyCredentials = {}) => {
   const stateRef = SynchronizedRef.makeUnsafe(initialState(credentials));
 
   const setAccessTokenState = (accessToken: string): Effect.Effect<void> =>
@@ -192,7 +192,7 @@ export class SpotifySession extends ServiceMap.Service<SpotifySession, {
   make: Effect.gen(function* () {
     const credentials = yield* SpotifySessionConfig;
 
-    return makeSpotifySession(credentials);
+    return createSpotifySession(credentials);
   }),
 }) {
   static readonly layer = Layer.effect(this)(this.make);
