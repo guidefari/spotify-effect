@@ -50,8 +50,7 @@ export class BrowseApi {
     options?: GetCategoriesOptions,
   ): Effect.Effect<
     GetCategoriesResponse["categories"],
-    SpotifyRequestError,
-    HttpClient.HttpClient
+    SpotifyRequestError
   > {
     return this.request
       .getJsonWithSchema("/browse/categories", GetCategoriesResponseSchema, buildQuery(options))
@@ -74,8 +73,7 @@ export class BrowseApi {
     options?: GetCategoryPlaylistsOptions,
   ): Effect.Effect<
     GetCategoryPlaylistsResponse["playlists"],
-    SpotifyRequestError,
-    HttpClient.HttpClient
+    SpotifyRequestError
   > {
     return this.request
       .getJsonWithSchema(
@@ -106,8 +104,7 @@ export class BrowseApi {
 
   public getAvailableGenreSeeds(): Effect.Effect<
     GetAvailableGenreSeedsResponse["genres"],
-    SpotifyRequestError,
-    HttpClient.HttpClient
+    SpotifyRequestError
   > {
     return this.request
       .getJsonWithSchema(

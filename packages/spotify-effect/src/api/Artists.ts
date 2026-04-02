@@ -66,8 +66,7 @@ export class ArtistsApi {
     country: string,
   ): Effect.Effect<
     GetArtistTopTracksResponse["tracks"],
-    SpotifyRequestError,
-    HttpClient.HttpClient
+    SpotifyRequestError
   > {
     return this.request
       .getJsonWithSchema(`/artists/${artistId}/top-tracks`, GetArtistTopTracksResponseSchema, {
@@ -80,8 +79,7 @@ export class ArtistsApi {
     artistId: string,
   ): Effect.Effect<
     GetRelatedArtistsResponse["artists"],
-    SpotifyRequestError,
-    HttpClient.HttpClient
+    SpotifyRequestError
   > {
     return this.request
       .getJsonWithSchema(`/artists/${artistId}/related-artists`, GetRelatedArtistsResponseSchema)

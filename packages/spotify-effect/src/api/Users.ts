@@ -11,8 +11,7 @@ export class UsersApi {
 
   public getCurrentUserProfile(): Effect.Effect<
     PrivateUser,
-    SpotifyRequestError,
-    HttpClient.HttpClient
+    SpotifyRequestError
   > {
     return this.request.getJsonWithSchema("/me", PrivateUserSchema);
   }
