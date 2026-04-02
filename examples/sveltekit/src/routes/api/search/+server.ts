@@ -19,13 +19,17 @@ export const POST: RequestHandler = async ({ request }) => {
   if (typeof b.accessToken !== "string" || typeof b.query !== "string" || !Array.isArray(b.types)) {
     return json({ message: "Missing required fields: accessToken, query, types" }, { status: 400 });
   }
+  const accessToken = b.accessToken;
+  const query = b.query;
+  const types = b.types as ReadonlyArray<SearchType>;
+
 
   try {
     const results = await runTraced(
       Effect.gen(function* () {
         const search = yield* Search;
-        return yield* search.search(b.query, b.types as ReadonlyArray<SearchType>);
-      }).pipe(Effect.provide(makeAccessTokenLayer(b.accessToken))),
+        return yield* search.search(query, types);
+      }).pipe(Effect.provide(makeAccessTokenLayer(accessToken))),
       "sveltekit.api.search",
     );
     return json(results);

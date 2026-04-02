@@ -18,13 +18,16 @@ export const POST: RequestHandler = async ({ request }) => {
   if (typeof b.accessToken !== "string" || typeof b.trackId !== "string") {
     return json({ message: "Missing required fields: accessToken, trackId" }, { status: 400 });
   }
+  const accessToken = b.accessToken;
+  const trackId = b.trackId;
+
 
   try {
     const track = await runTraced(
       Effect.gen(function* () {
         const tracks = yield* Tracks;
-        return yield* tracks.getTrack(b.trackId);
-      }).pipe(Effect.provide(makeAccessTokenLayer(b.accessToken))),
+        return yield* tracks.getTrack(trackId);
+      }).pipe(Effect.provide(makeAccessTokenLayer(accessToken))),
       "sveltekit.api.track",
     );
     return json(track);

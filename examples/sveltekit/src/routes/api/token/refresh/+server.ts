@@ -25,13 +25,17 @@ export const POST: RequestHandler = async ({ request }) => {
       { status: 400 },
     );
   }
+  const clientId = b.clientId;
+  const redirectUri = b.redirectUri;
+  const refreshToken = b.refreshToken;
+
 
   try {
     const tokens = await runTraced(
       Effect.gen(function* () {
         const auth = yield* SpotifyAuth;
-        return yield* auth.getRefreshedAccessToken(b.refreshToken);
-      }).pipe(Effect.provide(makeConfiguredSpotifyLayer({ clientId: b.clientId, redirectUri: b.redirectUri }))),
+        return yield* auth.getRefreshedAccessToken(refreshToken);
+      }).pipe(Effect.provide(makeConfiguredSpotifyLayer({ clientId, redirectUri }))),
       "sveltekit.api.token.refresh",
     );
 

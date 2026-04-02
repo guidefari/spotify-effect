@@ -5,12 +5,12 @@ export const makeAccessTokenLayer = (accessToken: string) =>
   makeSpotifyLayer({}, { accessToken });
 
 export const makeConfiguredSpotifyLayer = (
-  options: SpotifyApiOptions,
+  options: SpotifyApiOptions = {},
   credentials: SpotifyCredentials = {},
 ) => makeSpotifyLayer(options, credentials);
 
 export const provideSpotify = <A, E>(
   effect: Effect.Effect<A, E>,
-  options: SpotifyApiOptions,
+  options: SpotifyApiOptions = {},
   credentials: SpotifyCredentials = {},
 ): Effect.Effect<A, E> => Effect.provide(effect, makeConfiguredSpotifyLayer(options, credentials));

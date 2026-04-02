@@ -17,13 +17,16 @@ export const POST: RequestHandler = async ({ request }) => {
   if (typeof b.accessToken !== "string" || typeof b.userId !== "string") {
     return json({ message: "Missing required fields: accessToken, userId" }, { status: 400 });
   }
+  const accessToken = b.accessToken;
+  const userId = b.userId;
+
 
   try {
     const user = await Effect.runPromise(
       Effect.gen(function* () {
         const users = yield* Users;
-        return yield* users.getUser(b.userId);
-      }).pipe(Effect.provide(makeAccessTokenLayer(b.accessToken))),
+        return yield* users.getUser(userId);
+      }).pipe(Effect.provide(makeAccessTokenLayer(accessToken))),
     );
     return json(user);
   } catch (err) {

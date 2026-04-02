@@ -26,17 +26,22 @@ export const POST: RequestHandler = async ({ request }) => {
       { status: 400 },
     );
   }
+  const clientId = b.clientId;
+  const redirectUri = b.redirectUri;
+  const code = b.code;
+  const codeVerifier = b.codeVerifier;
+
 
   try {
     const tokens = await runTraced(
       Effect.gen(function* () {
         const auth = yield* SpotifyAuth;
         return yield* auth.getRefreshableUserTokensWithPkce({
-          clientId: b.clientId,
-          code: b.code,
-          codeVerifier: b.codeVerifier,
+          clientId,
+          code,
+          codeVerifier,
         });
-      }).pipe(Effect.provide(makeConfiguredSpotifyLayer({ clientId: b.clientId, redirectUri: b.redirectUri }))),
+      }).pipe(Effect.provide(makeConfiguredSpotifyLayer({ clientId, redirectUri }))),
       "sveltekit.api.pkce.exchange",
     );
     return json(tokens);
