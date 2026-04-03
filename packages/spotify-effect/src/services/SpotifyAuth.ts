@@ -121,10 +121,7 @@ const requestToken = <A>(options: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: HttpClientRequest.bodyUrlParams(options.body)(HttpClientRequest.empty).body,
-      }).pipe(
-        Effect.provideService(HttpClient.TracerPropagationEnabled, false),
-        Effect.mapError(mapHttpClientError),
-      );
+      }).pipe(Effect.mapError(mapHttpClientError));
 
       yield* Effect.annotateCurrentSpan({
         "spotify.http.status_code": response.status,
