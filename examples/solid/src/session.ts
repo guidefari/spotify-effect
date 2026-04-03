@@ -1,14 +1,8 @@
 import { createSignal } from "solid-js";
 import * as Effect from "effect/Effect";
-import {
-  makeSpotifyBrowserLayer,
-  makeSpotifyBrowserSession,
-  startPkceLogin as startPkceLoginEffect,
-} from "spotify-effect/browser";
-import { SpotifyAuth, Library, Users } from "spotify-effect";
-import type { BrowserRefreshableTokens } from "spotify-effect/browser";
+import { SpotifyBrowser } from "spotify-effect/browser";
+import type { BrowserRefreshableTokens, AuthorizationScope } from "spotify-effect/browser";
 import type { PrivateUser, SavedAlbum, SavedTrack, Paging } from "spotify-effect";
-import type { AuthorizationScope } from "spotify-effect/browser";
 
 export const DEFAULT_SCOPES = [
   "user-read-private",
@@ -21,30 +15,47 @@ export const DEFAULT_SCOPES = [
   "playlist-read-collaborative",
 ].join(" ");
 
-const bs = makeSpotifyBrowserSession({
-  sessionStorage: window.sessionStorage,
-  localStorage: window.localStorage,
-  history: window.history,
-});
+export const [clientId, setClientId] = createSignal("");
 
-export const [clientId, setClientId] = createSignal(
-  bs.getPkceState()?.clientId ?? "",
+const browserLayer = (id: string) =>
+  SpotifyBrowser.layer({
+    clientId: id,
+    redirectUri: `${window.location.origin}/`,
+    session: {
+      sessionStorage: window.sessionStorage,
+      localStorage: window.localStorage,
+      history: window.history,
+    },
+  });
+
+const run = <A>(effect: Effect.Effect<A, unknown, SpotifyBrowser>) =>
+  Effect.runPromise(effect.pipe(Effect.provide(browserLayer(clientId()))));
+
+const initLayer = browserLayer("");
+const initTokens = Effect.runSync(
+  Effect.gen(function* () {
+    const spotify = yield* SpotifyBrowser;
+    return spotify.auth.getTokens();
+  }).pipe(Effect.provide(initLayer)),
 );
 
-const [_tokens, _setTokens] = createSignal<BrowserRefreshableTokens | undefined>(
-  bs.getTokens(),
-);
+if (initTokens) {
+  const pkceClientId = Effect.runSync(
+    Effect.gen(function* () {
+      const spotify = yield* SpotifyBrowser;
+      return spotify.auth.getSession().getPkceState()?.clientId ?? "";
+    }).pipe(Effect.provide(initLayer)),
+  );
+  if (pkceClientId) setClientId(pkceClientId);
+}
+
+const [_tokens, _setTokens] = createSignal<BrowserRefreshableTokens | undefined>(initTokens);
 export const tokens = _tokens;
 
 export const [profile, setProfile] = createSignal<PrivateUser | null>(null);
 export const [isExchanging, setIsExchanging] = createSignal(false);
 export const [isFetchingProfile, setIsFetchingProfile] = createSignal(false);
 export const [sessionError, setSessionError] = createSignal<string | null>(null);
-
-function setTokens(t: BrowserRefreshableTokens): void {
-  _setTokens(t);
-  bs.setTokens(t);
-}
 
 export const isLoggedIn = () => _tokens() !== undefined;
 
@@ -73,20 +84,15 @@ export const tokenExpiresAt = () => {
 };
 
 export async function startPkceLogin(scopes: string): Promise<void> {
-  const id = clientId();
-  if (!id) throw new Error("Client ID is required");
-
   const scopeList = scopes
     .split(/\s+/)
     .map((s) => s.trim())
     .filter(Boolean) as AuthorizationScope[];
 
-  const url = await Effect.runPromise(
-    startPkceLoginEffect({
-      clientId: id,
-      redirectUri: `${window.location.origin}/`,
-      scopes: scopeList,
-      session: bs,
+  const url = await run(
+    Effect.gen(function* () {
+      const spotify = yield* SpotifyBrowser;
+      return yield* spotify.auth.startPkceLogin({ scopes: scopeList });
     }),
   );
 
@@ -94,41 +100,17 @@ export async function startPkceLogin(scopes: string): Promise<void> {
 }
 
 export async function exchangeCode(code: string): Promise<void> {
-  const pkceState = bs.getPkceState();
-  if (!pkceState) {
-    setSessionError("No stored PKCE state. Start the login flow from this page.");
-    return;
-  }
-
   setIsExchanging(true);
   setSessionError(null);
 
   try {
-    const result = await Effect.runPromise(
+    const tokens = await run(
       Effect.gen(function* () {
-        const auth = yield* SpotifyAuth;
-        return yield* auth.getRefreshableUserTokensWithPkce({
-          clientId: pkceState.clientId,
-          code,
-          codeVerifier: pkceState.verifier,
-        });
-      }).pipe(
-        Effect.provide(
-          makeSpotifyBrowserLayer({
-            clientId: pkceState.clientId,
-            redirectUri: pkceState.redirectUri,
-          }),
-        ),
-      ),
+        const spotify = yield* SpotifyBrowser;
+        return yield* spotify.auth.exchangeCode(code);
+      }),
     );
-
-    setTokens({
-      accessToken: result.access_token,
-      refreshToken: result.refresh_token,
-      accessTokenExpiresAt: Date.now() + result.expires_in * 1000,
-    });
-
-    bs.clearCallbackParams(new URL(window.location.href));
+    _setTokens(tokens);
   } catch (err) {
     setSessionError(err instanceof Error ? err.message : String(err));
   } finally {
@@ -144,13 +126,12 @@ export async function fetchProfile(): Promise<void> {
   setSessionError(null);
 
   try {
-    const result = await Effect.runPromise(
+    const result = await run(
       Effect.gen(function* () {
-        const users = yield* Users;
-        return yield* users.getCurrentUserProfile();
-      }).pipe(Effect.provide(makeSpotifyBrowserLayer({}, { accessToken: t.accessToken }))),
+        const spotify = yield* SpotifyBrowser;
+        return yield* spotify.users.getCurrentUserProfile();
+      }),
     );
-
     setProfile(result);
   } catch (err) {
     setSessionError(err instanceof Error ? err.message : String(err));
@@ -160,10 +141,15 @@ export async function fetchProfile(): Promise<void> {
 }
 
 export function logout(): void {
+  Effect.runSync(
+    Effect.gen(function* () {
+      const spotify = yield* SpotifyBrowser;
+      spotify.auth.logout();
+    }).pipe(Effect.provide(browserLayer(clientId()))),
+  );
   _setTokens(undefined);
   setProfile(null);
   setSessionError(null);
-  localStorage.removeItem("spotify-effect:tokens");
 }
 
 export type LibraryData = {
@@ -178,8 +164,7 @@ export const [isLoadingLibrary, setIsLoadingLibrary] = createSignal(false);
 export const [libraryError, setLibraryError] = createSignal<string | null>(null);
 
 export async function fetchLibrary(limit = 12, offset = 0): Promise<void> {
-  const t = _tokens();
-  if (!t) {
+  if (!_tokens()) {
     setLibraryError("No access token — log in first.");
     return;
   }
@@ -187,20 +172,18 @@ export async function fetchLibrary(limit = 12, offset = 0): Promise<void> {
   setIsLoadingLibrary(true);
   setLibraryError(null);
 
-  const layer = makeSpotifyBrowserLayer({}, { accessToken: t.accessToken });
-
   const [albumsResult, tracksResult] = await Promise.allSettled([
-    Effect.runPromise(
+    run(
       Effect.gen(function* () {
-        const library = yield* Library;
-        return yield* library.getSavedAlbums({ limit, offset });
-      }).pipe(Effect.provide(layer)),
+        const spotify = yield* SpotifyBrowser;
+        return yield* spotify.library.getSavedAlbums({ limit, offset });
+      }),
     ),
-    Effect.runPromise(
+    run(
       Effect.gen(function* () {
-        const library = yield* Library;
-        return yield* library.getSavedTracks({ limit, offset });
-      }).pipe(Effect.provide(layer)),
+        const spotify = yield* SpotifyBrowser;
+        return yield* spotify.library.getSavedTracks({ limit, offset });
+      }),
     ),
   ]);
 
