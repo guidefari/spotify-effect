@@ -1,6 +1,5 @@
 import { createSignal } from "solid-js";
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
 import {
   createPkceCodeChallenge,
   createPkceCodeVerifier,
@@ -11,7 +10,6 @@ import {
   Library,
   Users,
 } from "spotify-effect";
-import { FetchHttpClient, HttpClient } from "effect/unstable/http";
 import type {
   BrowserRefreshableTokens,
   PrivateUser,
@@ -30,11 +28,6 @@ export const DEFAULT_SCOPES = [
   "playlist-read-private",
   "playlist-read-collaborative",
 ].join(" ");
-
-const browserHttpClientLayer = Layer.mergeAll(
-  FetchHttpClient.layer,
-  Layer.succeed(HttpClient.TracerPropagationEnabled, false),
-);
 
 const bs = makeSpotifyBrowserSession({
   sessionStorage: window.sessionStorage,
@@ -134,7 +127,6 @@ export async function exchangeCode(code: string): Promise<void> {
           makeSpotifyLayer({
             clientId: pkceState.clientId,
             redirectUri: pkceState.redirectUri,
-            httpClientLayer: browserHttpClientLayer,
           }),
         ),
       ),
@@ -166,7 +158,7 @@ export async function fetchProfile(): Promise<void> {
       Effect.gen(function* () {
         const users = yield* Users;
         return yield* users.getCurrentUserProfile();
-      }).pipe(Effect.provide(makeSpotifyLayer({ httpClientLayer: browserHttpClientLayer }, { accessToken: t.accessToken }))),
+      }).pipe(Effect.provide(makeSpotifyLayer({}, { accessToken: t.accessToken }))),
     );
 
     setProfile(result);
@@ -205,7 +197,7 @@ export async function fetchLibrary(limit = 12, offset = 0): Promise<void> {
   setIsLoadingLibrary(true);
   setLibraryError(null);
 
-  const layer = makeSpotifyLayer({ httpClientLayer: browserHttpClientLayer }, { accessToken: t.accessToken });
+  const layer = makeSpotifyLayer({}, { accessToken: t.accessToken });
 
   const [albumsResult, tracksResult] = await Promise.allSettled([
     Effect.runPromise(
