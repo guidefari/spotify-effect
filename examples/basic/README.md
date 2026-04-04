@@ -34,4 +34,4 @@ To export to the local collector instead of console spans:
 SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 bun run example:basic -- --access-token <spotify-token> <track-id>
 ```
 
-For more background, see `markdown/otel.md`.
+For more background, see `docs/tracing/otel.md`.

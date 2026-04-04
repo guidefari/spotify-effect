@@ -53,7 +53,7 @@ Build the first complete user-authentication slice:
 - provide a manual browser playground for auth work
 - keep the example thin by delegating auth logic to the library rather than re-encoding flows in the UI
 
-### `markdown/pkce.md`
+### `docs/auth/pkce.md`
 
 - explain what PKCE is
 - explain why it exists and where it is used

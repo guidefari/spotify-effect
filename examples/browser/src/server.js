@@ -4,7 +4,7 @@ import { makeNodeTelemetryLayer } from "@spotify-effect/otel-node";
 
 const appEntry = new URL("./app.ts", import.meta.url);
 const htmlEntry = new URL("./index.html", import.meta.url);
-const pkceEntry = new URL("../../../markdown/pkce.md", import.meta.url);
+const pkceEntry = new URL("../../../docs/auth/pkce.md", import.meta.url);
 const packageEntry = new URL("../../../packages/spotify-effect/src/index.ts", import.meta.url);
 
 const isTracingEnabled = () => process.env.SPOTIFY_EFFECT_TRACE === "1";

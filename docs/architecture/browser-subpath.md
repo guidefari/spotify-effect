@@ -43,7 +43,7 @@ No `makeSpotifyLayer`, no individual service imports, no manual `Effect.provide`
 
 Effect's `FetchHttpClient` injects tracing propagation headers (`B3`, `Traceparent`) on all outgoing requests by default. These are non-simple headers under the CORS spec, which forces the browser to send a preflight OPTIONS request. Both `accounts.spotify.com/api/token` and `api.spotify.com/v1/*` reject preflights with these headers.
 
-See `docs/cors-browser-tracing.md` for the full investigation with screenshots.
+See `docs/tracing/cors-browser-tracing.md` for the full investigation with screenshots.
 
 The fix: `spotify-effect/browser` builds its HTTP client layer with `HttpClient.TracerPropagationEnabled` set to `false`. This is done in `browserHttpClientLayer` inside `src/browser/index.ts:31-34`.
 

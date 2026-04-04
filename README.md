@@ -50,7 +50,7 @@ Effect.runPromise(program);
 
 ## Observability
 
-Request and auth flows emit Effect tracing spans at shared boundaries. Enable local tracing with `SPOTIFY_EFFECT_TRACE=1`. See `markdown/otel.md` for setup notes and `examples/otel/` for a ready-to-run collector stack.
+Request and auth flows emit Effect tracing spans at shared boundaries. Enable local tracing with `SPOTIFY_EFFECT_TRACE=1`. See `docs/tracing/otel.md` for setup notes and `examples/otel/` for a ready-to-run collector stack.
 
 ## Additional Notes
 
