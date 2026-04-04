@@ -25,15 +25,14 @@
 		fetchedId = id;
 		isLoading = true;
 		error = null;
+		album = null;
+		void checkSaved(id);
 		try {
-			const [albumResponse] = await Promise.all([
-				fetch('/api/album', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ accessToken, albumId: id })
-				}),
-				checkSaved(id)
-			]);
+			const albumResponse = await fetch('/api/album', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ accessToken, albumId: id })
+			});
 			const data = await albumResponse.json();
 			if (!albumResponse.ok) throw new Error(data.message ?? JSON.stringify(data));
 			album = data as JsonObject;
