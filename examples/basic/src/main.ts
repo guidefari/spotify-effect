@@ -1,5 +1,5 @@
 import * as Data from "effect/Data";
-import { Console, Effect } from "effect";
+import { Console, Effect, ManagedRuntime } from "effect";
 import { makeSpotifyLayer, Tracks } from "spotify-effect";
 import { makeNodeTelemetryLayer } from "@spotify-effect/otel-node";
 
@@ -242,6 +242,6 @@ const program = resolveInputs(process.argv.slice(2)).pipe(
   }),
 );
 
-const telemetryLayer = makeNodeTelemetryLayer("spotify-effect-example-basic");
+const telemetryRuntime = ManagedRuntime.make(makeNodeTelemetryLayer("spotify-effect-example-basic"));
 const traced = Effect.withSpan(program, "spotify-effect.example.basic");
-Effect.runPromise(Effect.provide(traced, telemetryLayer));
+telemetryRuntime.runPromise(traced);
