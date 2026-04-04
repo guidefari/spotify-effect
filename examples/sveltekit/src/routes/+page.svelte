@@ -17,7 +17,8 @@
 		'playlist-read-collaborative',
 		'playlist-modify-private',
 		'playlist-modify-public',
-		'user-library-read'
+		'user-library-read',
+		'user-library-modify'
 	].join(' ');
 
 	let clientId = $state(session.clientId);
@@ -203,8 +204,9 @@
 				</p>
 
 				<div style="color: var(--muted); font-size: 12px; line-height: 1.7">
-					Default scopes include playlist write access so the playlist create, update, add-track, and
-					remove-track examples work after login.
+					Default scopes include playlist and album library write access so playlist changes and
+					album save or unsave work after login. If you already logged in before this change, log out
+					and log back in to refresh the granted scopes.
 				</div>
 
 				<div class="field">

@@ -1,18 +1,15 @@
 import * as NodeSdk from "@effect/opentelemetry/NodeSdk";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import {
-  BatchSpanProcessor,
-  ConsoleSpanExporter,
-  SimpleSpanProcessor,
-} from "@opentelemetry/sdk-trace-base";
-import type * as Layer from "effect/Layer";
 import type * as Resource from "@effect/opentelemetry/Resource";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { BatchSpanProcessor, ConsoleSpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
+import type * as Layer from "effect/Layer";
 
-const isTracingEnabled = (): boolean => process.env.SPOTIFY_EFFECT_TRACE === "1";
+export interface NodeTelemetryOptions {
+  readonly batch?: boolean;
+  readonly serviceVersion?: string;
+}
 
-const getTraceExporterUrl = (): string | undefined => {
-  const baseUrl = process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
-
+export const getOtlpTraceExporterUrl = (baseUrl?: string): string | undefined => {
   if (baseUrl === undefined || baseUrl.length === 0) {
     return undefined;
   }
@@ -22,25 +19,21 @@ const getTraceExporterUrl = (): string | undefined => {
 
 export const makeNodeTelemetryLayer = (
   serviceName: string,
-  options?: { batch?: boolean },
-): Layer.Layer<Resource.Resource> | undefined => {
-  if (!isTracingEnabled()) {
-    return undefined;
-  }
-
-  const exporterUrl = getTraceExporterUrl();
+  options: NodeTelemetryOptions = {},
+): Layer.Layer<Resource.Resource> => {
+  const exporterUrl = getOtlpTraceExporterUrl(process.env["OTEL_EXPORTER_OTLP_ENDPOINT"]);
   const exporter =
     exporterUrl === undefined
       ? new ConsoleSpanExporter()
       : new OTLPTraceExporter({ url: exporterUrl });
 
   const processor =
-    options?.batch === true ? new BatchSpanProcessor(exporter) : new SimpleSpanProcessor(exporter);
+    options.batch === true ? new BatchSpanProcessor(exporter) : new SimpleSpanProcessor(exporter);
 
   return NodeSdk.layer(() => ({
     resource: {
       serviceName,
-      serviceVersion: "0.1.0",
+      serviceVersion: options.serviceVersion ?? "0.1.0",
     },
     spanProcessor: processor,
   }));

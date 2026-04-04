@@ -1,13 +1,16 @@
-import { Effect } from "effect";
+import { Effect, ManagedRuntime } from "effect";
 import { makeSpotifyAuth, makeSpotifyLayer, SpotifySession, Tracks, Users } from "spotify-effect";
-import { makeNodeTelemetryLayer } from "./nodeTelemetry";
+import { makeNodeTelemetryLayer } from "@spotify-effect/otel-node";
 
 const appEntry = new URL("./app.ts", import.meta.url);
 const htmlEntry = new URL("./index.html", import.meta.url);
 const pkceEntry = new URL("../../../markdown/pkce.md", import.meta.url);
 const packageEntry = new URL("../../../packages/spotify-effect/src/index.ts", import.meta.url);
 
-const telemetryLayer = makeNodeTelemetryLayer("spotify-effect-example-browser");
+const isTracingEnabled = () => process.env.SPOTIFY_EFFECT_TRACE === "1";
+const telemetryRuntime = isTracingEnabled()
+  ? ManagedRuntime.make(makeNodeTelemetryLayer("spotify-effect-example-browser"))
+  : undefined;
 
 const buildClientBundle = async () => {
   const result = await Bun.build({
@@ -60,8 +63,9 @@ const json = (body, init) =>
 const runEffect = async (effect) => {
   try {
     const traced = Effect.withSpan(effect, "spotify-effect.example.browser.request");
-    const provided = telemetryLayer !== undefined ? Effect.provide(traced, telemetryLayer) : traced;
-    const result = await Effect.runPromise(provided);
+    const result = telemetryRuntime !== undefined
+      ? await telemetryRuntime.runPromise(traced)
+      : await Effect.runPromise(traced);
     return json(result);
   } catch (error) {
     return json(error, { status: 500 });
@@ -197,5 +201,5 @@ const server = Bun.serve({
 
 console.log(`spotify-effect browser example: http://127.0.0.1:${server.port}`);
 console.log(
-  `tracing: ${telemetryLayer !== undefined ? `enabled → ${process.env.OTEL_EXPORTER_OTLP_ENDPOINT}` : "disabled"}`,
+  `tracing: ${telemetryRuntime !== undefined ? `enabled → ${process.env.OTEL_EXPORTER_OTLP_ENDPOINT}` : "disabled"}`,
 );
