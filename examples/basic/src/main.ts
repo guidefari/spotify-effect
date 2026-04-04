@@ -1,7 +1,7 @@
 import * as Data from "effect/Data";
 import { Console, Effect } from "effect";
 import { makeSpotifyLayer, Tracks } from "spotify-effect";
-import { makeNodeTelemetryLayer } from "./nodeTelemetry";
+import { makeNodeTelemetryLayer } from "@spotify-effect/otel-node";
 
 const usage = [
   "spotify-effect basic example",
@@ -244,5 +244,4 @@ const program = resolveInputs(process.argv.slice(2)).pipe(
 
 const telemetryLayer = makeNodeTelemetryLayer("spotify-effect-example-basic");
 const traced = Effect.withSpan(program, "spotify-effect.example.basic");
-const provided = telemetryLayer !== undefined ? Effect.provide(traced, telemetryLayer) : traced;
-Effect.runPromise(provided);
+Effect.runPromise(Effect.provide(traced, telemetryLayer));

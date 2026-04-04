@@ -7,14 +7,10 @@
     "dev": "SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 vite dev",
     "build": "SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 vite build",
     "preview": "SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 vite preview",
-    "typecheck": "bun run --filter 'spotify-effect' build && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+    "typecheck": "bun run --filter 'spotify-effect' build && bun run --filter @spotify-effect/otel-node build && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@effect/opentelemetry": "4.0.0-beta.36",
-    "@opentelemetry/api": "^1.9.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.213.0",
-    "@opentelemetry/sdk-trace-base": "^2.6.0",
-    "@opentelemetry/sdk-trace-node": "^2.6.0",
+    "@spotify-effect/otel-node": "workspace:*",
     "effect": "4.0.0-beta.36",
     "spotify-effect": "workspace:*"
   },

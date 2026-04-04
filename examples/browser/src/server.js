@@ -1,13 +1,16 @@
 import { Effect } from "effect";
 import { makeSpotifyAuth, makeSpotifyLayer, SpotifySession, Tracks, Users } from "spotify-effect";
-import { makeNodeTelemetryLayer } from "./nodeTelemetry";
+import { makeNodeTelemetryLayer } from "@spotify-effect/otel-node";
 
 const appEntry = new URL("./app.ts", import.meta.url);
 const htmlEntry = new URL("./index.html", import.meta.url);
 const pkceEntry = new URL("../../../markdown/pkce.md", import.meta.url);
 const packageEntry = new URL("../../../packages/spotify-effect/src/index.ts", import.meta.url);
 
-const telemetryLayer = makeNodeTelemetryLayer("spotify-effect-example-browser");
+const isTracingEnabled = () => process.env.SPOTIFY_EFFECT_TRACE === "1";
+const telemetryLayer = isTracingEnabled()
+  ? makeNodeTelemetryLayer("spotify-effect-example-browser")
+  : undefined;
 
 const buildClientBundle = async () => {
   const result = await Bun.build({

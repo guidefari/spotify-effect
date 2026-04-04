@@ -1,24 +1,13 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import type * as Resource from "@effect/opentelemetry/Resource";
-import { getOtlpTraceExporterUrl, makeSpotifyNodeTelemetryLayer } from "spotify-effect";
+import { makeNodeTelemetryLayer } from "@spotify-effect/otel-node";
 
 const isTracingEnabled = (): boolean => process.env.SPOTIFY_EFFECT_TRACE === "1";
 
-const getTraceExporterUrl = (): string | undefined =>
-  getOtlpTraceExporterUrl(process.env.OTEL_EXPORTER_OTLP_ENDPOINT);
-
-const telemetryLayer: Layer.Layer<Resource.Resource> | undefined = (() => {
-  if (!isTracingEnabled()) {
-    return undefined;
-  }
-
-  return makeSpotifyNodeTelemetryLayer({
-    serviceName: "spotify-effect-example-sveltekit",
-    serviceVersion: "0.1.0",
-    exporterUrl: getTraceExporterUrl(),
-  });
-})();
+const telemetryLayer: Layer.Layer<Resource.Resource> | undefined = isTracingEnabled()
+  ? makeNodeTelemetryLayer("spotify-effect-example-sveltekit")
+  : undefined;
 
 export type TracedResult<A> = {
   data: A | null;

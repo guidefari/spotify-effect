@@ -20,11 +20,7 @@
       "name": "@examples/basic",
       "version": "0.0.2",
       "dependencies": {
-        "@effect/opentelemetry": "4.0.0-beta.36",
-        "@opentelemetry/api": "^1.9.0",
-        "@opentelemetry/exporter-trace-otlp-http": "^0.213.0",
-        "@opentelemetry/sdk-trace-base": "^2.6.0",
-        "@opentelemetry/sdk-trace-node": "^2.6.0",
+        "@spotify-effect/otel-node": "workspace:*",
         "effect": "4.0.0-beta.36",
         "spotify-effect": "workspace:*",
       },
@@ -33,11 +29,7 @@
       "name": "@examples/browser",
       "version": "0.0.2",
       "dependencies": {
-        "@effect/opentelemetry": "4.0.0-beta.36",
-        "@opentelemetry/api": "^1.9.0",
-        "@opentelemetry/exporter-trace-otlp-http": "^0.213.0",
-        "@opentelemetry/sdk-trace-base": "^2.6.0",
-        "@opentelemetry/sdk-trace-node": "^2.6.0",
+        "@spotify-effect/otel-node": "workspace:*",
         "effect": "4.0.0-beta.36",
         "spotify-effect": "workspace:*",
       },
@@ -60,11 +52,7 @@
       "name": "@examples/sveltekit",
       "version": "0.0.2",
       "dependencies": {
-        "@effect/opentelemetry": "4.0.0-beta.36",
-        "@opentelemetry/api": "^1.9.0",
-        "@opentelemetry/exporter-trace-otlp-http": "^0.213.0",
-        "@opentelemetry/sdk-trace-base": "^2.6.0",
-        "@opentelemetry/sdk-trace-node": "^2.6.0",
+        "@spotify-effect/otel-node": "workspace:*",
         "effect": "4.0.0-beta.36",
         "spotify-effect": "workspace:*",
       },
@@ -78,13 +66,20 @@
         "vite": "^6.0.0",
       },
     },
-    "packages/spotify-effect": {
-      "name": "spotify-effect",
-      "version": "0.2.0",
+    "packages/otel-node": {
+      "name": "@spotify-effect/otel-node",
+      "version": "0.1.0",
       "dependencies": {
         "@effect/opentelemetry": "4.0.0-beta.36",
         "@opentelemetry/exporter-trace-otlp-http": "^0.213.0",
         "@opentelemetry/sdk-trace-base": "^2.6.0",
+        "effect": "4.0.0-beta.36",
+      },
+    },
+    "packages/spotify-effect": {
+      "name": "spotify-effect",
+      "version": "0.3.0",
+      "dependencies": {
         "effect": "4.0.0-beta.36",
       },
     },
@@ -485,6 +480,8 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.59.1", "", { "os": "win32", "cpu": "x64" }, "sha512-wS+zHAJRVP5zOL0e+a3V3E/NTEwM2HEvvNKoDy5Xcfs0o8lljxn+EAFPkUsxihBdmDq1JWzXmmB9cbssCPdxxw=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.59.1", "", { "os": "win32", "cpu": "x64" }, "sha512-rhHyrMeLpErT/C7BxcEsU4COHQUzHyrPYW5tOZUeUhziNtRuYxmDWvqQqzpuUt8xpOgmbKa1btGXfnA/ANVO+g=="],
+
+    "@spotify-effect/otel-node": ["@spotify-effect/otel-node@workspace:packages/otel-node"],
 
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 

@@ -1,5 +1,4 @@
 export { cursorPaginateAll, cursorPaginateStream, paginateAll, paginateStream } from "./pagination/paginate";
-export { getOtlpTraceExporterUrl, makeSpotifyNodeTelemetryLayer } from "./telemetry/SpotifyNodeTelemetry";
 export { makeSpotifyLayer } from "./makeSpotifyLayer";
 export { Albums } from "./services/Albums";
 export { Artists } from "./services/Artists";
@@ -52,7 +51,6 @@ export type {
   SpotifyLayerOptions,
   SpotifyRetryConfig,
 } from "./services/SpotifyConfig";
-export type { SpotifyNodeTelemetryOptions } from "./telemetry/SpotifyNodeTelemetry";
 export type {
   AuthorizationScope,
   GetRefreshableUserTokensResponse,
