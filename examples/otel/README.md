@@ -1,6 +1,6 @@
 # OTel Collector Example
 
-This folder gives you a minimal local collector + Jaeger setup for `spotify-effect` examples.
+This folder gives you a minimal local collector + Jaeger setup for the `@spotify-effect/*` examples.
 
 ## Start the stack
 

@@ -1,6 +1,6 @@
 # Upstream Parity Tracking
 
-Tracks which `spotify-web-api-ts` tests have been ported to `spotify-effect` and verified for behavioral parity.
+Tracks which `spotify-web-api-ts` tests have been ported to `@spotify-effect/core` and verified for behavioral parity.
 
 ## TracksApi
 

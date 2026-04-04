@@ -5,8 +5,8 @@ import {
   getAuthorizationUrl,
   makeSpotifyBrowserSession,
   readAuthorizationCallback,
-} from "spotify-effect";
-import type { AuthorizationScope, BrowserRefreshableTokens } from "spotify-effect";
+} from "@spotify-effect/browser";
+import type { AuthorizationScope, BrowserRefreshableTokens } from "@spotify-effect/browser";
 
 const accessTokenInput = document.querySelector<HTMLTextAreaElement>("#access-token");
 const trackIdInput = document.querySelector<HTMLInputElement>("#track-id");

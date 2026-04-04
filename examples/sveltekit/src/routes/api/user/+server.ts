@@ -1,7 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import * as Effect from "effect/Effect";
-import { Users } from "spotify-effect";
+import { Users } from "@spotify-effect/core";
 import { makeAccessTokenLayer } from "$lib/server/spotify";
 
 export const POST: RequestHandler = async ({ request }) => {

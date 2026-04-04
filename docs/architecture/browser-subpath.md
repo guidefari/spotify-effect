@@ -5,16 +5,16 @@
 - startPkceLogin feels like it belongs to `SpotifyAuth`
 
 
-# `spotify-effect/browser` — Design Notes
+# `@spotify-effect/browser` — Design Notes
 
 ## What we built
 
-A `spotify-effect/browser` subpath export that provides a `SpotifyBrowser` service — a single Effect service that composes all 12 Spotify domain services + browser-specific auth into one `yield*`.
+A dedicated `@spotify-effect/browser` package that provides a `SpotifyBrowser` service — a single Effect service that composes all 12 Spotify domain services + browser-specific auth into one `yield*`.
 
 ### Consumer API
 
 ```ts
-import { SpotifyBrowser } from "spotify-effect/browser";
+import { SpotifyBrowser } from "@spotify-effect/browser";
 
 const program = Effect.gen(function* () {
   const spotify = yield* SpotifyBrowser;
@@ -45,7 +45,7 @@ Effect's `FetchHttpClient` injects tracing propagation headers (`B3`, `Tracepare
 
 See `docs/tracing/cors-browser-tracing.md` for the full investigation with screenshots.
 
-The fix: `spotify-effect/browser` builds its HTTP client layer with `HttpClient.TracerPropagationEnabled` set to `false`. This is done in `browserHttpClientLayer` inside `src/browser/index.ts:31-34`.
+The fix: `@spotify-effect/browser` builds its HTTP client layer with `HttpClient.TracerPropagationEnabled` set to `false`. This is done in `browserHttpClientLayer` inside `src/browser/index.ts:31-34`.
 
 ### API ergonomics
 
@@ -77,22 +77,22 @@ The `auth` namespace is custom — it wraps `SpotifyAuth.getRefreshableUserToken
 
 | File | Role |
 |---|---|
-| `packages/spotify-effect/src/browser/index.ts` | `SpotifyBrowser` service, `makeSpotifyBrowserLayer`, browser HTTP client layer |
-| `packages/spotify-effect/src/browser/SpotifyBrowserSession.ts` | PKCE state + token storage (sessionStorage/localStorage) |
+| `packages/browser/src/index.ts` | `SpotifyBrowser` service, `makeSpotifyBrowserLayer`, browser HTTP client layer |
+| `packages/browser/src/SpotifyBrowserSession.ts` | PKCE state + token storage (sessionStorage/localStorage) |
 | `packages/spotify-effect/src/makeSpotifyLayer.ts` | Core layer composition (environment-agnostic) |
-| `packages/spotify-effect/package.json` | `./browser` subpath export + `tsup` dual entry build |
+| `packages/browser/package.json` | dedicated browser package metadata + build config |
 | `examples/solid/src/session.ts` | Reference consumer using `SpotifyBrowser` |
 
 ### Package exports
 
 ```json
 {
-  ".": "src/index.ts",
-  "./browser": "src/browser/index.ts"
+  "name": "@spotify-effect/browser",
+  ".": "src/index.ts"
 }
 ```
 
-Built with `tsup src/index.ts src/browser/index.ts --format cjs,esm --dts`.
+Built with `tsup src/index.ts --format cjs,esm --dts`.
 
 ## Tradeoffs accepted
 

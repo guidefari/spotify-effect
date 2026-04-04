@@ -37,12 +37,6 @@ export {
   isRetryableError,
 } from "./errors/SpotifyError";
 export { AUTHORIZE_URL, BASE_ACCOUNTS_URL, BASE_API_URL, TOKEN_URL } from "./constants";
-export {
-  createPkceCodeChallenge,
-  createPkceCodeVerifier,
-  makeSpotifyBrowserSession,
-  readAuthorizationCallback,
-} from "./browser/SpotifyBrowserSession";
 export { getAuthorizationUrl } from "./utils/getAuthorizationUrl";
 export type { SpotifyRequestError } from "./errors/SpotifyError";
 export type {
@@ -57,11 +51,6 @@ export type {
   GetRefreshedAccessTokenResponse,
   GetTemporaryAppTokensResponse,
 } from "./model/SpotifyAuthorization";
-export type {
-  BrowserAuthorizationCallback,
-  BrowserPkceState,
-  BrowserRefreshableTokens,
-} from "./browser/SpotifyBrowserSession";
 export type {
   Album,
   Artist,

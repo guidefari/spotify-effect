@@ -2,7 +2,7 @@
 
 ## What already works in this repo
 
-`spotify-effect` now emits Effect tracing spans in the shared request and auth layers.
+`@spotify-effect/core` now emits Effect tracing spans in the shared request and auth layers.
 
 Important versioning note:
 

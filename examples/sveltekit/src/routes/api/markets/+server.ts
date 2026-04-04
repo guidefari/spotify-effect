@@ -1,7 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import * as Effect from "effect/Effect";
-import { Markets } from "spotify-effect";
+import { Markets } from "@spotify-effect/core";
 import { makeConfiguredSpotifyLayer } from "$lib/server/spotify";
 import { runTraced } from "$lib/server/telemetry";
 

@@ -1,6 +1,6 @@
 import * as Data from "effect/Data";
 import { Console, Effect, ManagedRuntime } from "effect";
-import { makeSpotifyLayer, Tracks } from "spotify-effect";
+import { makeSpotifyLayer, Tracks } from "@spotify-effect/core";
 import { makeNodeTelemetryLayer } from "@spotify-effect/otel-node";
 
 const usage = [

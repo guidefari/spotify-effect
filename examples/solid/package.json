@@ -5,12 +5,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "typecheck": "bun run --filter spotify-effect build && tsc -p tsconfig.json --noEmit"
+    "typecheck": "bun run --filter @spotify-effect/core build && bun run --filter @spotify-effect/browser build && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "effect": "4.0.0-beta.36",
     "solid-js": "^1.9.3",
-    "spotify-effect": "workspace:*"
+    "@spotify-effect/browser": "workspace:*",
+    "@spotify-effect/core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { session } from '$lib/session.svelte';
-	import type { SearchType } from 'spotify-effect';
+	import type { SearchType } from '@spotify-effect/core';
 
 	let query = $state('');
 	let selectedTypes = $state<SearchType[]>(['track']);

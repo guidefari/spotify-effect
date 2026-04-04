@@ -1,10 +1,10 @@
-# spotify-effect
+# @spotify-effect/core
 
 ## 0.3.0
 
 ### Minor Changes
 
-- Add `spotify-effect/browser` subpath export with CORS-safe defaults and `SpotifyBrowser` service
+- Add browser support that now lives in `@spotify-effect/browser`, with CORS-safe defaults and `SpotifyBrowser`
 - New `SpotifyBrowser` ServiceMap service that composes all 12 domain services + browser-specific PKCE auth into a single `yield*`
 - Disable Effect's `HttpClient.TracerPropagationEnabled` by default in browser layer to prevent CORS preflight failures on Spotify endpoints
 - Add `SpotifyBrowser.layer()` — one-call setup that wires HTTP client, tracing config, auth, and all domain services internally
@@ -13,8 +13,8 @@
 
 ### Documentation
 
-- Add `docs/cors-browser-tracing.md` — investigation into CORS preflight failures caused by Effect tracing headers
-- Add `docs/browser-subpath.md` — architecture notes, tradeoffs, and future work for next contributors
+- Add `docs/tracing/cors-browser-tracing.md` — investigation into CORS preflight failures caused by Effect tracing headers
+- Add `docs/architecture/browser-subpath.md` — architecture notes, tradeoffs, and future work for next contributors
 
 ## 0.2.0
 

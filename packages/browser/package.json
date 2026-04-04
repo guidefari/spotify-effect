@@ -1,5 +1,5 @@
 {
-  "name": "@spotify-effect/core",
+  "name": "@spotify-effect/browser",
   "version": "0.4.0",
   "license": "MIT",
   "main": "dist/index.js",
@@ -22,11 +22,12 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsc -p tsconfig.json && bun vitest run --config vite.config.ts",
-    "test:watch": "bun vitest --config vite.config.ts",
+    "test": "tsc -p tsconfig.json && bun vitest run",
+    "test:watch": "bun vitest",
     "build": "tsup src/index.ts --format cjs,esm --dts"
   },
   "dependencies": {
+    "@spotify-effect/core": "workspace:*",
     "effect": "4.0.0-beta.36"
   },
   "devDependencies": {}

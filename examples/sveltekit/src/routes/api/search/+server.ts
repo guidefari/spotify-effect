@@ -1,8 +1,8 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import * as Effect from "effect/Effect";
-import { Search } from "spotify-effect";
-import type { SearchType } from "spotify-effect";
+import { Search } from "@spotify-effect/core";
+import type { SearchType } from "@spotify-effect/core";
 import { makeAccessTokenLayer } from "$lib/server/spotify";
 import { runTraced } from "$lib/server/telemetry";
 

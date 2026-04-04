@@ -2,31 +2,34 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { ServiceMap } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/unstable/http";
-import { makeSpotifyLayer } from "../makeSpotifyLayer";
-import type { SpotifyApiOptions, SpotifyCredentials } from "../services/SpotifyConfig";
-import type { AuthorizationScope } from "../model/SpotifyAuthorization";
-import type { SpotifyRequestError } from "../errors/SpotifyError";
-import { getAuthorizationUrl } from "../utils/getAuthorizationUrl";
+import {
+  Albums,
+  Artists,
+  Browse,
+  Follow,
+  Library,
+  makeSpotifyLayer,
+  Markets,
+  Personalization,
+  Player,
+  Playlists,
+  Search,
+  SpotifyAuth,
+  Tracks,
+  Users,
+  type AuthorizationScope,
+  type SpotifyApiOptions,
+  type SpotifyCredentials,
+  type SpotifyRequestError,
+} from "@spotify-effect/core";
+import { getAuthorizationUrl } from "@spotify-effect/core";
 import {
   createPkceCodeChallenge,
   createPkceCodeVerifier,
   makeSpotifyBrowserSession,
-  type SpotifyBrowserSession,
   type BrowserRefreshableTokens,
+  type SpotifyBrowserSession,
 } from "./SpotifyBrowserSession";
-import { SpotifyAuth, type SpotifyAuthService } from "../services/SpotifyAuth";
-import { Albums } from "../services/Albums";
-import { Artists } from "../services/Artists";
-import { Browse } from "../services/Browse";
-import { Follow } from "../services/Follow";
-import { Library } from "../services/Library";
-import { Markets } from "../services/Markets";
-import { Personalization } from "../services/Personalization";
-import { Player } from "../services/Player";
-import { Playlists } from "../services/Playlists";
-import { Search } from "../services/Search";
-import { Tracks } from "../services/Tracks";
-import { Users } from "../services/Users";
 
 const browserHttpClientLayer = Layer.mergeAll(
   FetchHttpClient.layer,
@@ -213,9 +216,7 @@ export class SpotifyBrowser extends ServiceMap.Service<SpotifyBrowser, {
       getCredentials(),
     );
 
-    return Layer.effect(SpotifyBrowser)(make).pipe(
-      Layer.provideMerge(spotifyLayer),
-    );
+    return Layer.effect(SpotifyBrowser)(make).pipe(Layer.provideMerge(spotifyLayer));
   }
 }
 
@@ -227,13 +228,13 @@ export {
   makeSpotifyBrowserSession,
   readAuthorizationCallback,
 } from "./SpotifyBrowserSession";
-export { getAuthorizationUrl } from "../utils/getAuthorizationUrl";
+export { getAuthorizationUrl } from "@spotify-effect/core";
 export type {
   BrowserAuthorizationCallback,
   BrowserPkceState,
   BrowserRefreshableTokens,
   SpotifyBrowserSession,
 } from "./SpotifyBrowserSession";
-export type { GetAuthorizationUrlOptions, PKCEExtensionOptions } from "../utils/getAuthorizationUrl";
-export type { SpotifyApiOptions, SpotifyCredentials } from "../services/SpotifyConfig";
-export type { AuthorizationScope } from "../model/SpotifyAuthorization";
+export type { GetAuthorizationUrlOptions, PKCEExtensionOptions } from "@spotify-effect/core";
+export type { SpotifyApiOptions, SpotifyCredentials } from "@spotify-effect/core";
+export type { AuthorizationScope } from "@spotify-effect/core";

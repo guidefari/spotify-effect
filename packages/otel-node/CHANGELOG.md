@@ -6,7 +6,7 @@
 
 - e220cdf: Split Node OpenTelemetry support into `@spotify-effect/otel-node`
 
-  **Breaking change for `spotify-effect`:** `makeSpotifyNodeTelemetryLayer`, `getOtlpTraceExporterUrl`, and `SpotifyNodeTelemetryOptions` are no longer exported from `spotify-effect`. The core package now depends only on `effect`.
+  **Breaking change for `@spotify-effect/core`:** `makeSpotifyNodeTelemetryLayer`, `getOtlpTraceExporterUrl`, and `SpotifyNodeTelemetryOptions` are no longer exported from `@spotify-effect/core`. The core package now depends only on `effect`.
 
   **Migration:** Import from `@spotify-effect/otel-node` instead:
 
@@ -15,7 +15,7 @@
   import {
     makeSpotifyNodeTelemetryLayer,
     getOtlpTraceExporterUrl,
-  } from "spotify-effect";
+  } from "@spotify-effect/core";
 
   // After
   import {

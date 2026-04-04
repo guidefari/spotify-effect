@@ -1,6 +1,6 @@
 # Basic Example
 
-Interactive Effect-based CLI for testing `spotify-effect` manually.
+Interactive Effect-based CLI for testing `@spotify-effect/core` manually.
 
 Run it from the workspace root with:
 

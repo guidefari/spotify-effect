@@ -1,11 +1,12 @@
 import { Effect, ManagedRuntime } from "effect";
-import { makeSpotifyAuth, makeSpotifyLayer, SpotifySession, Tracks, Users } from "spotify-effect";
+import { makeSpotifyLayer, SpotifyAuth, SpotifySession, Tracks, Users } from "@spotify-effect/core";
 import { makeNodeTelemetryLayer } from "@spotify-effect/otel-node";
 
 const appEntry = new URL("./app.ts", import.meta.url);
 const htmlEntry = new URL("./index.html", import.meta.url);
 const pkceEntry = new URL("../../../docs/auth/pkce.md", import.meta.url);
 const packageEntry = new URL("../../../packages/spotify-effect/src/index.ts", import.meta.url);
+const browserPackageEntry = new URL("../../../packages/browser/src/index.ts", import.meta.url);
 
 const isTracingEnabled = () => process.env.SPOTIFY_EFFECT_TRACE === "1";
 const telemetryRuntime = isTracingEnabled()
@@ -19,7 +20,8 @@ const buildClientBundle = async () => {
     format: "esm",
     minify: false,
     alias: {
-      "spotify-effect": packageEntry.pathname,
+      "@spotify-effect/browser": browserPackageEntry.pathname,
+      "@spotify-effect/core": packageEntry.pathname,
     },
   });
 
@@ -41,7 +43,7 @@ const getClientBundle = async () => {
   }
 };
 
-const requestedPort = Number(process.env.PORT ?? "3012");
+const requestedPort = Number(process.env.PORT ?? "3013");
 
 const readJson = async (request) => {
   try {
@@ -72,9 +74,9 @@ const runEffect = async (effect) => {
   }
 };
 
-const server = Bun.serve({
+const startServer = (port) => Bun.serve({
   hostname: "127.0.0.1",
-  port: Number.isFinite(requestedPort) ? requestedPort : 3012,
+  port,
   async fetch(request) {
     const url = new URL(request.url);
 
@@ -120,14 +122,22 @@ const server = Bun.serve({
       }
 
       return runEffect(
-        makeSpotifyAuth({
-          clientId: body.clientId,
-          redirectUri: body.redirectUri,
-        }).getRefreshableUserTokensWithPkce({
-          clientId: body.clientId,
-          code: body.code,
-          codeVerifier: body.codeVerifier,
-        }),
+        Effect.gen(function* () {
+          const auth = yield* SpotifyAuth;
+
+          return yield* auth.getRefreshableUserTokensWithPkce({
+            clientId: body.clientId,
+            code: body.code,
+            codeVerifier: body.codeVerifier,
+          });
+        }).pipe(
+          Effect.provide(
+            makeSpotifyLayer({
+              clientId: body.clientId,
+              redirectUri: body.redirectUri,
+            }),
+          ),
+        ),
       );
     }
 
@@ -198,6 +208,18 @@ const server = Bun.serve({
     return new Response("Not found", { status: 404 });
   },
 });
+
+let server;
+
+try {
+  server = startServer(Number.isFinite(requestedPort) ? requestedPort : 3013);
+} catch (error) {
+  if (!(error instanceof Error) || !error.message.includes("EADDRINUSE")) {
+    throw error;
+  }
+
+  server = startServer(0);
+}
 
 console.log(`spotify-effect browser example: http://127.0.0.1:${server.port}`);
 console.log(

@@ -1,8 +1,8 @@
 import { createSignal } from "solid-js";
 import * as Effect from "effect/Effect";
-import { SpotifyBrowser } from "spotify-effect/browser";
-import type { BrowserRefreshableTokens, AuthorizationScope } from "spotify-effect/browser";
-import type { PrivateUser, SavedAlbum, SavedTrack, Paging } from "spotify-effect";
+import { SpotifyBrowser } from "@spotify-effect/browser";
+import type { BrowserRefreshableTokens, AuthorizationScope } from "@spotify-effect/browser";
+import type { PrivateUser, SavedAlbum, SavedTrack, Paging } from "@spotify-effect/core";
 
 export const DEFAULT_SCOPES = [
   "user-read-private",

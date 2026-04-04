@@ -68,7 +68,7 @@ In practice:
 - if the app runs in the browser, PKCE is the safer flow
 - client credentials are only for app-level access, not user data
 
-That means for `spotify-effect`:
+That means for the `@spotify-effect/*` package family:
 
 - `#11` covers server-to-server app tokens
 - `#12` should cover browser-safe user auth via PKCE and server-style user auth via auth code + refresh token

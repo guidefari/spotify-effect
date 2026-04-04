@@ -3,8 +3,8 @@ import {
   createPkceCodeVerifier,
   getAuthorizationUrl,
   makeSpotifyBrowserSession,
-} from "spotify-effect";
-import type { BrowserRefreshableTokens } from "spotify-effect";
+} from "@spotify-effect/browser";
+import type { BrowserRefreshableTokens } from "@spotify-effect/browser";
 import * as Effect from "effect/Effect";
 
 type BrowserSession = ReturnType<typeof makeSpotifyBrowserSession>;

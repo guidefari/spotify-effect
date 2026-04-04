@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "bun run src/server.js",
-    "typecheck": "bun run --filter spotify-effect build && bun run --filter @spotify-effect/otel-node build && tsc -p tsconfig.json --noEmit"
+    "typecheck": "bun run --filter @spotify-effect/core build && bun run --filter @spotify-effect/browser build && bun run --filter @spotify-effect/otel-node build && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@spotify-effect/otel-node": "workspace:*",
     "effect": "4.0.0-beta.36",
-    "spotify-effect": "workspace:*"
+    "@spotify-effect/browser": "workspace:*",
+    "@spotify-effect/core": "workspace:*"
   }
 }

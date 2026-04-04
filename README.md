@@ -15,7 +15,9 @@ This is an **isomorphic** (works in both Node.js and browser environments) Effec
 
 ## Packages
 
-- **`packages/spotify-effect`** — Core SDK with API clients for Tracks, Users, and authentication
+- **`@spotify-effect/core`** — Core SDK with API clients, auth flows, and shared helpers
+- **`@spotify-effect/browser`** — Browser-focused package with PKCE/session helpers and `SpotifyBrowser`
+- **`@spotify-effect/otel-node`** — Node OpenTelemetry integration
 
 ## Examples
 
@@ -26,18 +28,15 @@ This is an **isomorphic** (works in both Node.js and browser environments) Effec
 ## Quick Start
 
 ```typescript
-import { SpotifyWebApi } from "spotify-effect";
+import { makeSpotifyLayer, Tracks } from "@spotify-effect/core";
 import { Effect } from "effect";
 
 const program = Effect.gen(function* () {
-  const spotify = yield* SpotifyWebApi.create({
-    accessToken: "your-access-token",
-  });
-
-  const track = yield* spotify.tracks.getTrack("4iV5W9uYEdYUVa79Axb7Rh");
+  const tracks = yield* Tracks;
+  const track = yield* tracks.getTrack("4iV5W9uYEdYUVa79Axb7Rh");
 
   return track;
-});
+}).pipe(Effect.provide(makeSpotifyLayer({}, { accessToken: "your-access-token" })));
 
 Effect.runPromise(program);
 ```
@@ -54,4 +53,4 @@ Request and auth flows emit Effect tracing spans at shared boundaries. Enable lo
 
 ## Additional Notes
 
-See notes in `/markdown` for more detailed documentation.
+See `docs/` for more detailed documentation.

@@ -1,7 +1,7 @@
 import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import * as Effect from "effect/Effect";
-import { Follow, Playlists, cursorPaginateAll, paginateAll } from "spotify-effect";
+import { Follow, Playlists, cursorPaginateAll, paginateAll } from "@spotify-effect/core";
 import { makeAccessTokenLayer } from "$lib/server/spotify";
 import { runTracedResult } from "$lib/server/telemetry";
 

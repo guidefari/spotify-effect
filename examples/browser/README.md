@@ -5,7 +5,7 @@ Small browser playground for manual testing.
 Current capabilities:
 
 - paste an access token
-- fetch a track by ID in the browser using `spotify-effect`
+- fetch a track by ID in the browser using `@spotify-effect/core` and `@spotify-effect/browser`
 
 Planned for issue `#12`:
 

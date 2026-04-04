@@ -18,29 +18,31 @@
     },
     "examples/basic": {
       "name": "@examples/basic",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
+        "@spotify-effect/core": "workspace:*",
         "@spotify-effect/otel-node": "workspace:*",
         "effect": "4.0.0-beta.36",
-        "spotify-effect": "workspace:*",
       },
     },
     "examples/browser": {
       "name": "@examples/browser",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
+        "@spotify-effect/browser": "workspace:*",
+        "@spotify-effect/core": "workspace:*",
         "@spotify-effect/otel-node": "workspace:*",
         "effect": "4.0.0-beta.36",
-        "spotify-effect": "workspace:*",
       },
     },
     "examples/solid": {
       "name": "@examples/solid",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "dependencies": {
+        "@spotify-effect/browser": "workspace:*",
+        "@spotify-effect/core": "workspace:*",
         "effect": "4.0.0-beta.36",
         "solid-js": "^1.9.3",
-        "spotify-effect": "workspace:*",
       },
       "devDependencies": {
         "typescript": "^5.9.3",
@@ -50,11 +52,12 @@
     },
     "examples/sveltekit": {
       "name": "@examples/sveltekit",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
+        "@spotify-effect/browser": "workspace:*",
+        "@spotify-effect/core": "workspace:*",
         "@spotify-effect/otel-node": "workspace:*",
         "effect": "4.0.0-beta.36",
-        "spotify-effect": "workspace:*",
       },
       "devDependencies": {
         "@sveltejs/adapter-node": "^5.2.0",
@@ -66,9 +69,17 @@
         "vite": "^6.0.0",
       },
     },
+    "packages/browser": {
+      "name": "@spotify-effect/browser",
+      "version": "0.4.0",
+      "dependencies": {
+        "@spotify-effect/core": "workspace:*",
+        "effect": "4.0.0-beta.36",
+      },
+    },
     "packages/otel-node": {
       "name": "@spotify-effect/otel-node",
-      "version": "0.1.0",
+      "version": "0.4.0",
       "dependencies": {
         "@effect/opentelemetry": "4.0.0-beta.36",
         "@opentelemetry/exporter-trace-otlp-http": "^0.213.0",
@@ -77,8 +88,8 @@
       },
     },
     "packages/spotify-effect": {
-      "name": "spotify-effect",
-      "version": "0.3.0",
+      "name": "@spotify-effect/core",
+      "version": "0.4.0",
       "dependencies": {
         "effect": "4.0.0-beta.36",
       },
@@ -480,6 +491,10 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.59.1", "", { "os": "win32", "cpu": "x64" }, "sha512-wS+zHAJRVP5zOL0e+a3V3E/NTEwM2HEvvNKoDy5Xcfs0o8lljxn+EAFPkUsxihBdmDq1JWzXmmB9cbssCPdxxw=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.59.1", "", { "os": "win32", "cpu": "x64" }, "sha512-rhHyrMeLpErT/C7BxcEsU4COHQUzHyrPYW5tOZUeUhziNtRuYxmDWvqQqzpuUt8xpOgmbKa1btGXfnA/ANVO+g=="],
+
+    "@spotify-effect/browser": ["@spotify-effect/browser@workspace:packages/browser"],
+
+    "@spotify-effect/core": ["@spotify-effect/core@workspace:packages/spotify-effect"],
 
     "@spotify-effect/otel-node": ["@spotify-effect/otel-node@workspace:packages/otel-node"],
 
@@ -888,8 +903,6 @@
     "source-map-js": ["source-map-js@1.2.1", "", {}, "sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA=="],
 
     "spawndamnit": ["spawndamnit@3.0.1", "", { "dependencies": { "cross-spawn": "^7.0.5", "signal-exit": "^4.0.1" } }, "sha512-MmnduQUuHCoFckZoWnXsTg7JaiLBJrKFj9UI2MbRPGaJeVpsLcVBu6P/IGZovziM/YBsellCmsprgNA+w0CzVg=="],
-
-    "spotify-effect": ["spotify-effect@workspace:packages/spotify-effect"],
 
     "sprintf-js": ["sprintf-js@1.0.3", "", {}, "sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g=="],
 

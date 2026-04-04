@@ -1,5 +1,5 @@
 import { createSignal, For, onMount, Show } from "solid-js";
-import type { PrivateUser, SavedAlbum, SavedTrack } from "spotify-effect";
+import type { PrivateUser, SavedAlbum, SavedTrack } from "@spotify-effect/core";
 import {
   clientId,
   DEFAULT_SCOPES,
