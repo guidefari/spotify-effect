@@ -1,15 +1,22 @@
 <script lang="ts">
 	import { session } from '$lib/session.svelte';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 
 	type JsonObject = Record<string, unknown>;
 
 	const PAGE_SIZE = 20;
 
+	function getPageFromUrl(): number {
+		const p = parseInt(page.url.searchParams.get('page') ?? '', 10);
+		return Number.isFinite(p) && p >= 1 ? p : 1;
+	}
+
 	let searchQuery = $state('');
 	let searchResults = $state<JsonObject[] | null>(null);
 	let libraryAlbums = $state<JsonObject[] | null>(null);
 	let libraryTotal = $state(0);
-	let libraryOffset = $state(0);
+	let libraryOffset = $state((getPageFromUrl() - 1) * PAGE_SIZE);
 	let selectedAlbum = $state<JsonObject | null>(null);
 	let isLoadingLibrary = $state(false);
 	let isLoadingSearch = $state(false);
@@ -106,7 +113,14 @@
 		const newOffset = direction === 'next'
 			? libraryOffset + PAGE_SIZE
 			: Math.max(0, libraryOffset - PAGE_SIZE);
-		fetchLibrary(newOffset);
+		const newPage = Math.floor(newOffset / PAGE_SIZE) + 1;
+		const url = new URL(page.url);
+		if (newPage <= 1) {
+			url.searchParams.delete('page');
+		} else {
+			url.searchParams.set('page', String(newPage));
+		}
+		goto(url.toString(), { replaceState: false, noScroll: true });
 	}
 
 	async function performSearch(query: string) {
@@ -161,8 +175,19 @@
 	}
 
 	$effect(() => {
+		const urlPage = getPageFromUrl();
+		const urlOffset = (urlPage - 1) * PAGE_SIZE;
+		if (urlOffset !== libraryOffset) {
+			libraryOffset = urlOffset;
+			if (session.tokens?.accessToken) {
+				fetchLibrary(urlOffset);
+			}
+		}
+	});
+
+	$effect(() => {
 		if (session.tokens?.accessToken && !libraryAlbums && !isLoadingLibrary) {
-			fetchLibrary();
+			fetchLibrary(libraryOffset);
 		}
 	});
 
@@ -182,6 +207,9 @@
 
 	const gridLabel = $derived(searchQuery.trim() && searchResults ? 'search results' : 'your library');
 	const isGridLoading = $derived(searchQuery.trim() ? isLoadingSearch : isLoadingLibrary);
+	const skeletonCount = $derived(
+		libraryAlbums ? Math.min(libraryAlbums.length || PAGE_SIZE, PAGE_SIZE) : PAGE_SIZE
+	);
 </script>
 
 <div class="stack" style="gap: 20px">
@@ -219,8 +247,26 @@
 	{/if}
 
 	{#if isLoadingDetail}
-		<div class="card" style="text-align: center; padding: 40px">
-			<span class="spinner"></span>
+		<div>
+			<div class="skeleton-text" style="width: 60px; height: 14px; margin-bottom: 12px"></div>
+			<div class="section-header"><div class="skeleton-text" style="width: 100px; height: 14px"></div></div>
+			<div class="card stack">
+				<div class="album-header">
+					<div class="skeleton album-art"></div>
+					<div class="album-meta">
+						<div class="skeleton-text" style="width: 180px; height: 20px"></div>
+						<div class="skeleton-text" style="width: 120px; height: 14px"></div>
+						<div class="skeleton-text" style="width: 100px; height: 14px"></div>
+					</div>
+				</div>
+				{#each { length: 6 } as _, i (i)}
+					<div class="track-row">
+						<div class="skeleton-text" style="width: 16px; height: 12px; margin: 0 auto"></div>
+						<div class="skeleton-text" style="width: 70%; height: 13px"></div>
+						<div class="skeleton-text" style="width: 32px; height: 12px; margin-left: auto"></div>
+					</div>
+				{/each}
+			</div>
 		</div>
 	{:else if selectedAlbum}
 		<div>
@@ -306,8 +352,14 @@
 		<div>
 			<div class="section-header">{gridLabel}</div>
 			{#if isGridLoading}
-				<div class="card" style="text-align: center; padding: 40px">
-					<span class="spinner"></span>
+				<div class="album-grid">
+					{#each { length: skeletonCount } as _, i (i)}
+						<div class="album-card skeleton-card">
+							<div class="skeleton album-card-placeholder"></div>
+							<div class="skeleton-text" style="width: 80%; height: 12px"></div>
+							<div class="skeleton-text" style="width: 55%; height: 11px"></div>
+						</div>
+					{/each}
 				</div>
 			{:else if displayAlbums.length > 0}
 				<div class="album-grid">
@@ -541,6 +593,29 @@
 	.copy-btn:hover {
 		color: var(--accent);
 		border-color: var(--accent-border);
+	}
+
+	@keyframes shimmer {
+		0% { background-position: -200% 0; }
+		100% { background-position: 200% 0; }
+	}
+
+	.skeleton {
+		background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
+		background-size: 200% 100%;
+		animation: shimmer 1.5s ease-in-out infinite;
+	}
+
+	.skeleton-text {
+		background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
+		background-size: 200% 100%;
+		animation: shimmer 1.5s ease-in-out infinite;
+		border-radius: 4px;
+	}
+
+	.skeleton-card {
+		cursor: default;
+		pointer-events: none;
 	}
 
 	.pagination {
