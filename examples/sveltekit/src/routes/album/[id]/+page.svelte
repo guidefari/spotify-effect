@@ -3,8 +3,8 @@
 	import { session } from '$lib/session.svelte';
 	import { page } from '$app/state';
 	import type { JsonObject } from '../album-helpers';
-	import AlbumDetail from '../AlbumDetail.svelte';
-	import AlbumDetailSkeleton from '../AlbumDetailSkeleton.svelte';
+  import AlbumDetailSkeleton from '../AlbumDetailSkeleton.svelte';
+  import AlbumDetail from '../AlbumDetail.svelte';
 
 	const albumId = $derived(page.params.id);
 
