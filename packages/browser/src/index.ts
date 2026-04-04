@@ -15,6 +15,7 @@ import {
   Playlists,
   Search,
   SpotifyAuth,
+  SpotifyConfigurationError,
   Tracks,
   Users,
   type AuthorizationScope,
@@ -143,7 +144,9 @@ export class SpotifyBrowser extends ServiceMap.Service<SpotifyBrowser, {
             Effect.gen(function* () {
               const pkceState = session.getPkceState();
               if (!pkceState) {
-                return yield* Effect.die(new Error("No stored PKCE state. Start the login flow first."));
+                return yield* new SpotifyConfigurationError({
+                  message: "No stored PKCE state. Start the login flow first.",
+                });
               }
 
               const result = yield* auth.getRefreshableUserTokensWithPkce({

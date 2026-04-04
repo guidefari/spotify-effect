@@ -21,10 +21,10 @@
     "access": "public"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsc -p tsconfig.json && bun vitest run",
+    "typecheck": "bun run --filter @spotify-effect/core build && tsc -p tsconfig.json --noEmit",
+    "test": "bun run --filter @spotify-effect/core build && tsc -p tsconfig.json && bun vitest run",
     "test:watch": "bun vitest",
-    "build": "tsup src/index.ts --format cjs,esm --dts"
+    "build": "bun run --filter @spotify-effect/core build && tsup src/index.ts --format cjs,esm --dts"
   },
   "dependencies": {
     "@spotify-effect/core": "workspace:*",

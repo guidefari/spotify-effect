@@ -1,3 +1,4 @@
+import { inspect } from "node:util";
 import * as Data from "effect/Data";
 import { Console, Effect, ManagedRuntime } from "effect";
 import { makeSpotifyLayer, Tracks } from "@spotify-effect/core";
@@ -233,7 +234,7 @@ const program = resolveInputs(process.argv.slice(2)).pipe(
       const tracks = yield* Tracks;
       const track = yield* tracks.getTrack(inputs.trackId);
 
-      yield* Console.log(JSON.stringify(track, null, 2));
+      yield* Console.log(inspect(track, { depth: null, colors: false, compact: false }));
     }).pipe(Effect.provide(spotifyLayer));
   }),
   Effect.matchEffect({
