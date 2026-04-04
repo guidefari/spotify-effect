@@ -21,11 +21,8 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
-      - name: Typecheck Workspace
-        run: bun run typecheck
-
-      - name: Build Workspace
-        run: bun run build
+      - name: Verify Workspace
+        run: bun run release:ci
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
