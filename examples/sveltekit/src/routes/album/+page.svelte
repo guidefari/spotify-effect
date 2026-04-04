@@ -3,15 +3,24 @@
 
 	type JsonObject = Record<string, unknown>;
 
+	const PAGE_SIZE = 20;
+
 	let searchQuery = $state('');
 	let searchResults = $state<JsonObject[] | null>(null);
 	let libraryAlbums = $state<JsonObject[] | null>(null);
+	let libraryTotal = $state(0);
+	let libraryOffset = $state(0);
 	let selectedAlbum = $state<JsonObject | null>(null);
 	let isLoadingLibrary = $state(false);
 	let isLoadingSearch = $state(false);
 	let isLoadingDetail = $state(false);
 	let error = $state<string | null>(null);
 	let showRaw = $state(false);
+
+	const libraryPage = $derived(Math.floor(libraryOffset / PAGE_SIZE) + 1);
+	const libraryTotalPages = $derived(Math.max(1, Math.ceil(libraryTotal / PAGE_SIZE)));
+	const hasNextPage = $derived(libraryOffset + PAGE_SIZE < libraryTotal);
+	const hasPrevPage = $derived(libraryOffset > 0);
 
 	const getImage = (item: JsonObject): string | null => {
 		const images = item.images as Array<JsonObject> | undefined;
@@ -62,7 +71,7 @@
 		setTimeout(() => { if (copiedField === field) copiedField = null; }, 1500);
 	}
 
-	async function fetchLibrary() {
+	async function fetchLibrary(offset = 0) {
 		const accessToken = session.tokens?.accessToken;
 		if (!accessToken) return;
 
@@ -72,7 +81,7 @@
 			const response = await fetch('/api/library', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ accessToken, limit: 50, offset: 0 })
+				body: JSON.stringify({ accessToken, limit: PAGE_SIZE, offset })
 			});
 			const data: unknown = await response.json();
 			if (!response.ok || typeof data !== 'object' || data === null) {
@@ -84,11 +93,20 @@
 			libraryAlbums = items
 				.map((item) => item.album)
 				.filter((a): a is JsonObject => typeof a === 'object' && a !== null);
+			libraryTotal = (albumsPage?.total as number) ?? 0;
+			libraryOffset = offset;
 		} catch (err) {
 			error = err instanceof Error ? err.message : String(err);
 		} finally {
 			isLoadingLibrary = false;
 		}
+	}
+
+	function goToPage(direction: 'next' | 'prev') {
+		const newOffset = direction === 'next'
+			? libraryOffset + PAGE_SIZE
+			: Math.max(0, libraryOffset - PAGE_SIZE);
+		fetchLibrary(newOffset);
 	}
 
 	async function performSearch(query: string) {
@@ -310,6 +328,17 @@
 					{searchQuery.trim() ? 'no albums found' : 'no saved albums'}
 				</div>
 			{/if}
+
+			{#if !searchQuery.trim() && libraryTotal > 0}
+				<div class="pagination">
+					<button class="ghost" onclick={() => goToPage('prev')} disabled={!hasPrevPage}>← prev</button>
+					<span class="pagination-info">
+						{libraryOffset + 1}–{Math.min(libraryOffset + PAGE_SIZE, libraryTotal)} of {libraryTotal}
+						<span class="pagination-page">page {libraryPage}/{libraryTotalPages}</span>
+					</span>
+					<button class="ghost" onclick={() => goToPage('next')} disabled={!hasNextPage}>next →</button>
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
@@ -512,5 +541,32 @@
 	.copy-btn:hover {
 		color: var(--accent);
 		border-color: var(--accent-border);
+	}
+
+	.pagination {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 16px;
+		padding: 12px 0;
+	}
+
+	.pagination-info {
+		font-size: 12px;
+		color: var(--muted);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
+	}
+
+	.pagination-page {
+		font-size: 11px;
+		opacity: 0.7;
+	}
+
+	.pagination button:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
 	}
 </style>
