@@ -19,7 +19,7 @@
     "example:browser": "SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 turbo run dev --filter=@examples/browser",
     "example:solid": "SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 turbo run dev --filter=@examples/solid",
     "example:sveltekit": "SPOTIFY_EFFECT_TRACE=1 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 turbo run dev --filter=@examples/sveltekit",
-    "release:ci": "turbo run typecheck test build",
+    "ci": "turbo run typecheck test build",
     "release": "changeset publish",
     "prepare": "effect-language-service patch"
   },
