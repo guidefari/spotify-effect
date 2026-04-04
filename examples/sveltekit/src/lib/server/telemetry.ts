@@ -1,11 +1,9 @@
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
-import type * as Resource from "@effect/opentelemetry/Resource";
 import { makeNodeTelemetryLayer } from "@spotify-effect/otel-node";
 
 const isTracingEnabled = (): boolean => process.env.SPOTIFY_EFFECT_TRACE === "1";
 
-const telemetryLayer: Layer.Layer<Resource.Resource> | undefined = isTracingEnabled()
+const telemetryLayer = isTracingEnabled()
   ? makeNodeTelemetryLayer("spotify-effect-example-sveltekit")
   : undefined;
 
