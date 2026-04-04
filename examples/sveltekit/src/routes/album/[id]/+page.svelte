@@ -18,6 +18,18 @@
 
 	const isSaved = $derived(albumId ? (savedMap[albumId] ?? false) : false);
 
+	const isJsonObject = (value: unknown): value is JsonObject => {
+		return typeof value === 'object' && value !== null;
+	};
+
+	const getErrorMessage = (value: unknown): string => {
+		if (isJsonObject(value) && typeof value.message === 'string') {
+			return value.message;
+		}
+
+		return JSON.stringify(value);
+	};
+
 	async function fetchAlbum(id: string) {
 		const accessToken = session.tokens?.accessToken;
 		if (!accessToken) return;
@@ -33,9 +45,10 @@
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ accessToken, albumId: id })
 			});
-			const data = await albumResponse.json();
-			if (!albumResponse.ok) throw new Error(data.message ?? JSON.stringify(data));
-			album = data as JsonObject;
+			const data: unknown = await albumResponse.json();
+			if (!albumResponse.ok) throw new Error(getErrorMessage(data));
+			if (!isJsonObject(data)) throw new Error('Invalid album response');
+			album = data;
 		} catch (err) {
 			error = err instanceof Error ? err.message : String(err);
 		} finally {
@@ -54,8 +67,17 @@
 				body: JSON.stringify({ accessToken, albumIds: [id] })
 			});
 			if (!response.ok) return;
-			const data = await response.json();
-			savedMap = { ...savedMap, ...(data as Record<string, boolean>) };
+			const data: unknown = await response.json();
+			if (!isJsonObject(data)) return;
+
+			const nextSaved: Record<string, boolean> = {};
+			for (const [key, value] of Object.entries(data)) {
+				if (typeof value === 'boolean') {
+					nextSaved[key] = value;
+				}
+			}
+
+			savedMap = { ...savedMap, ...nextSaved };
 		} catch {
 			// silent
 		}
@@ -76,8 +98,8 @@
 				body: JSON.stringify({ accessToken, albumIds: [id] })
 			});
 			if (!response.ok) {
-				const data = await response.json();
-				throw new Error((data as JsonObject).message as string ?? JSON.stringify(data));
+				const data: unknown = await response.json();
+				throw new Error(getErrorMessage(data));
 			}
 			savedMap = { ...savedMap, [id]: !wasSaved };
 		} catch (err) {

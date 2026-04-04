@@ -131,7 +131,7 @@
 			{#if getCopyrights(album).length > 0}
 				<span class="kv-key">copyright</span>
 				<span class="kv-value" style="color: var(--muted); font-size: 11px">
-					{#each getCopyrights(album) as c (c.text)}
+					{#each getCopyrights(album) as c, i (`${c.type}:${c.text}:${i}`)}
 						<div>{c.type === 'P' ? '℗' : '©'} {c.text}</div>
 					{/each}
 				</span>
