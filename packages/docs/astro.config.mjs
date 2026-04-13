@@ -4,11 +4,12 @@ import starlightTypeDoc, { typeDocSidebarGroup } from 'starlight-typedoc'
 
 export default defineConfig({
   site: 'https://guidefari.github.io',
-  base: '/spotify-effect',
+  base: '/',
   integrations: [
     starlight({
       title: 'spotify-effect',
       description: 'Effect-native Spotify Web API client',
+      head: [],
       social: {
         github: 'https://github.com/guidefari/spotify-effect',
       },
@@ -19,7 +20,7 @@ export default defineConfig({
             '../../packages/browser/src/index.ts',
             '../../packages/otel-node/src/index.ts',
           ],
-          tsconfig: '../../packages/spotify-effect/tsconfig.json',
+          tsconfig: './tsconfig.typedoc.json',
           output: 'api',
           typeDoc: {
             entryPointStrategy: 'resolve',
@@ -34,12 +35,12 @@ export default defineConfig({
         {
           label: 'Guides',
           items: [
-            { label: 'Getting Started', slug: 'guides/getting-started' },
-            { label: 'Authentication', slug: 'guides/authentication' },
-            { label: 'Browser (PKCE)', slug: 'guides/browser' },
-            { label: 'Error Handling', slug: 'guides/error-handling' },
-            { label: 'Pagination', slug: 'guides/pagination' },
-            { label: 'Observability', slug: 'guides/observability' },
+            { label: 'Getting Started', link: '/guides/getting-started/' },
+            { label: 'Authentication', link: '/guides/authentication/' },
+            { label: 'Browser (PKCE)', link: '/guides/browser/' },
+            { label: 'Error Handling', link: '/guides/error-handling/' },
+            { label: 'Pagination', link: '/guides/pagination/' },
+            { label: 'Observability', link: '/guides/observability/' },
           ],
         },
         typeDocSidebarGroup,
