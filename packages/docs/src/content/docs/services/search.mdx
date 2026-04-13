@@ -1,0 +1,153 @@
+---
+title: Search
+description: Search the Spotify catalog for albums, artists, tracks, playlists, and more.
+head: []
+---
+
+The `Search` service lets you search Spotify's catalog. You can search across one or more types simultaneously.
+
+## Basic Usage
+
+```ts
+import { Effect } from 'effect'
+import { Search, makeSpotifyLayer } from '@spotify-effect/core'
+
+const program = Effect.gen(function* () {
+  const search = yield* Search
+
+  const results = yield* search.search('Tame Impala', ['artist', 'track'], {
+    limit: 5,
+  })
+
+  return results
+})
+```
+
+## Search Types
+
+Available `SearchType` values:
+- `'album'`
+- `'artist'`
+- `'episode'`
+- `'genre'`
+- `'playlist'`
+- `'show'`
+- `'track'`
+- `'audiobook'`
+
+## Search by Type
+
+### Search for tracks
+
+```ts
+const program = Effect.gen(function* () {
+  const search = yield* Search
+
+  const results = yield* search.search('Let It Be', ['track'], {
+    limit: 10,
+    market: 'US',
+  })
+
+  const tracks = results.tracks?.items ?? []
+  for (const track of tracks) {
+    console.log(`${track.name} — ${track.artists[0]?.name}`)
+  }
+})
+```
+
+### Search for artists
+
+```ts
+const program = Effect.gen(function* () {
+  const search = yield* Search
+
+  const results = yield* search.search('Radiohead', ['artist'])
+
+  const artist = results.artists?.items[0]
+  if (artist) {
+    console.log(`${artist.name} — ${artist.followers.total} followers`)
+  }
+})
+```
+
+### Multi-type search
+
+```ts
+const program = Effect.gen(function* () {
+  const search = yield* Search
+
+  const results = yield* search.search('Dark Side of the Moon', [
+    'album',
+    'track',
+  ])
+
+  console.log('Albums:', results.albums?.items.length)
+  console.log('Tracks:', results.tracks?.items.length)
+})
+```
+
+## Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `q` | `string` | Search query (required) |
+| `type` | `SearchType[]` | Types to search (required) |
+| `market` | `string` | ISO country code for content availability |
+| `limit` | `number` | Max results per type (1-50, default 20) |
+| `offset` | `number` | Pagination offset |
+| `include_external` | `'audio'` | Include external content |
+
+## Examples
+
+### Search with market filter
+
+```ts
+const results = yield* search.search('Despacito', ['track'], {
+  market: 'US',  // Only return content available in US
+})
+```
+
+### Build a search service
+
+```ts
+import { Effect, Context } from 'effect'
+
+interface SearchResult {
+  readonly artists: ReadonlyArray<Artist>
+  readonly tracks: ReadonlyArray<Track>
+}
+
+const searchByQuery = (query: string): Effect.Effect<SearchResult> =>
+  Effect.gen(function* () {
+    const search = yield* Search
+
+    const results = yield* search.search(query, ['artist', 'track'], {
+      limit: 10,
+    })
+
+    return {
+      artists: results.artists?.items ?? [],
+      tracks: results.tracks?.items ?? [],
+    }
+  })
+```
+
+### Paginated search
+
+```ts
+const paginatedSearch = (query: string, page: number) =>
+  Effect.gen(function* () {
+    const search = yield* Search
+
+    return yield* search.search(query, ['track'], {
+      limit: 20,
+      offset: page * 20,
+    })
+  })
+```
+
+## Next steps
+
+- [Albums](/services/albums) — get album details and tracks
+- [Artists](/services/artists) — get artist info and related artists
+- [Tracks](/services/tracks) — get audio features and analysis

@@ -1,0 +1,165 @@
+---
+title: Users
+description: Get user profiles and public user information.
+head: []
+---
+
+The `Users` service retrieves user profile information.
+
+## Current User Profile
+
+### Get the authenticated user's profile
+
+```ts
+import { Effect } from 'effect'
+import { Users, makeSpotifyLayer } from '@spotify-effect/core'
+
+const program = Effect.gen(function* () {
+  const users = yield* Users
+
+  const me = yield* users.getCurrentUserProfile()
+
+  console.log(`Name: ${me.display_name}`)
+  console.log(`Email: ${me.email}`)
+  console.log(`Country: ${me.country}`)
+  console.log(`Followers: ${me.followers.total}`)
+  console.log(`ID: ${me.id}`)
+})
+```
+
+### Profile object fields
+
+```ts
+interface PrivateUser {
+  id: string
+  display_name: string
+  email: string
+  images: Image[]
+  country: string           // ISO 3166-1 alpha-2
+  product: 'free' | 'premium'
+  followers: { total: number }
+  birthdate: string
+  href: string
+  uri: string
+}
+```
+
+## Public User Profiles
+
+### Get any user's public profile
+
+```ts
+const program = Effect.gen(function* () {
+  const users = yield* Users
+
+  const user = yield* users.getUser('spotify')
+
+  console.log(`${user.display_name ?? user.id}`)
+  console.log(`Followers: ${user.followers.total}`)
+  console.log(`Profile: ${user.external_urls.spotify}`)
+})
+```
+
+### Public profile object
+
+```ts
+interface PublicUser {
+  id: string
+  display_name: string | null
+  images: Image[]
+  followers: { total: number; href: string }
+  href: string
+  uri: string
+  type: 'user'
+  external_urls: { spotify: string }
+}
+```
+
+## Practical Examples
+
+### Display user info card
+
+```ts
+const displayUserCard = () =>
+  Effect.gen(function* () {
+    const users = yield* Users
+
+    const me = yield* users.getCurrentUserProfile()
+
+    return `
+┌─────────────────────────────┐
+│ ${me.display_name ?? me.id}
+├─────────────────────────────┤
+│ Email: ${me.email}
+│ Country: ${me.country}
+│ Plan: ${me.product}
+│ Followers: ${me.followers.total}
+└─────────────────────────────┘
+`
+  })
+```
+
+### Compare two users' popularity
+
+```ts
+const compareUsers = (userId1: string, userId2: string) =>
+  Effect.gen(function* () {
+    const users = yield* Users
+
+    const [user1, user2] = yield* Effect.all([
+      users.getUser(userId1),
+      users.getUser(userId2),
+    ])
+
+    return {
+      user1: { id: user1.id, followers: user1.followers.total },
+      user2: { id: user2.id, followers: user2.followers.total },
+      morePopular: user1.followers.total > user2.followers.total ? user1.id : user2.id,
+    }
+  })
+```
+
+### Get user's public playlists
+
+```ts
+import { Effect } from 'effect'
+import { Users, Playlists } from '@spotify-effect/core'
+
+const getUserPlaylists = (userId: string) =>
+  Effect.gen(function* () {
+    const playlists = yield* Playlists
+
+    const userPlaylists = yield* playlists.getUserPlaylists(userId, {
+      limit: 50,
+    })
+
+    return userPlaylists.items
+  })
+```
+
+### Create playlist for user
+
+```ts
+const createUserPlaylist = (userId: string, name: string) =>
+  Effect.gen(function* () {
+    const playlists = yield* Playlists
+
+    return yield* playlists.createPlaylist(userId, name, {
+      description: `Created by ${userId}`,
+      public: true,
+    })
+  })
+```
+
+## Scopes Required
+
+| Operation | Required Scope |
+|-----------|---------------|
+| `getCurrentUserProfile` | `user-read-email` + `user-read-private` |
+| `getUser` | None (public) |
+
+## Next steps
+
+- [Playlists](/services/playlists) — manage playlists
+- [Library](/services/library) — manage saved content
+- [Personalization](/services/personalization) — top artists and tracks

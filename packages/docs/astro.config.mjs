@@ -9,6 +9,7 @@ export default defineConfig({
     starlight({
       title: 'spotify-effect',
       description: 'Effect-native Spotify Web API client',
+      disable404Route: true,
       head: [],
       social: {
         github: 'https://github.com/guidefari/spotify-effect',
@@ -41,6 +42,23 @@ export default defineConfig({
             { label: 'Error Handling', link: '/guides/error-handling/' },
             { label: 'Pagination', link: '/guides/pagination/' },
             { label: 'Observability', link: '/guides/observability/' },
+          ],
+        },
+        {
+          label: 'Services',
+          items: [
+            { label: 'Albums', link: '/services/albums/' },
+            { label: 'Artists', link: '/services/artists/' },
+            { label: 'Browse', link: '/services/browse/' },
+            { label: 'Follow', link: '/services/follow/' },
+            { label: 'Library', link: '/services/library/' },
+            { label: 'Markets', link: '/services/markets/' },
+            { label: 'Player', link: '/services/player/' },
+            { label: 'Personalization', link: '/services/personalization/' },
+            { label: 'Playlists', link: '/services/playlists/' },
+            { label: 'Search', link: '/services/search/' },
+            { label: 'Tracks', link: '/services/tracks/' },
+            { label: 'Users', link: '/services/users/' },
           ],
         },
         typeDocSidebarGroup,

@@ -1,0 +1,219 @@
+---
+title: Artists
+description: Get artists, their albums, top tracks, and related artists.
+head: []
+---
+
+The `Artists` service fetches artist information from Spotify's catalog.
+
+## Getting Artists
+
+### Get a single artist
+
+```ts
+import { Effect } from 'effect'
+import { Artists, makeSpotifyLayer } from '@spotify-effect/core'
+
+const program = Effect.gen(function* () {
+  const artists = yield* Artists
+
+  const artist = yield* artists.getArtist('0YC192cP3KPCRWx8zr8MfZ')
+
+  console.log(`${artist.name}`)
+  console.log(`Followers: ${artist.followers.total}`)
+  console.log(`Genres: ${artist.genres.join(', ')}`)
+  console.log(`Popularity: ${artist.popularity}`)
+})
+```
+
+### Get multiple artists
+
+```ts
+const program = Effect.gen(function* () {
+  const artists = yield* Artists
+
+  const results = yield* artists.getArtists([
+    '0YC192cP3KPCRWx8zr8MfZ',
+    '2YZyLoL8N0Wb9xBt1NhZWg',
+    '1Xyo4u8uXC1ZmMpatF05PJ',
+  ])
+
+  for (const artist of results) {
+    console.log(`${artist.name} — ${artist.followers.total} followers`)
+  }
+})
+```
+
+## Artist Albums
+
+### Get an artist's albums
+
+```ts
+const program = Effect.gen(function* () {
+  const artists = yield* Artists
+
+  const albums = yield* artists.getArtistAlbums('0YC192cP3KPCRWx8zr8MfZ', {
+    include_groups: ['album', 'single'],
+    market: 'US',
+    limit: 20,
+  })
+
+  for (const album of albums.items) {
+    console.log(`${album.name} (${album.album_type})`)
+  }
+})
+```
+
+### Album groups filter
+
+| Value | Description |
+|-------|-------------|
+| `'album'` | Main releases |
+| `'single'` | Singles |
+| `'compilation'` | Compilations |
+| `'appears_on'` | Appearances on other albums |
+| `'ep'` | EPs (treated as single) |
+
+## Top Tracks
+
+### Get an artist's top tracks
+
+```ts
+const program = Effect.gen(function* () {
+  const artists = yield* Artists
+
+  const tracks = yield* artists.getArtistTopTracks(
+    '0YC192cP3KPCRWx8zr8MfZ',
+    'US'  // ISO country code
+  )
+
+  for (const track of tracks) {
+    console.log(`${track.name} — ${track.popularity}`)
+  }
+})
+```
+
+## Related Artists
+
+### Get artists related to another
+
+```ts
+const program = Effect.gen(function* () {
+  const artists = yield* Artists
+
+  const related = yield* artists.getRelatedArtists('0YC192cP3KPCRWx8zr8MfZ')
+
+  console.log('Fans also like:')
+  for (const artist of related) {
+    console.log(`  ${artist.name}`)
+  }
+})
+```
+
+## Practical Examples
+
+### Get full artist discography
+
+```ts
+import { Effect } from 'effect'
+import { Artists, Albums, paginateAll } from '@spotify-effect/core'
+
+const getFullDiscography = (artistId: string) =>
+  Effect.gen(function* () {
+    const artists = yield* Artists
+    const albums = yield* Albums
+
+    const artist = yield* artists.getArtist(artistId)
+    const discography = yield* paginateAll(
+      (offset, limit) =>
+        artists.getArtistAlbums(artistId, {
+          offset,
+          limit,
+          include_groups: ['album', 'single', 'compilation'],
+          market: 'US',
+        }),
+      50,
+    )
+
+    const albumIds = [...new Set(discography.map(a => a.id))]
+    const fullAlbums = yield* albums.getAlbums(albumIds)
+
+    return {
+      artist,
+      albums: fullAlbums.filter((a): a is NonNullable<typeof a> => a !== null),
+    }
+  })
+```
+
+### Find artists by genre
+
+```ts
+import { Effect } from 'effect'
+import { Artists } from '@spotify-effect/core'
+import { paginateAll } from '@spotify-effect/core'
+
+const getArtistsByGenre = (genre: string) =>
+  Effect.gen(function* () {
+    const artists = yield* Artists
+    const browse = yield* Browse
+
+    const seeds = yield* browse.getAvailableGenreSeeds()
+
+    if (!seeds.includes(genre)) {
+      return yield* Effect.fail(new Error(`Unknown genre: ${genre}`))
+    }
+
+    const recommendations = yield* browse.getRecommendations({
+      seed_genres: [genre],
+      limit: 20,
+    })
+
+    const artistIds = recommendations.tracks.flatMap(t =>
+      t.artists.map(a => a.id)
+    )
+
+    const uniqueIds = [...new Set(artistIds)].slice(0, 50)
+    return yield* artists.getArtists(uniqueIds)
+  })
+```
+
+### Discover similar artists
+
+```ts
+const getSimilarArtists = (artistId: string, maxDepth = 1) =>
+  Effect.gen(function* () {
+    const artists = yield* Artists
+
+    const related = yield* artists.getRelatedArtists(artistId)
+
+    const allArtists = [...related]
+
+    for (const artist of related.slice(0, maxDepth)) {
+      const subRelated = yield* artists.getRelatedArtists(artist.id)
+      allArtists.push(...subRelated)
+    }
+
+    return allArtists
+  })
+```
+
+## Artist Object
+
+```ts
+interface Artist {
+  id: string
+  name: string
+  genres: string[]
+  popularity: number
+  followers: { total: number; href: string }
+  images: Image[]
+  href: string
+  uri: string
+}
+```
+
+## Next steps
+
+- [Albums](/services/albums) — get artist's albums
+- [Search](/services/search) — search for artists
+- [Browse](/services/browse) — featured content and recommendations

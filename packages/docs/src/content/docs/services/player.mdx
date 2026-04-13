@@ -1,0 +1,223 @@
+---
+title: Player
+description: Control playback, manage devices, and access currently playing track.
+head: []
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+
+The `Player` service controls Spotify playback. Requires the `user-read-playback-state` scope for read operations and `user-modify-playback-state` for control operations.
+
+## Getting Playback State
+
+### Current playback info
+
+```ts
+import { Effect } from 'effect'
+import { Player, makeSpotifyLayer } from '@spotify-effect/core'
+
+const program = Effect.gen(function* () {
+  const player = yield* Player
+
+  const playback = yield* player.getPlaybackInfo()
+
+  if (playback) {
+    console.log(`Playing: ${playback.item?.name}`)
+    console.log(`Device: ${playback.device.name}`)
+    console.log(`Progress: ${playback.progress_ms}ms`)
+  }
+})
+```
+
+### Currently playing track
+
+```ts
+const program = Effect.gen(function* () {
+  const player = yield* Player
+
+  const current = yield* player.getCurrentlyPlayingTrack({
+    market: 'US',
+  })
+
+  if (current?.item?._tag === 'Track') {
+    console.log(`${current.item.name} by ${current.item.artists[0]?.name}`)
+  }
+})
+```
+
+### Get available devices
+
+```ts
+const program = Effect.gen(function* () {
+  const player = yield* Player
+
+  const devices = yield* player.getMyDevices()
+
+  for (const device of devices) {
+    console.log(`${device.name} (${device.type}) - ${device.is_active ? 'active' : 'inactive'}`)
+  }
+})
+```
+
+### Get user's queue
+
+```ts
+const program = Effect.gen(function* () {
+  const player = yield* Player
+
+  const queue = yield* player.getQueue()
+
+  console.log('Currently playing:', queue.currently_playing?.name)
+  console.log('Queue:', queue.queue.map(item => item.name))
+})
+```
+
+## Controlling Playback
+
+### Transfer playback to a device
+
+```ts
+const program = Effect.gen(function* () {
+  const player = yield* Player
+
+  // Get devices first
+  const devices = yield* player.getMyDevices()
+  const myDevice = devices.find(d => d.name === 'My Speaker')
+
+  if (myDevice) {
+    yield* player.transferPlayback(myDevice.id, {
+      play: true,
+    })
+  }
+})
+```
+
+### Start playback
+
+<Tabs>
+  <TabItem label="By track URIs">
+
+```ts
+const program = Effect.gen(function* () {
+  const player = yield* Player
+
+  yield* player.play({
+    context_uri: 'spotify:album:4aawyAB9vmqN3uQ7FjRGTy',
+    offset: { position: 3 },
+  })
+})
+```
+
+  </TabItem>
+  <TabItem label="By track URIs">
+
+```ts
+yield* player.play({
+  uris: [
+    'spotify:track:4cOdK2wGLETKBW3PvgPWqT',
+    'spotify:track:5as3aKm2oGOikBg4arGMLi',
+  ],
+})
+```
+
+  </TabItem>
+  <TabItem label="From position">
+
+```ts
+yield* player.play({
+  context_uri: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M',
+  offset: { position: 0 },
+  position_ms: 30000,
+})
+```
+
+  </TabItem>
+</Tabs>
+
+### Pause playback
+
+```ts
+yield* player.pause()
+```
+
+### Skip tracks
+
+```ts
+yield* player.skipToNext()
+yield* player.skipToPrevious()
+```
+
+### Seek to position
+
+```ts
+// Seek to 1 minute (60000ms)
+yield* player.seek(60000)
+```
+
+### Set volume
+
+```ts
+// Set volume to 50%
+yield* player.setVolume(50)
+```
+
+### Toggle shuffle
+
+```ts
+yield* player.setShuffle(true)  // Enable shuffle
+yield* player.setShuffle(false) // Disable shuffle
+```
+
+### Set repeat mode
+
+```ts
+import type { RepeatState } from '@spotify-effect/core'
+
+yield* player.setRepeat('track')    // Repeat current track
+yield* player.setRepeat('context')  // Repeat context
+yield* player.setRepeat('off')      // Disable repeat
+```
+
+### Add to queue
+
+```ts
+const program = Effect.gen(function* () {
+  const player = yield* Player
+
+  yield* player.addToQueue('spotify:track:4cOdK2wGLETKBW3PvgPWqT')
+})
+```
+
+## Recently Played
+
+```ts
+const program = Effect.gen(function* () {
+  const player = yield* Player
+
+  const history = yield* player.getRecentlyPlayedTracks({
+    limit: 50,
+  })
+
+  for (const item of history.items) {
+    console.log(`${item.track.name} — ${item.played_at}`)
+  }
+})
+```
+
+## Scopes Required
+
+| Operation | Required Scope |
+|-----------|---------------|
+| `getPlaybackInfo` | `user-read-playback-state` |
+| `getCurrentlyPlayingTrack` | `user-read-currently-playing` |
+| `getMyDevices` | `user-read-playback-state` |
+| `getQueue` | `user-read-playback-state` |
+| `getRecentlyPlayedTracks` | `user-read-recently-played` |
+| `play`, `pause`, `skipToNext`, etc. | `user-modify-playback-state` |
+| `transferPlayback` | `user-modify-playback-state` |
+
+## Next steps
+
+- [Playlists](/services/playlists) — control playlists
+- [Search](/services/search) — find tracks to play
+- [Library](/services/library) — manage saved tracks

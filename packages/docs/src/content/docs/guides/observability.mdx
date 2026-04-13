@@ -4,4 +4,205 @@ description: Add OpenTelemetry tracing to your spotify-effect application with @
 head: []
 ---
 
-Coming soon. `@spotify-effect/otel-node` exports `makeNodeTelemetryLayer` and `getOtlpTraceExporterUrl`. Set `OTEL_EXPORTER_OTLP_ENDPOINT` to ship traces to your collector; falls back to `ConsoleSpanExporter` when no endpoint is configured.
+import { Tabs, TabItem, Steps } from '@astrojs/starlight/components'
+
+`@spotify-effect/otel-node` provides OpenTelemetry tracing for your Spotify API calls. This helps you understand request latency, trace errors, and monitor API usage in production.
+
+## Installation
+
+<Tabs>
+  <TabItem label="bun">
+    ```sh
+    bun add @spotify-effect/otel-node @opentelemetry/exporter-trace-otlp-http @effect/opentelemetry
+    ```
+  </TabItem>
+  <TabItem label="npm">
+    ```sh
+    npm install @spotify-effect/otel-node @opentelemetry/exporter-trace-otlp-http @effect/opentelemetry
+    ```
+  </TabItem>
+</Tabs>
+
+## Setup
+
+### Basic configuration
+
+```ts
+import { Effect, Layer } from 'effect'
+import { NodeRuntime } from '@effect/platform-node'
+import { makeSpotifyLayer } from '@spotify-effect/core'
+import { makeNodeTelemetryLayer } from '@spotify-effect/otel-node'
+
+const TelemetryLayer = makeNodeTelemetryLayer('spotify-app', {
+  serviceVersion: '1.0.0',
+})
+
+const SpotifyLayer = makeSpotifyLayer({
+  clientId: process.env.SPOTIFY_CLIENT_ID!,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
+})
+
+const program = Effect.gen(function* () {
+  const search = yield* Search
+  return yield* search.search('Daft Punk', ['artist'])
+})
+
+program.pipe(
+  Effect.provide(TelemetryLayer),
+  Effect.provide(SpotifyLayer),
+  NodeRuntime.runMain,
+)
+```
+
+### With OTLP endpoint
+
+Set the `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable:
+
+```bash
+# Send traces to your OTLP collector (e.g., Jaeger, Tempo, Honeycomb)
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+
+# Or specify the full v1/traces path
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces
+```
+
+The library automatically detects and uses the endpoint:
+
+```ts
+// If OTEL_EXPORTER_OTLP_ENDPOINT is set, traces go to your collector
+// Otherwise, traces print to console for debugging
+```
+
+### Batch processing
+
+For high-throughput applications, use batch span processing:
+
+```ts
+import { makeNodeTelemetryLayer } from '@spotify-effect/otel-node'
+
+const TelemetryLayer = makeNodeTelemetryLayer('spotify-app', {
+  serviceVersion: '1.0.0',
+  batch: true,  // Use BatchSpanProcessor instead of SimpleSpanProcessor
+})
+```
+
+## What Gets Traced
+
+Each Spotify API call creates a span with:
+
+| Attribute | Description |
+|-----------|-------------|
+| `name` | e.g., `spotify.search.search` |
+| `http.method` | `GET`, `POST`, etc. |
+| `http.url` | Full request URL |
+| `http.status_code` | Response status |
+| `spotify.auth.grant_type` | Token grant type used |
+| `spotify.auth.uses_client_secret` | Whether client credentials were used |
+
+### Example span names
+
+- `spotify.auth.token` — Token acquisition
+- `spotify.search.search` — Search API calls
+- `spotify.player.play` — Playback control
+- `spotify.playlist.addItemsToPlaylist` — Playlist modifications
+
+## Customizing Exporter
+
+For advanced configurations:
+
+```ts
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import * as NodeSdk from '@effect/opentelemetry/NodeSdk'
+import type { Resource } from '@effect/opentelemetry/Resource'
+import { Layer } from 'effect'
+
+const customExporter = new OTLPTraceExporter({
+  url: 'https://api.honeycomb.io/v1/traces',
+  headers: {
+    'x-honeycomb-team': process.env.HONEYCOMB_API_KEY,
+  },
+})
+
+const CustomTelemetryLayer: Layer.Layer<Resource.Resource> = NodeSdk.layer(() => ({
+  resource: {
+    serviceName: 'spotify-app',
+    serviceVersion: '1.0.0',
+  },
+  spanProcessor: new BatchSpanProcessor(customExporter),
+}))
+```
+
+## Viewing Traces
+
+### Console exporter (development)
+
+Without an OTLP endpoint, spans print to stdout:
+
+```
+Span: spotify.auth.token
+  Attributes:
+    spotify.auth.grant_type: client_credentials
+    spotify.auth.uses_client_secret: true
+```
+
+### Jaeger
+
+```bash
+docker run -p 16686:16686 -p 4318:4318 jaegertracing/all-in-one:latest
+```
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` and open http://localhost:16686.
+
+### Tempo + Grafana
+
+```yaml
+# docker-compose.yml
+tempo:
+  image: grafana/tempo:latest
+  ports:
+    - "4317:4317"   # OTLP gRPC
+    - "4318:4318"   # OTLP HTTP
+    - "16686:16686" # UI
+```
+
+### Other backends
+
+Works with any OTLP-compatible backend:
+- **Honeycomb** — `https://api.honeycomb.io/v1/traces`
+- **New Relic** — `https://otlp.nr-data.net:4318`
+- **Datadog** — Use DD_TRACE AGENT
+
+## Integration with Existing Telemetry
+
+### Combining with your app's spans
+
+```ts
+import { Effect, SpanStatus } from 'effect'
+
+const program = Effect.gen(function* () {
+  const span = yield* Effect.currentSpan
+
+  span.addEvent('Starting Spotify search')
+
+  const search = yield* Search
+  const results = yield* search.search('Radiohead', ['album'])
+
+  span.addEvent('Search complete', {
+    'result.count': results.albums?.items.length ?? 0,
+  })
+
+  return results
+}).pipe(
+  Effect.withSpan('search-for-albums'),
+)
+```
+
+### Propagating context
+
+Traces automatically propagate through Effect's context system. Child operations become child spans.
+
+## Next steps
+
+- [Error Handling](/guides/error-handling) — trace error patterns
+- [Getting Started](/guides/getting-started) — quick setup guide

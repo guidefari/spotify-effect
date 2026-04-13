@@ -1,0 +1,237 @@
+---
+title: Playlists
+description: Create, manage, and curate playlists.
+head: []
+---
+
+The `Playlists` service creates and manages Spotify playlists.
+
+## Getting Playlists
+
+### Get user's playlists
+
+```ts
+import { Effect } from 'effect'
+import { Playlists, makeSpotifyLayer } from '@spotify-effect/core'
+
+const program = Effect.gen(function* () {
+  const playlists = yield* Playlists
+
+  const myPlaylists = yield* playlists.getMyPlaylists({ limit: 50 })
+
+  for (const playlist of myPlaylists.items) {
+    console.log(`${playlist.name} (${playlist.tracks.total} tracks)`)
+  }
+})
+```
+
+### Get a specific playlist
+
+```ts
+const program = Effect.gen(function* () {
+  const playlists = yield* Playlists
+
+  const playlist = yield* playlists.getPlaylist('37i9dQZF1DXcBWIGoYBM5M')
+
+  console.log(`${playlist.name} by ${playlist.owner.display_name}`)
+  console.log(`Description: ${playlist.description}`)
+  console.log(`Tracks: ${playlist.tracks.total}`)
+})
+```
+
+### Get playlist tracks
+
+```ts
+const program = Effect.gen(function* () {
+  const playlists = yield* Playlists
+
+  const tracks = yield* playlists.getPlaylistItems('37i9dQZF1DXcBWIGoYBM5M', {
+    fields: ['items(track(name,artists,name))'],
+    limit: 100,
+  })
+
+  for (const item of tracks.items) {
+    if (item.track?._tag === 'Track') {
+      console.log(`${item.track.name} — ${item.track.artists[0]?.name}`)
+    }
+  }
+})
+```
+
+## Creating Playlists
+
+### Create a new playlist
+
+```ts
+const program = Effect.gen(function* () {
+  const playlists = yield* Playlists
+  const users = yield* Users
+
+  const me = yield* users.getCurrentUserProfile()
+
+  const playlist = yield* playlists.createPlaylist(me.id, 'My New Playlist', {
+    description: 'My favorite tracks',
+    public: false,
+  })
+
+  console.log(`Created: ${playlist.id}`)
+  return playlist
+})
+```
+
+### Create playlist options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `description` | `string` | `''` | Playlist description |
+| `public` | `boolean` | `false` | Public visibility |
+| `collaborative` | `boolean` | `false` | Collaborative playlist |
+
+## Modifying Playlists
+
+### Add tracks to playlist
+
+```ts
+const program = Effect.gen(function* () {
+  const playlists = yield* Playlists
+
+  const result = yield* playlists.addItemsToPlaylist(
+    playlistId,
+    [
+      'spotify:track:4cOdK2wGLETKBW3PvgPWqT',
+      'spotify:track:5as3aKm2oGOikBg4arGMLi',
+    ],
+    {
+      position: 0,  // Add at beginning
+    }
+  )
+
+  console.log(`New snapshot: ${result.snapshot_id}`)
+})
+```
+
+### Remove tracks from playlist
+
+```ts
+const program = Effect.gen(function* () {
+  const playlists = yield* Playlists
+
+  const result = yield* playlists.removePlaylistItems(
+    playlistId,
+    ['spotify:track:4cOdK2wGLETKBW3PvgPWqT'],
+    currentSnapshotId,
+  )
+
+  return result.snapshot_id
+})
+```
+
+### Update playlist details
+
+```ts
+const program = Effect.gen(function* () {
+  const playlists = yield* Playlists
+
+  yield* playlists.changePlaylistDetails(playlistId, {
+    name: 'Updated Name',
+    description: 'New description',
+    public: true,
+  })
+})
+```
+
+## Practical Examples
+
+### Copy a playlist
+
+```ts
+const copyPlaylist = (sourceId: string, newName: string) =>
+  Effect.gen(function* () {
+    const playlists = yield* Playlists
+    const users = yield* Users
+
+    const me = yield* users.getCurrentUserProfile()
+
+    const source = yield* playlists.getPlaylist(sourceId)
+
+    const newPlaylist = yield* playlists.createPlaylist(me.id, newName, {
+      description: `Copy of ${source.name}`,
+      public: false,
+    })
+
+    const tracks = yield* Effect.runPromise(
+      paginateAll(
+        (offset, limit) =>
+          playlists.getPlaylistItems(sourceId, { offset, limit }),
+        100,
+      )
+    )
+
+    const uris = tracks.items
+      .map(item => item.track?.uri)
+      .filter((uri): uri is string => uri !== undefined)
+
+    for (let i = 0; i < uris.length; i += 100) {
+      yield* playlists.addItemsToPlaylist(
+        newPlaylist.id,
+        uris.slice(i, i + 100),
+      )
+    }
+
+    return newPlaylist
+  })
+```
+
+### Rebuild playlist from search
+
+```ts
+const rebuildFromSearch = (playlistId: string, query: string) =>
+  Effect.gen(function* () {
+    const playlists = yield* Playlists
+    const search = yield* Search
+
+    const results = yield* search.search(query, ['track'], { limit: 50 })
+
+    const uris = results.tracks?.items.map(t => t.uri) ?? []
+
+    yield* playlists.removePlaylistItems(playlistId, uris)
+
+    yield* playlists.addItemsToPlaylist(playlistId, uris)
+  })
+```
+
+## Pagination
+
+Use `paginateAll` to fetch all tracks from large playlists:
+
+```ts
+import { paginateAll } from '@spotify-effect/core'
+
+const getAllPlaylistTracks = (playlistId: string) =>
+  Effect.gen(function* () {
+    const playlists = yield* Playlists
+
+    return yield* paginateAll(
+      (offset, limit) =>
+        playlists.getPlaylistItems(playlistId, { offset, limit }),
+      100,
+    )
+  })
+```
+
+## Scopes Required
+
+| Operation | Required Scope |
+|-----------|---------------|
+| `getPlaylist`, `getPlaylistItems` | `playlist-read-private` or `playlist-read-collaborative` |
+| `getMyPlaylists`, `getUserPlaylists` | `playlist-read-private` |
+| `createPlaylist` | `playlist-modify-private` or `playlist-modify-public` |
+| `addItemsToPlaylist` | `playlist-modify-private` or `playlist-modify-public` |
+| `removePlaylistItems` | `playlist-modify-private` or `playlist-modify-public` |
+| `changePlaylistDetails` | `playlist-modify-private` or `playlist-modify-public` |
+
+## Next steps
+
+- [Library](/services/library) — save tracks to library
+- [Search](/services/search) — find tracks to add
+- [Follow](/services/follow) — follow playlist updates
