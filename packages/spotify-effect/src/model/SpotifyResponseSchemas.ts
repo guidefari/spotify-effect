@@ -24,7 +24,7 @@ import {
 } from "./SpotifyObjectSchemas";
 
 export const GetTracksResponseSchema = Schema.Struct({
-  tracks: Schema.mutable(Schema.Array(TrackSchema)),
+  tracks: Schema.mutable(Schema.Array(Schema.NullOr(TrackSchema))),
 });
 
 export const GetAlbumsResponseSchema = Schema.Struct({
