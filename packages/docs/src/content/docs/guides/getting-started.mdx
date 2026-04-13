@@ -1,0 +1,133 @@
+---
+title: Getting Started
+description: Install spotify-effect, configure your credentials, and make your first Spotify API call.
+---
+
+import { Tabs, TabItem, Steps } from '@astrojs/starlight/components'
+
+`spotify-effect` is an [Effect](https://effect.website)-native Spotify Web API client. This guide walks you through installation, credential setup, and running your first API call.
+
+## Prerequisites
+
+- Node.js 18+ (or Bun 1.0+)
+- A [Spotify Developer](https://developer.spotify.com/dashboard) application with a client ID and client secret
+
+## Installation
+
+<Tabs>
+  <TabItem label="bun">
+    ```sh
+    bun add @spotify-effect/core effect
+    ```
+  </TabItem>
+  <TabItem label="npm">
+    ```sh
+    npm install @spotify-effect/core effect
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```sh
+    pnpm add @spotify-effect/core effect
+    ```
+  </TabItem>
+</Tabs>
+
+## Configure credentials
+
+`spotify-effect` uses `SpotifyConfig` — an Effect service — to supply credentials. The easiest way to provide it is via `makeSpotifyLayer`, which accepts a `SpotifyLayerOptions` object.
+
+```ts
+import { makeSpotifyLayer } from '@spotify-effect/core'
+
+const SpotifyLayer = makeSpotifyLayer({
+  clientId: process.env.SPOTIFY_CLIENT_ID!,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
+})
+```
+
+The layer handles token refresh automatically. You never manage access tokens manually.
+
+## Make your first API call
+
+<Steps>
+
+1. **Import the service you need**
+
+   Each Spotify resource group is a separate Effect service. To search for tracks, use `Search`:
+
+   ```ts
+   import { Search } from '@spotify-effect/core'
+   ```
+
+2. **Build an Effect program**
+
+   ```ts
+   import { Effect } from 'effect'
+   import { Search, makeSpotifyLayer } from '@spotify-effect/core'
+
+   const program = Effect.gen(function* () {
+     const search = yield* Search
+     const results = yield* search.searchForItem({
+       q: 'Tame Impala',
+       type: ['track'],
+       limit: 5,
+     })
+     return results.tracks?.items ?? []
+   })
+   ```
+
+3. **Provide the layer and run**
+
+   ```ts
+   import { NodeRuntime } from '@effect/platform-node'
+
+   const SpotifyLayer = makeSpotifyLayer({
+     clientId: process.env.SPOTIFY_CLIENT_ID!,
+     clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
+   })
+
+   program.pipe(
+     Effect.provide(SpotifyLayer),
+     NodeRuntime.runMain,
+   )
+   ```
+
+</Steps>
+
+## Full example
+
+```ts
+import { Effect } from 'effect'
+import { NodeRuntime } from '@effect/platform-node'
+import { Search, makeSpotifyLayer } from '@spotify-effect/core'
+
+const SpotifyLayer = makeSpotifyLayer({
+  clientId: process.env.SPOTIFY_CLIENT_ID!,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
+})
+
+const program = Effect.gen(function* () {
+  const search = yield* Search
+  const results = yield* search.searchForItem({
+    q: 'Tame Impala',
+    type: ['track'],
+    limit: 5,
+  })
+  const tracks = results.tracks?.items ?? []
+  for (const track of tracks) {
+    console.log(`${track.name} — ${track.artists[0]?.name}`)
+  }
+})
+
+program.pipe(
+  Effect.provide(SpotifyLayer),
+  NodeRuntime.runMain,
+)
+```
+
+## Next steps
+
+- [Authentication](/spotify-effect/guides/authentication) — understand token strategies (client credentials vs. authorization code)
+- [Browser (PKCE)](/spotify-effect/guides/browser) — use `@spotify-effect/browser` for SPA OAuth flows
+- [Error Handling](/spotify-effect/guides/error-handling) — handle `SpotifyHttpError`, `SpotifyRateLimitError`, and more
+- [Pagination](/spotify-effect/guides/pagination) — paginate through large result sets with `paginateAll` and streams

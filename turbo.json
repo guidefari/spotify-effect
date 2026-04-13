@@ -11,7 +11,7 @@
         "!node_modules/.vite/**",
         "!tsconfig.tsbuildinfo"
       ],
-      "outputs": ["dist/**", ".svelte-kit/output/**"]
+      "outputs": ["dist/**", ".svelte-kit/output/**", ".astro/**"]
     },
     "typecheck": {
       "dependsOn": ["^build"],

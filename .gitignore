@@ -4,3 +4,4 @@ dist
 *.tsbuildinfo
 .opencode
 .turbo
+packages/docs/src/content/docs/api/
