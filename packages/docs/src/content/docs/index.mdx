@@ -15,19 +15,23 @@ hero:
       icon: open-book
 ---
 
-import { CardGrid, Card } from '@astrojs/starlight/components'
+import { CardGrid, Card } from "@astrojs/starlight/components";
 
 <CardGrid stagger>
   <Card title="Effect-native" icon="puzzle">
-    Every API call returns an `Effect`, giving you structured concurrency, dependency injection, and typed error handling out of the box.
+    Every API call returns an `Effect`, giving you structured concurrency, dependency injection, and
+    typed error handling out of the box.
   </Card>
   <Card title="Three packages" icon="open-book">
-    `@spotify-effect/core` for Node.js, `@spotify-effect/browser` for PKCE flows, and `@spotify-effect/otel-node` for OpenTelemetry tracing.
+    `@spotify-effect/core` for Node.js, `@spotify-effect/browser` for PKCE flows, and
+    `@spotify-effect/otel-node` for OpenTelemetry tracing.
   </Card>
   <Card title="39+ endpoints" icon="list-format">
-    Full coverage of Albums, Artists, Browse, Follow, Library, Markets, Personalization, Player, Playlists, Search, Tracks, and Users.
+    Full coverage of Albums, Artists, Browse, Follow, Library, Markets, Personalization, Player,
+    Playlists, Search, Tracks, and Users.
   </Card>
   <Card title="Typed errors" icon="warning">
-    Discriminated union errors — `SpotifyHttpError`, `SpotifyRateLimitError`, `SpotifyParseError` — with automatic retry classification.
+    Discriminated union errors — `SpotifyHttpError`, `SpotifyRateLimitError`, `SpotifyParseError` —
+    with automatic retry classification.
   </Card>
 </CardGrid>

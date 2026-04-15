@@ -4,7 +4,7 @@ description: Token strategies supported by spotify-effect — client credentials
 head: []
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components'
+import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 `spotify-effect` supports three authentication flows. The library handles token management automatically — you configure credentials once, and the layer manages access token retrieval and refresh.
 
@@ -13,25 +13,22 @@ import { Tabs, TabItem } from '@astrojs/starlight/components'
 Use this for server-to-server requests where you don't need user-specific data (e.g., featured playlists, new releases, catalog search).
 
 ```ts
-import { Effect } from 'effect'
-import { NodeRuntime } from '@effect/platform-node'
-import { Browse, makeSpotifyLayer } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { NodeRuntime } from "@effect/platform-node";
+import { Browse, makeSpotifyLayer } from "@spotify-effect/core";
 
 const SpotifyLayer = makeSpotifyLayer({
   clientId: process.env.SPOTIFY_CLIENT_ID!,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
-})
+});
 
 const program = Effect.gen(function* () {
-  const browse = yield* Browse
-  const releases = yield* browse.getNewReleases({ limit: 10 })
-  return releases.items
-})
+  const browse = yield* Browse;
+  const releases = yield* browse.getNewReleases({ limit: 10 });
+  return releases.items;
+});
 
-program.pipe(
-  Effect.provide(SpotifyLayer),
-  NodeRuntime.runMain,
-)
+program.pipe(Effect.provide(SpotifyLayer), NodeRuntime.runMain);
 ```
 
 ### How it works
@@ -59,21 +56,21 @@ Use this when you need to access or modify user-specific data (playlists, saved 
 ### Step 1: Generate authorization URL
 
 ```ts
-import { getAuthorizationUrl } from '@spotify-effect/core'
+import { getAuthorizationUrl } from "@spotify-effect/core";
 
 const authUrl = getAuthorizationUrl(
   process.env.SPOTIFY_CLIENT_ID!,
   process.env.SPOTIFY_REDIRECT_URI!,
-  'code',
+  "code",
   {
     scope: [
-      'user-read-private',
-      'user-library-read',
-      'playlist-read-private',
-      'user-read-currently-playing',
+      "user-read-private",
+      "user-library-read",
+      "playlist-read-private",
+      "user-read-currently-playing",
     ],
   },
-)
+);
 
 // Redirect user to authUrl
 ```
@@ -81,21 +78,21 @@ const authUrl = getAuthorizationUrl(
 ### Step 2: Exchange code for tokens
 
 ```ts
-import { Effect } from 'effect'
-import { SpotifyAuth, makeSpotifyLayer } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { SpotifyAuth, makeSpotifyLayer } from "@spotify-effect/core";
 
 const SpotifyLayer = makeSpotifyLayer({
   clientId: process.env.SPOTIFY_CLIENT_ID!,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
   redirectUri: process.env.SPOTIFY_REDIRECT_URI!,
-})
+});
 
 const program = Effect.gen(function* () {
-  const auth = yield* SpotifyAuth
-  const tokens = yield* auth.getRefreshableUserTokens(authorizationCode)
+  const auth = yield* SpotifyAuth;
+  const tokens = yield* auth.getRefreshableUserTokens(authorizationCode);
   // Store tokens.access_token and tokens.refresh_token securely
-  return tokens
-})
+  return tokens;
+});
 ```
 
 ### Step 3: Provide tokens to the layer
@@ -114,7 +111,7 @@ const SpotifyLayer = makeSpotifyLayer(
     refreshToken: storedRefreshToken,
     expiresAt: tokenExpiresAtTimestamp,
   },
-)
+);
 ```
 
 The layer automatically refreshes tokens when they expire.
@@ -129,26 +126,26 @@ See the [Browser (PKCE) guide](/guides/browser) for detailed instructions using 
 
 Available OAuth scopes:
 
-| Scope | Description |
-|-------|-------------|
-| `ugc-image-upload` | Upload images to a user's profile |
-| `user-read-playback-state` | Read user's current playback state |
-| `user-modify-playback-state` | Control Spotify playback |
-| `user-read-currently-playing` | Read currently playing track |
-| `streaming` | Play Spotify content |
-| `user-read-email` | Read user's email |
-| `user-read-private` | Read user's subscription details |
-| `playlist-read-collaborative` | Read collaborative playlists |
-| `playlist-modify-public` | Modify public playlists |
-| `playlist-read-private` | Read private playlists |
-| `playlist-modify-private` | Modify private playlists |
-| `user-library-modify` | Modify saved content |
-| `user-library-read` | Read saved content |
-| `user-top-read` | Read user's top artists/tracks |
-| `user-read-playback-position` | Read playback position |
-| `user-read-recently-played` | Read recently played |
-| `user-follow-read` | Read followed artists |
-| `user-follow-modify` | Modify followed artists |
+| Scope                         | Description                        |
+| ----------------------------- | ---------------------------------- |
+| `ugc-image-upload`            | Upload images to a user's profile  |
+| `user-read-playback-state`    | Read user's current playback state |
+| `user-modify-playback-state`  | Control Spotify playback           |
+| `user-read-currently-playing` | Read currently playing track       |
+| `streaming`                   | Play Spotify content               |
+| `user-read-email`             | Read user's email                  |
+| `user-read-private`           | Read user's subscription details   |
+| `playlist-read-collaborative` | Read collaborative playlists       |
+| `playlist-modify-public`      | Modify public playlists            |
+| `playlist-read-private`       | Read private playlists             |
+| `playlist-modify-private`     | Modify private playlists           |
+| `user-library-modify`         | Modify saved content               |
+| `user-library-read`           | Read saved content                 |
+| `user-top-read`               | Read user's top artists/tracks     |
+| `user-read-playback-position` | Read playback position             |
+| `user-read-recently-played`   | Read recently played               |
+| `user-follow-read`            | Read followed artists              |
+| `user-follow-modify`          | Modify followed artists            |
 
 ## Token Storage
 

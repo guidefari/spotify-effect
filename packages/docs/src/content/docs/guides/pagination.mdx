@@ -15,21 +15,20 @@ Most Spotify endpoints use offset-based pagination via the `Paging` object.
 Fetch all items from a paginated endpoint:
 
 ```ts
-import { Effect } from 'effect'
-import { Library, paginateAll } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Library, paginateAll } from "@spotify-effect/core";
 
 const program = Effect.gen(function* () {
-  const library = yield* Library
+  const library = yield* Library;
 
   const allTracks = yield* paginateAll(
-    (offset, limit) =>
-      library.getSavedTracks({ offset, limit }),
-    50,  // page size
-  )
+    (offset, limit) => library.getSavedTracks({ offset, limit }),
+    50, // page size
+  );
 
-  console.log(`Found ${allTracks.length} saved tracks`)
-  return allTracks
-})
+  console.log(`Found ${allTracks.length} saved tracks`);
+  return allTracks;
+});
 ```
 
 ### Using paginateStream
@@ -37,68 +36,66 @@ const program = Effect.gen(function* () {
 For streaming large result sets without loading everything into memory:
 
 ```ts
-import { Effect, Stream } from 'effect'
-import { Library, paginateStream } from '@spotify-effect/core'
+import { Effect, Stream } from "effect";
+import { Library, paginateStream } from "@spotify-effect/core";
 
 const program = Effect.gen(function* () {
-  const library = yield* Library
+  const library = yield* Library;
 
   const trackStream = paginateStream(
-    (offset, limit) =>
-      library.getSavedTracks({ offset, limit }),
+    (offset, limit) => library.getSavedTracks({ offset, limit }),
     50,
-  )
+  );
 
   // Process tracks one by one
-  yield* Stream.runForEach(trackStream, (track) =>
-    Effect.sync(() => console.log(track.name)),
-  )
-})
+  yield* Stream.runForEach(trackStream, (track) => Effect.sync(() => console.log(track.name)));
+});
 ```
 
 ## Cursor Pagination
 
 Cursor-based pagination is used for:
+
 - Recently played tracks
 - Followed artists/users
 
 ### Using cursorPaginateAll
 
 ```ts
-import { Effect } from 'effect'
-import { Player, cursorPaginateAll } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Player, cursorPaginateAll } from "@spotify-effect/core";
 
 const program = Effect.gen(function* () {
-  const player = yield* Player
+  const player = yield* Player;
 
   const history = yield* cursorPaginateAll(
     (options) => player.getRecentlyPlayedTracks(options),
     50,
-  )
+  );
 
-  console.log(`Found ${history.length} recently played tracks`)
-  return history
-})
+  console.log(`Found ${history.length} recently played tracks`);
+  return history;
+});
 ```
 
 ### Using cursorPaginateStream
 
 ```ts
-import { Effect, Stream } from 'effect'
-import { Player, cursorPaginateStream } from '@spotify-effect/core'
+import { Effect, Stream } from "effect";
+import { Player, cursorPaginateStream } from "@spotify-effect/core";
 
 const program = Effect.gen(function* () {
-  const player = yield* Player
+  const player = yield* Player;
 
   const historyStream = cursorPaginateStream(
     (options) => player.getRecentlyPlayedTracks(options),
     50,
-  )
+  );
 
   yield* Stream.runForEach(historyStream, (item) =>
     Effect.sync(() => console.log(item.track.name)),
-  )
-})
+  );
+});
 ```
 
 ## Practical Examples
@@ -106,129 +103,121 @@ const program = Effect.gen(function* () {
 ### Fetch all playlists with pagination
 
 ```ts
-import { Effect } from 'effect'
-import { Playlists, paginateAll } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Playlists, paginateAll } from "@spotify-effect/core";
 
 const getAllPlaylists = Effect.gen(function* () {
-  const playlists = yield* Playlists
+  const playlists = yield* Playlists;
 
-  return yield* paginateAll(
-    (offset, limit) => playlists.getMyPlaylists({ offset, limit }),
-    50,
-  )
-})
+  return yield* paginateAll((offset, limit) => playlists.getMyPlaylists({ offset, limit }), 50);
+});
 ```
 
 ### Search with type filters
 
 ```ts
-import { Effect } from 'effect'
-import { Search } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Search } from "@spotify-effect/core";
 
 const program = Effect.gen(function* () {
-  const search = yield* Search
+  const search = yield* Search;
 
   // Search across multiple types
-  const results = yield* search.search('Daft Punk', ['album', 'artist', 'track'], {
+  const results = yield* search.search("Daft Punk", ["album", "artist", "track"], {
     limit: 10,
-  })
+  });
 
-  console.log('Albums:', results.albums?.items.length)
-  console.log('Artists:', results.artists?.items.length)
-  console.log('Tracks:', results.tracks?.items.length)
-})
+  console.log("Albums:", results.albums?.items.length);
+  console.log("Artists:", results.artists?.items.length);
+  console.log("Tracks:", results.tracks?.items.length);
+});
 ```
 
 ### Get all albums from an artist
 
 ```ts
-import { Effect } from 'effect'
-import { Artists, Albums, paginateAll } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Artists, Albums, paginateAll } from "@spotify-effect/core";
 
 const getAllArtistAlbums = (artistId: string) =>
   Effect.gen(function* () {
-    const artists = yield* Artists
-    const albums = yield* Albums
+    const artists = yield* Artists;
+    const albums = yield* Albums;
 
     const artistAlbums = yield* paginateAll(
       (offset, limit) =>
         artists.getArtistAlbums(artistId, {
           offset,
           limit,
-          include_groups: ['album', 'single', 'compilation'],
+          include_groups: ["album", "single", "compilation"],
         }),
       50,
-    )
+    );
 
     // Fetch full album details for each (batched)
-    const albumIds = artistAlbums.map(a => a.id)
-    const fullAlbums = yield* albums.getAlbums(albumIds)
+    const albumIds = artistAlbums.map((a) => a.id);
+    const fullAlbums = yield* albums.getAlbums(albumIds);
 
-    return fullAlbums
-  })
+    return fullAlbums;
+  });
 ```
 
 ### Process large datasets with streams
 
 ```ts
-import { Effect, Stream } from 'effect'
-import { Library, Library as LibraryService, paginateStream } from '@spotify-effect/core'
+import { Effect, Stream } from "effect";
+import { Library, Library as LibraryService, paginateStream } from "@spotify-effect/core";
 
 const processSavedTracks = () =>
   Effect.gen(function* () {
-    const library = yield* Library
+    const library = yield* Library;
 
     const trackStream = paginateStream(
       (offset, limit) => library.getSavedTracks({ offset, limit }),
       50,
-    )
+    );
 
     // Count tracks by artist
     const artistCounts = yield* Stream.runFold(
       trackStream,
       new Map<string, number>(),
       (counts, track) => {
-        const artist = track.artists[0]?.name ?? 'Unknown'
-        counts.set(artist, (counts.get(artist) ?? 0) + 1)
-        return counts
+        const artist = track.artists[0]?.name ?? "Unknown";
+        counts.set(artist, (counts.get(artist) ?? 0) + 1);
+        return counts;
       },
-    )
+    );
 
     // Find top artists
-    const topArtists = [...artistCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
+    const topArtists = [...artistCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-    console.log('Top 10 artists by saved tracks:')
+    console.log("Top 10 artists by saved tracks:");
     for (const [artist, count] of topArtists) {
-      console.log(`${artist}: ${count} tracks`)
+      console.log(`${artist}: ${count} tracks`);
     }
-  })
+  });
 ```
 
 ## Combining with Error Handling
 
 ```ts
-import { Effect, Exit } from 'effect'
-import { Library, paginateAll } from '@spotify-effect/core'
-import { SpotifyRateLimitError, isRetryableError } from '@spotify-effect/core'
+import { Effect, Exit } from "effect";
+import { Library, paginateAll } from "@spotify-effect/core";
+import { SpotifyRateLimitError, isRetryableError } from "@spotify-effect/core";
 
 const getAllSavedTracks = (maxRetries = 3) =>
   Effect.gen(function* () {
-    const library = yield* Library
+    const library = yield* Library;
 
     return yield* Effect.retry(
-      paginateAll(
-        (offset, limit) => library.getSavedTracks({ offset, limit }),
-        50,
-      ),
+      paginateAll((offset, limit) => library.getSavedTracks({ offset, limit }), 50),
       {
         times: maxRetries,
-        schedule: Schedule.exponential('1 second'),
+        schedule: Schedule.exponential("1 second"),
         while: isRetryableError,
       },
-    )
-  })
+    );
+  });
 ```
 
 ## Performance Tips

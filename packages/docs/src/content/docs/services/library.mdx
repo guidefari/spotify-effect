@@ -11,53 +11,50 @@ The `Library` service manages a user's saved content — albums and tracks.
 ### Get saved tracks
 
 ```ts
-import { Effect } from 'effect'
-import { Library, makeSpotifyLayer } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Library, makeSpotifyLayer } from "@spotify-effect/core";
 
 const program = Effect.gen(function* () {
-  const library = yield* Library
+  const library = yield* Library;
 
   const saved = yield* library.getSavedTracks({
     limit: 50,
-    market: 'US',
-  })
+    market: "US",
+  });
 
   for (const item of saved.items) {
-    console.log(`${item.track.name} — ${item.added_at}`)
+    console.log(`${item.track.name} — ${item.added_at}`);
   }
-})
+});
 ```
 
 ### Check if tracks are saved
 
 ```ts
 const program = Effect.gen(function* () {
-  const library = yield* Library
+  const library = yield* Library;
 
   const results = yield* library.areTracksSaved([
-    '4cOdK2wGLETKBW3PvgPWqT',
-    '5as3aKm2oGOikBg4arGMLi',
-  ])
+    "4cOdK2wGLETKBW3PvgPWqT",
+    "5as3aKm2oGOikBg4arGMLi",
+  ]);
 
   results.forEach((isSaved, i) => {
-    console.log(`Track ${i}: ${isSaved ? 'Saved' : 'Not saved'}`)
-  })
-})
+    console.log(`Track ${i}: ${isSaved ? "Saved" : "Not saved"}`);
+  });
+});
 ```
 
 ### Save tracks
 
 ```ts
-yield* library.saveTracks([
-  '4cOdK2wGLETKBW3PvgPWqT',
-  '5as3aKm2oGOikBg4arGMLi',
-])
+yield * library.saveTracks(["4cOdK2wGLETKBW3PvgPWqT", "5as3aKm2oGOikBg4arGMLi"]);
 ```
 
 ### Remove saved tracks
 
 ```ts
-yield* library.removeSavedTracks(['4cOdK2wGLETKBW3PvgPWqT'])
+yield * library.removeSavedTracks(["4cOdK2wGLETKBW3PvgPWqT"]);
 ```
 
 ## Saved Albums
@@ -66,37 +63,35 @@ yield* library.removeSavedTracks(['4cOdK2wGLETKBW3PvgPWqT'])
 
 ```ts
 const program = Effect.gen(function* () {
-  const library = yield* Library
+  const library = yield* Library;
 
   const saved = yield* library.getSavedAlbums({
     limit: 50,
-  })
+  });
 
   for (const item of saved.items) {
-    console.log(`${item.album.name} — ${item.added_at}`)
+    console.log(`${item.album.name} — ${item.added_at}`);
   }
-})
+});
 ```
 
 ### Check if albums are saved
 
 ```ts
-const results = yield* library.areAlbumsSaved([
-  '4aawyAB9vmqN3uQ7FjRGTy',
-  '6rqhFgbbKwnb9MLmUQDhG6',
-])
+const results =
+  yield * library.areAlbumsSaved(["4aawyAB9vmqN3uQ7FjRGTy", "6rqhFgbbKwnb9MLmUQDhG6"]);
 ```
 
 ### Save albums
 
 ```ts
-yield* library.saveAlbums(['4aawyAB9vmqN3uQ7FjRGTy'])
+yield * library.saveAlbums(["4aawyAB9vmqN3uQ7FjRGTy"]);
 ```
 
 ### Remove saved albums
 
 ```ts
-yield* library.removeSavedAlbums(['4aawyAB9vmqN3uQ7FjRGTy'])
+yield * library.removeSavedAlbums(["4aawyAB9vmqN3uQ7FjRGTy"]);
 ```
 
 ## Practical Examples
@@ -104,29 +99,29 @@ yield* library.removeSavedAlbums(['4aawyAB9vmqN3uQ7FjRGTy'])
 ### Save search results to library
 
 ```ts
-import { Effect } from 'effect'
-import { Library, Search } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Library, Search } from "@spotify-effect/core";
 
 const saveSearchToLibrary = (query: string) =>
   Effect.gen(function* () {
-    const library = yield* Library
-    const search = yield* Search
+    const library = yield* Library;
+    const search = yield* Search;
 
-    const results = yield* search.search(query, ['track'], { limit: 50 })
-    const trackIds = results.tracks?.items.map(t => t.id) ?? []
+    const results = yield* search.search(query, ["track"], { limit: 50 });
+    const trackIds = results.tracks?.items.map((t) => t.id) ?? [];
 
     const [saved, notSaved] = yield* Effect.all([
       library.areTracksSaved(trackIds),
       Effect.succeed(trackIds),
-    ])
+    ]);
 
-    const toSave = trackIds.filter((_, i) => !saved[i])
+    const toSave = trackIds.filter((_, i) => !saved[i]);
     if (toSave.length > 0) {
-      yield* library.saveTracks(toSave)
+      yield* library.saveTracks(toSave);
     }
 
-    return { saved: toSave.length }
-  })
+    return { saved: toSave.length };
+  });
 ```
 
 ### Sync playlist to library
@@ -134,48 +129,47 @@ const saveSearchToLibrary = (query: string) =>
 ```ts
 const syncPlaylistToLibrary = (playlistId: string) =>
   Effect.gen(function* () {
-    const library = yield* Library
-    const playlists = yield* Playlists
-    const albums = yield* Albums
+    const library = yield* Library;
+    const playlists = yield* Playlists;
+    const albums = yield* Albums;
 
     const tracks = yield* paginateAll(
-      (offset, limit) =>
-        playlists.getPlaylistItems(playlistId, { offset, limit }),
+      (offset, limit) => playlists.getPlaylistItems(playlistId, { offset, limit }),
       100,
-    )
+    );
 
     const trackIds = tracks.items
-      .map(item => item.track?._tag === 'Track' ? item.track.id : null)
-      .filter((id): id is string => id !== null)
+      .map((item) => (item.track?._tag === "Track" ? item.track.id : null))
+      .filter((id): id is string => id !== null);
 
     const albumIds = [
       ...new Set(
         tracks.items
-          .map(item => item.track?._tag === 'Track' ? item.track.album.id : null)
-          .filter((id): id is string => id !== null)
+          .map((item) => (item.track?._tag === "Track" ? item.track.album.id : null))
+          .filter((id): id is string => id !== null),
       ),
-    ]
+    ];
 
     const [savedTracks, savedAlbums] = yield* Effect.all([
       library.areTracksSaved(trackIds),
       library.areAlbumsSaved(albumIds),
-    ])
+    ]);
 
-    const tracksToSave = trackIds.filter((_, i) => !savedTracks[i])
-    const albumsToSave = albumIds.filter((_, i) => !savedAlbums[i])
+    const tracksToSave = trackIds.filter((_, i) => !savedTracks[i]);
+    const albumsToSave = albumIds.filter((_, i) => !savedAlbums[i]);
 
     if (tracksToSave.length > 0) {
-      yield* library.saveTracks(tracksToSave)
+      yield* library.saveTracks(tracksToSave);
     }
     if (albumsToSave.length > 0) {
-      yield* library.saveAlbums(albumsToSave)
+      yield* library.saveAlbums(albumsToSave);
     }
 
     return {
       tracksSaved: tracksToSave.length,
       albumsSaved: albumsToSave.length,
-    }
-  })
+    };
+  });
 ```
 
 ### Export library to playlist
@@ -183,33 +177,29 @@ const syncPlaylistToLibrary = (playlistId: string) =>
 ```ts
 const exportLibraryToPlaylist = (userId: string, name: string) =>
   Effect.gen(function* () {
-    const library = yield* Library
-    const playlists = yield* Playlists
+    const library = yield* Library;
+    const playlists = yield* Playlists;
 
     const savedTracks = yield* paginateAll(
-      (offset, limit) =>
-        library.getSavedTracks({ offset, limit }),
+      (offset, limit) => library.getSavedTracks({ offset, limit }),
       50,
-    )
+    );
 
     const playlist = yield* playlists.createPlaylist(userId, name, {
-      description: 'My saved tracks',
+      description: "My saved tracks",
       public: false,
-    })
+    });
 
-    const trackUris = savedTracks.map(item => item.track?.uri).filter(
-      (uri): uri is string => uri !== undefined
-    )
+    const trackUris = savedTracks
+      .map((item) => item.track?.uri)
+      .filter((uri): uri is string => uri !== undefined);
 
     for (let i = 0; i < trackUris.length; i += 100) {
-      yield* playlists.addItemsToPlaylist(
-        playlist.id,
-        trackUris.slice(i, i + 100)
-      )
+      yield* playlists.addItemsToPlaylist(playlist.id, trackUris.slice(i, i + 100));
     }
 
-    return { playlist, trackCount: trackUris.length }
-  })
+    return { playlist, trackCount: trackUris.length };
+  });
 ```
 
 ## Pagination
@@ -217,37 +207,31 @@ const exportLibraryToPlaylist = (userId: string, name: string) =>
 Use `paginateAll` for large libraries:
 
 ```ts
-import { paginateAll } from '@spotify-effect/core'
+import { paginateAll } from "@spotify-effect/core";
 
 const getAllSavedTracks = () =>
   Effect.gen(function* () {
-    const library = yield* Library
+    const library = yield* Library;
 
-    return yield* paginateAll(
-      (offset, limit) => library.getSavedTracks({ offset, limit }),
-      50,
-    )
-  })
+    return yield* paginateAll((offset, limit) => library.getSavedTracks({ offset, limit }), 50);
+  });
 
 const getAllSavedAlbums = () =>
   Effect.gen(function* () {
-    const library = yield* Library
+    const library = yield* Library;
 
-    return yield* paginateAll(
-      (offset, limit) => library.getSavedAlbums({ offset, limit }),
-      50,
-    )
-  })
+    return yield* paginateAll((offset, limit) => library.getSavedAlbums({ offset, limit }), 50);
+  });
 ```
 
 ## Scopes Required
 
-| Operation | Required Scope |
-|-----------|---------------|
-| `getSavedTracks`, `getSavedAlbums` | `user-library-read` |
-| `saveTracks`, `saveAlbums` | `user-library-modify` |
+| Operation                                | Required Scope        |
+| ---------------------------------------- | --------------------- |
+| `getSavedTracks`, `getSavedAlbums`       | `user-library-read`   |
+| `saveTracks`, `saveAlbums`               | `user-library-modify` |
 | `removeSavedTracks`, `removeSavedAlbums` | `user-library-modify` |
-| `areTracksSaved`, `areAlbumsSaved` | `user-library-read` |
+| `areTracksSaved`, `areAlbumsSaved`       | `user-library-read`   |
 
 ## Next steps
 

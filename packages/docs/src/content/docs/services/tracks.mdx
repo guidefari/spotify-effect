@@ -11,40 +11,37 @@ The `Tracks` service fetches track information, audio features, and detailed aud
 ### Get a single track
 
 ```ts
-import { Effect } from 'effect'
-import { Tracks, makeSpotifyLayer } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Tracks, makeSpotifyLayer } from "@spotify-effect/core";
 
 const program = Effect.gen(function* () {
-  const tracks = yield* Tracks
+  const tracks = yield* Tracks;
 
-  const track = yield* tracks.getTrack('4cOdK2wGLETKBW3PvgPWqT', {
-    market: 'US',
-  })
+  const track = yield* tracks.getTrack("4cOdK2wGLETKBW3PvgPWqT", {
+    market: "US",
+  });
 
-  console.log(`${track.name} by ${track.artists[0]?.name}`)
-  console.log(`Album: ${track.album.name}`)
-  console.log(`Duration: ${track.duration_ms}ms`)
-  console.log(`Popularity: ${track.popularity}`)
-})
+  console.log(`${track.name} by ${track.artists[0]?.name}`);
+  console.log(`Album: ${track.album.name}`);
+  console.log(`Duration: ${track.duration_ms}ms`);
+  console.log(`Popularity: ${track.popularity}`);
+});
 ```
 
 ### Get multiple tracks
 
 ```ts
 const program = Effect.gen(function* () {
-  const tracks = yield* Tracks
+  const tracks = yield* Tracks;
 
-  const results = yield* tracks.getTracks([
-    '4cOdK2wGLETKBW3PvgPWqT',
-    '5as3aKm2oGOikBg4arGMLi',
-  ])
+  const results = yield* tracks.getTracks(["4cOdK2wGLETKBW3PvgPWqT", "5as3aKm2oGOikBg4arGMLi"]);
 
   for (const track of results) {
     if (track) {
-      console.log(track.name)
+      console.log(track.name);
     }
   }
-})
+});
 ```
 
 ## Audio Features
@@ -55,52 +52,52 @@ Audio features are numerical representations of track characteristics.
 
 ```ts
 const program = Effect.gen(function* () {
-  const tracks = yield* Tracks
+  const tracks = yield* Tracks;
 
-  const features = yield* tracks.getAudioFeaturesForTrack('4cOdK2wGLETKBW3PvgPWqT')
+  const features = yield* tracks.getAudioFeaturesForTrack("4cOdK2wGLETKBW3PvgPWqT");
 
-  console.log(`Energy: ${features.energy}`)       // 0-1
-  console.log(`Danceability: ${features.danceability}`)  // 0-1
-  console.log(`Tempo: ${features.tempo} BPM`)
-  console.log(`Key: ${features.key}`)           // 0-11 (C to B)
-  console.log(`Mode: ${features.mode}`)         // 0 (minor) or 1 (major)
-  console.log(`Valence: ${features.valence}`)   // 0-1 (sad to happy)
-})
+  console.log(`Energy: ${features.energy}`); // 0-1
+  console.log(`Danceability: ${features.danceability}`); // 0-1
+  console.log(`Tempo: ${features.tempo} BPM`);
+  console.log(`Key: ${features.key}`); // 0-11 (C to B)
+  console.log(`Mode: ${features.mode}`); // 0 (minor) or 1 (major)
+  console.log(`Valence: ${features.valence}`); // 0-1 (sad to happy)
+});
 ```
 
 ### Feature descriptions
 
-| Feature | Range | Description |
-|---------|-------|-------------|
-| `acousticness` | 0-1 | Confidence of acoustic |
-| `danceability` | 0-1 | Suitable for dancing |
-| `energy` | 0-1 | Intensity and activity |
-| `instrumentalness` | 0-1 | No vocals |
-| `liveness` | 0-1 | Audience presence |
-| `loudness` | -60-0 dB | Overall loudness |
-| `speechiness` | 0-1 | Spoken words |
-| `tempo` | BPM | Speed |
-| `valence` | 0-1 | Musical positiveness |
-| `key` | 0-11 | C, C#, D, etc. |
-| `mode` | 0-1 | Minor (0) or Major (1) |
+| Feature            | Range    | Description            |
+| ------------------ | -------- | ---------------------- |
+| `acousticness`     | 0-1      | Confidence of acoustic |
+| `danceability`     | 0-1      | Suitable for dancing   |
+| `energy`           | 0-1      | Intensity and activity |
+| `instrumentalness` | 0-1      | No vocals              |
+| `liveness`         | 0-1      | Audience presence      |
+| `loudness`         | -60-0 dB | Overall loudness       |
+| `speechiness`      | 0-1      | Spoken words           |
+| `tempo`            | BPM      | Speed                  |
+| `valence`          | 0-1      | Musical positiveness   |
+| `key`              | 0-11     | C, C#, D, etc.         |
+| `mode`             | 0-1      | Minor (0) or Major (1) |
 
 ### Get audio features for multiple tracks
 
 ```ts
 const program = Effect.gen(function* () {
-  const tracks = yield* Tracks
+  const tracks = yield* Tracks;
 
   const features = yield* tracks.getAudioFeaturesForTracks([
-    '4cOdK2wGLETKBW3PvgPWqT',
-    '5as3aKm2oGOikBg4arGMLi',
-  ])
+    "4cOdK2wGLETKBW3PvgPWqT",
+    "5as3aKm2oGOikBg4arGMLi",
+  ]);
 
   for (const feature of features) {
     if (feature) {
-      console.log(`${feature.tempo} BPM - Energy: ${feature.energy}`)
+      console.log(`${feature.tempo} BPM - Energy: ${feature.energy}`);
     }
   }
-})
+});
 ```
 
 ## Audio Analysis
@@ -111,21 +108,21 @@ Audio analysis provides detailed musical breakdown.
 
 ```ts
 const program = Effect.gen(function* () {
-  const tracks = yield* Tracks
+  const tracks = yield* Tracks;
 
-  const analysis = yield* tracks.getAudioAnalysisForTrack('4cOdK2wGLETKBW3PvgPWqT')
+  const analysis = yield* tracks.getAudioAnalysisForTrack("4cOdK2wGLETKBW3PvgPWqT");
 
-  console.log(`Duration: ${analysis.track.duration}s`)
-  console.log(`Time signature: ${analysis.track.time_signature}/4`)
-  console.log(`Tempo: ${analysis.track.tempo} BPM`)
+  console.log(`Duration: ${analysis.track.duration}s`);
+  console.log(`Time signature: ${analysis.track.time_signature}/4`);
+  console.log(`Tempo: ${analysis.track.tempo} BPM`);
 
-  console.log('Sections:')
+  console.log("Sections:");
   for (const section of analysis.sections) {
-    console.log(`  ${section.start}s - ${section.loudness}dB`)
+    console.log(`  ${section.start}s - ${section.loudness}dB`);
   }
 
-  console.log('Segments:', analysis.segments.length)
-})
+  console.log("Segments:", analysis.segments.length);
+});
 ```
 
 ## Practical Examples
@@ -133,53 +130,50 @@ const program = Effect.gen(function* () {
 ### Build a mood playlist based on audio features
 
 ```ts
-import { Effect } from 'effect'
-import { Tracks, Search, Playlists, Users } from '@spotify-effect/core'
-import { paginateAll } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Tracks, Search, Playlists, Users } from "@spotify-effect/core";
+import { paginateAll } from "@spotify-effect/core";
 
-const buildMoodPlaylist = (
-  userId: string,
-  mood: 'chill' | 'energetic' | 'happy' | 'sad'
-) => {
+const buildMoodPlaylist = (userId: string, mood: "chill" | "energetic" | "happy" | "sad") => {
   const featureTargets = {
     chill: { target_energy: 0.3, target_valence: 0.5 },
     energetic: { target_energy: 0.8, target_valence: 0.6 },
     happy: { target_valence: 0.8, target_energy: 0.5 },
     sad: { target_valence: 0.2, target_energy: 0.3 },
-  }
+  };
 
   return Effect.gen(function* () {
-    const search = yield* Search
-    const tracks = yield* Tracks
-    const playlists = yield* Playlists
+    const search = yield* Search;
+    const tracks = yield* Tracks;
+    const playlists = yield* Playlists;
 
-    const results = yield* search.search(mood, ['track'], { limit: 100 })
-    const trackIds = results.tracks?.items.map(t => t.id) ?? []
+    const results = yield* search.search(mood, ["track"], { limit: 100 });
+    const trackIds = results.tracks?.items.map((t) => t.id) ?? [];
 
-    const features = yield* tracks.getAudioFeaturesForTracks(trackIds)
-    const targets = featureTargets[mood]
+    const features = yield* tracks.getAudioFeaturesForTracks(trackIds);
+    const targets = featureTargets[mood];
 
-    const filtered = features.filter(f => {
-      if (!f) return false
+    const filtered = features.filter((f) => {
+      if (!f) return false;
       return (
         Math.abs(f.energy - (targets.target_energy ?? 0)) < 0.3 &&
         Math.abs(f.valence - (targets.target_valence ?? 0)) < 0.3
-      )
-    })
+      );
+    });
 
     const playlist = yield* playlists.createPlaylist(userId, `${mood} vibes`, {
       description: `Tracks matching ${mood} mood`,
       public: false,
-    })
+    });
 
     yield* playlists.addItemsToPlaylist(
       playlist.id,
-      filtered.map(f => `spotify:track:${f.track_id}`)
-    )
+      filtered.map((f) => `spotify:track:${f.track_id}`),
+    );
 
-    return playlist
-  })
-}
+    return playlist;
+  });
+};
 ```
 
 ### Analyze playlist energy
@@ -187,34 +181,34 @@ const buildMoodPlaylist = (
 ```ts
 const analyzePlaylistEnergy = (playlistId: string) =>
   Effect.gen(function* () {
-    const tracks = yield* Tracks
-    const playlists = yield* Playlists
+    const tracks = yield* Tracks;
+    const playlists = yield* Playlists;
 
     const playlistItems = yield* paginateAll(
-      (offset, limit) =>
-        playlists.getPlaylistItems(playlistId, { offset, limit }),
+      (offset, limit) => playlists.getPlaylistItems(playlistId, { offset, limit }),
       100,
-    )
+    );
 
     const trackIds = playlistItems.items
-      .map(item => item.track?._tag === 'Track' ? item.track.id : null)
-      .filter((id): id is string => id !== null)
+      .map((item) => (item.track?._tag === "Track" ? item.track.id : null))
+      .filter((id): id is string => id !== null);
 
-    const features = yield* tracks.getAudioFeaturesForTracks(trackIds)
+    const features = yield* tracks.getAudioFeaturesForTracks(trackIds);
 
-    const validFeatures = features.filter((f): f is NonNullable<typeof f> => f !== null)
+    const validFeatures = features.filter((f): f is NonNullable<typeof f> => f !== null);
 
-    const avgEnergy = validFeatures.reduce((sum, f) => sum + f.energy, 0) / validFeatures.length
-    const avgTempo = validFeatures.reduce((sum, f) => sum + f.tempo, 0) / validFeatures.length
-    const avgDanceability = validFeatures.reduce((sum, f) => sum + f.danceability, 0) / validFeatures.length
+    const avgEnergy = validFeatures.reduce((sum, f) => sum + f.energy, 0) / validFeatures.length;
+    const avgTempo = validFeatures.reduce((sum, f) => sum + f.tempo, 0) / validFeatures.length;
+    const avgDanceability =
+      validFeatures.reduce((sum, f) => sum + f.danceability, 0) / validFeatures.length;
 
     return {
       avgEnergy,
       avgTempo,
       avgDanceability,
       trackCount: validFeatures.length,
-    }
-  })
+    };
+  });
 ```
 
 ### Find similar tracks by audio features
@@ -222,30 +216,30 @@ const analyzePlaylistEnergy = (playlistId: string) =>
 ```ts
 const findSimilarTracks = (trackId: string) =>
   Effect.gen(function* () {
-    const tracks = yield* Tracks
-    const search = yield* Search
+    const tracks = yield* Tracks;
+    const search = yield* Search;
 
-    const original = yield* tracks.getAudioFeaturesForTrack(trackId)
-    const results = yield* search.search(original.key.toString(), ['track'], {
+    const original = yield* tracks.getAudioFeaturesForTrack(trackId);
+    const results = yield* search.search(original.key.toString(), ["track"], {
       limit: 50,
-    })
+    });
 
-    const trackIds = results.tracks?.items.map(t => t.id) ?? []
-    const candidateFeatures = yield* tracks.getAudioFeaturesForTracks(trackIds)
+    const trackIds = results.tracks?.items.map((t) => t.id) ?? [];
+    const candidateFeatures = yield* tracks.getAudioFeaturesForTracks(trackIds);
 
     const similar = candidateFeatures
-      .filter(f => {
-        if (!f || f.id === trackId) return false
+      .filter((f) => {
+        if (!f || f.id === trackId) return false;
         return (
           Math.abs(f.energy - original.energy) < 0.15 &&
           Math.abs(f.tempo - original.tempo) < 10 &&
           Math.abs(f.danceability - original.danceability) < 0.2
-        )
+        );
       })
-      .slice(0, 10)
+      .slice(0, 10);
 
-    return similar
-  })
+    return similar;
+  });
 ```
 
 ## Next steps

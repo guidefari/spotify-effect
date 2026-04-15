@@ -9,17 +9,17 @@ The `Markets` service provides a list of markets where Spotify content is availa
 ## Getting Available Markets
 
 ```ts
-import { Effect } from 'effect'
-import { Markets, makeSpotifyLayer } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Markets, makeSpotifyLayer } from "@spotify-effect/core";
 
 const program = Effect.gen(function* () {
-  const markets = yield* Markets
+  const markets = yield* Markets;
 
-  const availableMarkets = yield* markets.getMarkets()
+  const availableMarkets = yield* markets.getMarkets();
 
-  console.log(`Spotify available in ${availableMarkets.length} markets`)
-  console.log('First 10:', availableMarkets.slice(0, 10).join(', '))
-})
+  console.log(`Spotify available in ${availableMarkets.length} markets`);
+  console.log("First 10:", availableMarkets.slice(0, 10).join(", "));
+});
 ```
 
 ## Usage with Market Options
@@ -28,15 +28,15 @@ Many endpoints accept a `market` parameter to filter content availability:
 
 ```ts
 const program = Effect.gen(function* () {
-  const search = yield* Search
+  const search = yield* Search;
 
-  const results = yield* search.search('Radiohead', ['track'], {
-    market: 'GB',  // Only return content available in UK
+  const results = yield* search.search("Radiohead", ["track"], {
+    market: "GB", // Only return content available in UK
     limit: 10,
-  })
+  });
 
-  return results
-})
+  return results;
+});
 ```
 
 ## Common Use Cases
@@ -44,48 +44,43 @@ const program = Effect.gen(function* () {
 ### Filter content by user's market
 
 ```ts
-import { Effect } from 'effect'
-import { Markets, Users } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Markets, Users } from "@spotify-effect/core";
 
 const getUserCountry = () =>
   Effect.gen(function* () {
-    const users = yield* Users
+    const users = yield* Users;
 
-    const me = yield* users.getCurrentUserProfile()
-    return me.country ?? 'US'
-  })
+    const me = yield* users.getCurrentUserProfile();
+    return me.country ?? "US";
+  });
 
-const getLocalizedContent = <T>(
-  fetch: (market: string) => Effect.Effect<T>
-) =>
+const getLocalizedContent = <T>(fetch: (market: string) => Effect.Effect<T>) =>
   Effect.gen(function* () {
-    const market = yield* getUserCountry()
-    return yield* fetch(market)
-  })
+    const market = yield* getUserCountry();
+    return yield* fetch(market);
+  });
 ```
 
 ### Check market availability
 
 ```ts
-import { Effect } from 'effect'
-import { Markets, Albums } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Markets, Albums } from "@spotify-effect/core";
 
 const checkAlbumAvailability = (albumId: string) =>
   Effect.gen(function* () {
-    const markets = yield* Markets
-    const albums = yield* Albums
+    const markets = yield* Markets;
+    const albums = yield* Albums;
 
-    const [available, album] = yield* Effect.all([
-      markets.getMarkets(),
-      albums.getAlbum(albumId),
-    ])
+    const [available, album] = yield* Effect.all([markets.getMarkets(), albums.getAlbum(albumId)]);
 
     return {
       albumName: album.name,
       totalMarkets: available.length,
       albumMarkets: album.available_markets,
-    }
-  })
+    };
+  });
 ```
 
 ### List artists by region
@@ -93,34 +88,31 @@ const checkAlbumAvailability = (albumId: string) =>
 ```ts
 const getTopArtistsForRegion = (country: string) =>
   Effect.gen(function* () {
-    const artists = yield* Artists
+    const artists = yield* Artists;
 
-    const topTracks = yield* artists.getArtistTopTracks(
-      '0YC192cP3KPCRWx8zr8MfZ',
-      country
-    )
+    const topTracks = yield* artists.getArtistTopTracks("0YC192cP3KPCRWx8zr8MfZ", country);
 
     return {
       country,
       tracks: topTracks,
-    }
-  })
+    };
+  });
 ```
 
 ## ISO 3166-1 Alpha-2 Country Codes
 
 Spotify uses ISO 3166-1 alpha-2 country codes. Common examples:
 
-| Code | Country |
-|------|---------|
-| `US` | United States |
+| Code | Country        |
+| ---- | -------------- |
+| `US` | United States  |
 | `GB` | United Kingdom |
-| `CA` | Canada |
-| `AU` | Australia |
-| `DE` | Germany |
-| `FR` | France |
-| `JP` | Japan |
-| `BR` | Brazil |
+| `CA` | Canada         |
+| `AU` | Australia      |
+| `DE` | Germany        |
+| `FR` | France         |
+| `JP` | Japan          |
+| `BR` | Brazil         |
 
 ## Next steps
 

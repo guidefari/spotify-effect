@@ -4,9 +4,5 @@
     "composite": false,
     "lib": ["ES2022", "DOM"]
   },
-  "include": [
-    "../spotify-effect/src/**/*.ts",
-    "../browser/src/**/*.ts",
-    "../otel-node/src/**/*.ts"
-  ]
+  "include": ["../spotify-effect/src/**/*.ts", "../browser/src/**/*.ts", "../otel-node/src/**/*.ts"]
 }

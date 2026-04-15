@@ -4,7 +4,7 @@ description: Typed, discriminated union errors returned by spotify-effect and ho
 head: []
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components'
+import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 `spotify-effect` uses Effect's type system to represent errors as discriminated unions. Every API call can fail with a `SpotifyRequestError`, which is a union of specific error types.
 
@@ -15,17 +15,18 @@ import { Tabs, TabItem } from '@astrojs/starlight/components'
 HTTP-level errors from the Spotify API (4xx responses).
 
 ```ts
-import { SpotifyHttpError } from '@spotify-effect/core'
+import { SpotifyHttpError } from "@spotify-effect/core";
 
-if (error._tag === 'SpotifyHttpError') {
-  console.log(error.status)     // HTTP status code (e.g., 404)
-  console.log(error.method)      // 'GET', 'POST', etc.
-  console.log(error.url)         // Request URL
-  console.log(error.apiMessage)  // Error message from Spotify
+if (error._tag === "SpotifyHttpError") {
+  console.log(error.status); // HTTP status code (e.g., 404)
+  console.log(error.method); // 'GET', 'POST', etc.
+  console.log(error.url); // Request URL
+  console.log(error.apiMessage); // Error message from Spotify
 }
 ```
 
 Common causes:
+
 - `400` — Bad request (invalid parameters)
 - `401` — Unauthorized (expired or invalid token)
 - `403` — Forbidden (insufficient scopes)
@@ -37,11 +38,11 @@ Common causes:
 Spotify's rate limit was exceeded.
 
 ```ts
-import { SpotifyRateLimitError } from '@spotify-effect/core'
+import { SpotifyRateLimitError } from "@spotify-effect/core";
 
-if (error._tag === 'SpotifyRateLimitError') {
-  console.log(error.retryAfterSeconds)  // Seconds to wait
-  console.log(error.url)
+if (error._tag === "SpotifyRateLimitError") {
+  console.log(error.retryAfterSeconds); // Seconds to wait
+  console.log(error.url);
 }
 ```
 
@@ -50,11 +51,11 @@ if (error._tag === 'SpotifyRateLimitError') {
 Failed to decode the API response (schema mismatch).
 
 ```ts
-import { SpotifyParseError } from '@spotify-effect/core'
+import { SpotifyParseError } from "@spotify-effect/core";
 
-if (error._tag === 'SpotifyParseError') {
-  console.log(error.cause)   // The decoding error
-  console.log(error.url)    // Request URL
+if (error._tag === "SpotifyParseError") {
+  console.log(error.cause); // The decoding error
+  console.log(error.url); // Request URL
 }
 ```
 
@@ -63,10 +64,10 @@ if (error._tag === 'SpotifyParseError') {
 Misconfiguration (missing credentials, invalid parameters).
 
 ```ts
-import { SpotifyConfigurationError } from '@spotify-effect/core'
+import { SpotifyConfigurationError } from "@spotify-effect/core";
 
-if (error._tag === 'SpotifyConfigurationError') {
-  console.log(error.message)  // What went wrong
+if (error._tag === "SpotifyConfigurationError") {
+  console.log(error.message); // What went wrong
 }
 ```
 
@@ -75,11 +76,11 @@ if (error._tag === 'SpotifyConfigurationError') {
 Network-level failures (connection issues, DNS errors).
 
 ```ts
-import { SpotifyTransportError } from '@spotify-effect/core'
+import { SpotifyTransportError } from "@spotify-effect/core";
 
-if (error._tag === 'SpotifyTransportError') {
-  console.log(error.cause)   // The underlying error
-  console.log(error.url)     // Request URL
+if (error._tag === "SpotifyTransportError") {
+  console.log(error.cause); // The underlying error
+  console.log(error.url); // Request URL
 }
 ```
 
@@ -88,42 +89,44 @@ if (error._tag === 'SpotifyTransportError') {
 ### Using Effect.catch
 
 ```ts
-import { Effect } from 'effect'
-import { SpotifyHttpError, SpotifyRateLimitError } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { SpotifyHttpError, SpotifyRateLimitError } from "@spotify-effect/core";
 
 const program = Effect.gen(function* () {
-  const browse = yield* Browse
-  return yield* browse.getNewReleases()
+  const browse = yield* Browse;
+  return yield* browse.getNewReleases();
 }).pipe(
-  Effect.catch('SpotifyHttpError', (error) => {
+  Effect.catch("SpotifyHttpError", (error) => {
     if (error.status === 401) {
-      return Effect.fail(new TokenExpiredError())
+      return Effect.fail(new TokenExpiredError());
     }
-    return Effect.fail(error)
+    return Effect.fail(error);
   }),
-)
+);
 ```
 
 ### Using Effect.match
 
 ```ts
-import { Effect } from 'effect'
+import { Effect } from "effect";
 
-const result = yield* Effect.match({
-  onSuccess: (data) => data,
-  onFailure: (error) => {
-    switch (error._tag) {
-      case 'SpotifyHttpError':
-        if (error.status === 404) return null
-        return error
-      case 'SpotifyRateLimitError':
-        console.log(`Rate limited. Retry after ${error.retryAfterSeconds}s`)
-        return error
-      default:
-        return error
-    }
-  },
-})
+const result =
+  yield *
+  Effect.match({
+    onSuccess: (data) => data,
+    onFailure: (error) => {
+      switch (error._tag) {
+        case "SpotifyHttpError":
+          if (error.status === 404) return null;
+          return error;
+        case "SpotifyRateLimitError":
+          console.log(`Rate limited. Retry after ${error.retryAfterSeconds}s`);
+          return error;
+        default:
+          return error;
+      }
+    },
+  });
 ```
 
 ### Using Effect.exit
@@ -131,19 +134,21 @@ const result = yield* Effect.match({
 For cases where you need to handle success and failure differently:
 
 ```ts
-import { Effect, Exit } from 'effect'
+import { Effect, Exit } from "effect";
 
-const exit = yield* Effect.exit(
-  Effect.gen(function* () {
-    const search = yield* Search
-    return yield* search.search('Queen', ['artist'])
-  })
-)
+const exit =
+  yield *
+  Effect.exit(
+    Effect.gen(function* () {
+      const search = yield* Search;
+      return yield* search.search("Queen", ["artist"]);
+    }),
+  );
 
 if (Exit.isSuccess(exit)) {
-  console.log('Found artists:', exit.value.artists?.items)
+  console.log("Found artists:", exit.value.artists?.items);
 } else {
-  console.log('Search failed:', exit.cause)
+  console.log("Search failed:", exit.cause);
 }
 ```
 
@@ -154,7 +159,7 @@ if (Exit.isSuccess(exit)) {
 Use `isRetryableError` to determine if an error should be retried:
 
 ```ts
-import { isRetryableError } from '@spotify-effect/core'
+import { isRetryableError } from "@spotify-effect/core";
 
 if (isRetryableError(error)) {
   // Retry the request
@@ -162,6 +167,7 @@ if (isRetryableError(error)) {
 ```
 
 `isRetryableError` returns `true` for:
+
 - `SpotifyTransportError` (network failures)
 - `SpotifyHttpError` with status 429 or 5xx
 - `SpotifyRateLimitError`
@@ -169,8 +175,8 @@ if (isRetryableError(error)) {
 ### Implementing retry with backoff
 
 ```ts
-import { Effect } from 'effect'
-import { SpotifyRateLimitError, isRetryableError } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { SpotifyRateLimitError, isRetryableError } from "@spotify-effect/core";
 
 const withRetry = <A, E, R>(
   effect: Effect.Effect<A, E, R>,
@@ -178,12 +184,11 @@ const withRetry = <A, E, R>(
 ): Effect.Effect<A, E, R> =>
   Effect.retry(effect, {
     times: maxRetries,
-    schedule: Schedule.exponential('1 second'),
+    schedule: Schedule.exponential("1 second"),
     while: (error) =>
       isRetryableError(error) &&
-      (error._tag !== 'SpotifyRateLimitError' || 
-        error.retryAfterSeconds < 60),
-  })
+      (error._tag !== "SpotifyRateLimitError" || error.retryAfterSeconds < 60),
+  });
 ```
 
 ## Error Recovery Patterns
@@ -192,24 +197,22 @@ const withRetry = <A, E, R>(
 
 ```ts
 const program = Effect.gen(function* () {
-  const browse = yield* Browse
-  const newReleases = yield* Effect.either(
-    browse.getNewReleases({ country: 'US' }),
-  )
+  const browse = yield* Browse;
+  const newReleases = yield* Effect.either(browse.getNewReleases({ country: "US" }));
 
-  if (newReleases._tag === 'Left') {
-    return yield* getCachedReleases()  // Fallback
+  if (newReleases._tag === "Left") {
+    return yield* getCachedReleases(); // Fallback
   }
 
-  yield* cacheReleases(newReleases.right)
-  return newReleases.right
-})
+  yield* cacheReleases(newReleases.right);
+  return newReleases.right;
+});
 ```
 
 ### Timeout with fallback
 
 ```ts
-import { Effect, Duration } from 'effect'
+import { Effect, Duration } from "effect";
 
 const withTimeout = <A, E, R>(
   effect: Effect.Effect<A, E, R>,
@@ -219,9 +222,7 @@ const withTimeout = <A, E, R>(
   Effect.match({
     onSuccess: (a) => a,
     onFailure: (e) => e,
-  })(
-    Effect.race(effect, Effect.sleep(timeout).pipe(Effect.map(() => fallback)))
-  )
+  })(Effect.race(effect, Effect.sleep(timeout).pipe(Effect.map(() => fallback))));
 ```
 
 ## Next steps

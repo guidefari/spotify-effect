@@ -4,7 +4,7 @@ description: Use @spotify-effect/browser for OAuth PKCE flows in SPAs and browse
 head: []
 ---
 
-import { Steps, TabItem, Tabs } from '@astrojs/starlight/components'
+import { Steps, TabItem, Tabs } from "@astrojs/starlight/components";
 
 `@spotify-effect/browser` provides OAuth PKCE flow support for browser-based applications. PKCE eliminates the need for a client secret, making it safe for frontend-only applications.
 
@@ -12,14 +12,10 @@ import { Steps, TabItem, Tabs } from '@astrojs/starlight/components'
 
 <Tabs>
   <TabItem label="bun">
-    ```sh
-    bun add @spotify-effect/browser @spotify-effect/core effect
-    ```
+    ```sh bun add @spotify-effect/browser @spotify-effect/core effect ```
   </TabItem>
   <TabItem label="npm">
-    ```sh
-    npm install @spotify-effect/browser @spotify-effect/core effect
-    ```
+    ```sh npm install @spotify-effect/browser @spotify-effect/core effect ```
   </TabItem>
 </Tabs>
 
@@ -28,20 +24,20 @@ import { Steps, TabItem, Tabs } from '@astrojs/starlight/components'
 Create a `SpotifyBrowser` instance with the required options:
 
 ```ts
-import { SpotifyBrowser } from '@spotify-effect/browser'
-import * as Layer from 'effect/Layer'
+import { SpotifyBrowser } from "@spotify-effect/browser";
+import * as Layer from "effect/Layer";
 
 const spotify = SpotifyBrowser.layer({
-  clientId: 'your-client-id',
-  redirectUri: 'https://yourapp.com/callback',
+  clientId: "your-client-id",
+  redirectUri: "https://yourapp.com/callback",
   session: {
     sessionStorage: window.sessionStorage,
     localStorage: window.localStorage,
     history: window.history,
   },
-})
+});
 
-export const SpotifyLayer = spotify
+export const SpotifyLayer = spotify;
 ```
 
 ## OAuth Flow
@@ -53,28 +49,21 @@ export const SpotifyLayer = spotify
    Generate the authorization URL with PKCE challenge:
 
    ```ts
-   import { Effect, Layer } from 'effect'
-   import { SpotifyBrowser } from '@spotify-effect/browser'
+   import { Effect, Layer } from "effect";
+   import { SpotifyBrowser } from "@spotify-effect/browser";
 
    const program = Effect.gen(function* () {
-     const spotify = yield* SpotifyBrowser
+     const spotify = yield* SpotifyBrowser;
 
      // Generate URL and redirect
      const url = yield* spotify.auth.startPkceLogin({
-       scopes: [
-         'user-read-private',
-         'user-library-read',
-         'playlist-read-private',
-         'streaming',
-       ],
-     })
+       scopes: ["user-read-private", "user-library-read", "playlist-read-private", "streaming"],
+     });
 
-     window.location.href = url
-   })
+     window.location.href = url;
+   });
 
-   Effect.runPromise(program.pipe(
-     Effect.provide(SpotifyLayer),
-   ))
+   Effect.runPromise(program.pipe(Effect.provide(SpotifyLayer)));
    ```
 
 2. **Handle the callback**
@@ -82,23 +71,21 @@ export const SpotifyLayer = spotify
    On your callback page, exchange the authorization code for tokens:
 
    ```ts
-   import { Effect } from 'effect'
-   import { SpotifyBrowser, readAuthorizationCallback } from '@spotify-effect/browser'
+   import { Effect } from "effect";
+   import { SpotifyBrowser, readAuthorizationCallback } from "@spotify-effect/browser";
 
-   const callback = readAuthorizationCallback(new URL(window.location.href))
+   const callback = readAuthorizationCallback(new URL(window.location.href));
 
    if (callback) {
      const program = Effect.gen(function* () {
-       const spotify = yield* SpotifyBrowser
-       const tokens = yield* spotify.auth.exchangeCode(callback.code)
+       const spotify = yield* SpotifyBrowser;
+       const tokens = yield* spotify.auth.exchangeCode(callback.code);
 
-       console.log('Authenticated!', tokens.accessToken)
+       console.log("Authenticated!", tokens.accessToken);
        // Tokens are automatically stored in session/localStorage
-     })
+     });
 
-     Effect.runPromise(program.pipe(
-       Effect.provide(SpotifyLayer),
-     ))
+     Effect.runPromise(program.pipe(Effect.provide(SpotifyLayer)));
    }
    ```
 
@@ -108,10 +95,10 @@ export const SpotifyLayer = spotify
 
    ```ts
    const program = Effect.gen(function* () {
-     const spotify = yield* SpotifyBrowser
-     const user = yield* spotify.users.getCurrentUserProfile()
-     console.log(`Hello, ${user.display_name}!`)
-   })
+     const spotify = yield* SpotifyBrowser;
+     const user = yield* spotify.users.getCurrentUserProfile();
+     console.log(`Hello, ${user.display_name}!`);
+   });
    ```
 
 </Steps>
@@ -121,12 +108,12 @@ export const SpotifyLayer = spotify
 ### Check authentication status
 
 ```ts
-const tokens = spotify.auth.getTokens()
+const tokens = spotify.auth.getTokens();
 
 if (tokens) {
   // User is authenticated
-  const expiresAt = new Date(tokens.accessTokenExpiresAt)
-  console.log(`Token expires at: ${expiresAt}`)
+  const expiresAt = new Date(tokens.accessTokenExpiresAt);
+  console.log(`Token expires at: ${expiresAt}`);
 }
 ```
 
@@ -136,16 +123,16 @@ Tokens are automatically refreshed when they expire. Call `refreshToken` to proa
 
 ```ts
 const program = Effect.gen(function* () {
-  const spotify = yield* SpotifyBrowser
-  const tokens = yield* spotify.auth.refreshToken(currentRefreshToken)
-  console.log('Tokens refreshed!')
-})
+  const spotify = yield* SpotifyBrowser;
+  const tokens = yield* spotify.auth.refreshToken(currentRefreshToken);
+  console.log("Tokens refreshed!");
+});
 ```
 
 ### Logout
 
 ```ts
-spotify.auth.logout()
+spotify.auth.logout();
 // Clears tokens from session/localStorage
 ```
 
@@ -169,25 +156,23 @@ The browser package provides all the same services as `@spotify-effect/core`:
 ## Example: Build a simple player
 
 ```ts
-import { Effect } from 'effect'
-import { SpotifyBrowser } from '@spotify-effect/browser'
+import { Effect } from "effect";
+import { SpotifyBrowser } from "@spotify-effect/browser";
 
 const program = Effect.gen(function* () {
-  const spotify = yield* SpotifyBrowser
+  const spotify = yield* SpotifyBrowser;
 
   // Get user's top tracks
   const topTracks = yield* spotify.personalization.getMyTopTracks({
     limit: 10,
-  })
+  });
 
   // Start playback
-  const uris = topTracks.items.map(track => track.uri)
-  yield* spotify.player.play({ uris })
-})
+  const uris = topTracks.items.map((track) => track.uri);
+  yield* spotify.player.play({ uris });
+});
 
-Effect.runPromise(program.pipe(
-  Effect.provide(SpotifyLayer),
-))
+Effect.runPromise(program.pipe(Effect.provide(SpotifyLayer)));
 ```
 
 ## Next steps

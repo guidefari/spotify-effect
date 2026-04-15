@@ -4,7 +4,7 @@ description: Add OpenTelemetry tracing to your spotify-effect application with @
 head: []
 ---
 
-import { Tabs, TabItem, Steps } from '@astrojs/starlight/components'
+import { Tabs, TabItem, Steps } from "@astrojs/starlight/components";
 
 `@spotify-effect/otel-node` provides OpenTelemetry tracing for your Spotify API calls. This helps you understand request latency, trace errors, and monitor API usage in production.
 
@@ -12,14 +12,12 @@ import { Tabs, TabItem, Steps } from '@astrojs/starlight/components'
 
 <Tabs>
   <TabItem label="bun">
-    ```sh
-    bun add @spotify-effect/otel-node @opentelemetry/exporter-trace-otlp-http @effect/opentelemetry
-    ```
+    ```sh bun add @spotify-effect/otel-node @opentelemetry/exporter-trace-otlp-http
+    @effect/opentelemetry ```
   </TabItem>
   <TabItem label="npm">
-    ```sh
-    npm install @spotify-effect/otel-node @opentelemetry/exporter-trace-otlp-http @effect/opentelemetry
-    ```
+    ```sh npm install @spotify-effect/otel-node @opentelemetry/exporter-trace-otlp-http
+    @effect/opentelemetry ```
   </TabItem>
 </Tabs>
 
@@ -28,30 +26,26 @@ import { Tabs, TabItem, Steps } from '@astrojs/starlight/components'
 ### Basic configuration
 
 ```ts
-import { Effect, Layer } from 'effect'
-import { NodeRuntime } from '@effect/platform-node'
-import { makeSpotifyLayer } from '@spotify-effect/core'
-import { makeNodeTelemetryLayer } from '@spotify-effect/otel-node'
+import { Effect, Layer } from "effect";
+import { NodeRuntime } from "@effect/platform-node";
+import { makeSpotifyLayer } from "@spotify-effect/core";
+import { makeNodeTelemetryLayer } from "@spotify-effect/otel-node";
 
-const TelemetryLayer = makeNodeTelemetryLayer('spotify-app', {
-  serviceVersion: '1.0.0',
-})
+const TelemetryLayer = makeNodeTelemetryLayer("spotify-app", {
+  serviceVersion: "1.0.0",
+});
 
 const SpotifyLayer = makeSpotifyLayer({
   clientId: process.env.SPOTIFY_CLIENT_ID!,
   clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
-})
+});
 
 const program = Effect.gen(function* () {
-  const search = yield* Search
-  return yield* search.search('Daft Punk', ['artist'])
-})
+  const search = yield* Search;
+  return yield* search.search("Daft Punk", ["artist"]);
+});
 
-program.pipe(
-  Effect.provide(TelemetryLayer),
-  Effect.provide(SpotifyLayer),
-  NodeRuntime.runMain,
-)
+program.pipe(Effect.provide(TelemetryLayer), Effect.provide(SpotifyLayer), NodeRuntime.runMain);
 ```
 
 ### With OTLP endpoint
@@ -78,25 +72,25 @@ The library automatically detects and uses the endpoint:
 For high-throughput applications, use batch span processing:
 
 ```ts
-import { makeNodeTelemetryLayer } from '@spotify-effect/otel-node'
+import { makeNodeTelemetryLayer } from "@spotify-effect/otel-node";
 
-const TelemetryLayer = makeNodeTelemetryLayer('spotify-app', {
-  serviceVersion: '1.0.0',
-  batch: true,  // Use BatchSpanProcessor instead of SimpleSpanProcessor
-})
+const TelemetryLayer = makeNodeTelemetryLayer("spotify-app", {
+  serviceVersion: "1.0.0",
+  batch: true, // Use BatchSpanProcessor instead of SimpleSpanProcessor
+});
 ```
 
 ## What Gets Traced
 
 Each Spotify API call creates a span with:
 
-| Attribute | Description |
-|-----------|-------------|
-| `name` | e.g., `spotify.search.search` |
-| `http.method` | `GET`, `POST`, etc. |
-| `http.url` | Full request URL |
-| `http.status_code` | Response status |
-| `spotify.auth.grant_type` | Token grant type used |
+| Attribute                         | Description                          |
+| --------------------------------- | ------------------------------------ |
+| `name`                            | e.g., `spotify.search.search`        |
+| `http.method`                     | `GET`, `POST`, etc.                  |
+| `http.url`                        | Full request URL                     |
+| `http.status_code`                | Response status                      |
+| `spotify.auth.grant_type`         | Token grant type used                |
 | `spotify.auth.uses_client_secret` | Whether client credentials were used |
 
 ### Example span names
@@ -111,26 +105,26 @@ Each Spotify API call creates a span with:
 For advanced configurations:
 
 ```ts
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base'
-import * as NodeSdk from '@effect/opentelemetry/NodeSdk'
-import type { Resource } from '@effect/opentelemetry/Resource'
-import { Layer } from 'effect'
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
+import * as NodeSdk from "@effect/opentelemetry/NodeSdk";
+import type { Resource } from "@effect/opentelemetry/Resource";
+import { Layer } from "effect";
 
 const customExporter = new OTLPTraceExporter({
-  url: 'https://api.honeycomb.io/v1/traces',
+  url: "https://api.honeycomb.io/v1/traces",
   headers: {
-    'x-honeycomb-team': process.env.HONEYCOMB_API_KEY,
+    "x-honeycomb-team": process.env.HONEYCOMB_API_KEY,
   },
-})
+});
 
 const CustomTelemetryLayer: Layer.Layer<Resource.Resource> = NodeSdk.layer(() => ({
   resource: {
-    serviceName: 'spotify-app',
-    serviceVersion: '1.0.0',
+    serviceName: "spotify-app",
+    serviceVersion: "1.0.0",
   },
   spanProcessor: new BatchSpanProcessor(customExporter),
-}))
+}));
 ```
 
 ## Viewing Traces
@@ -161,14 +155,15 @@ Set `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` and open http://localhos
 tempo:
   image: grafana/tempo:latest
   ports:
-    - "4317:4317"   # OTLP gRPC
-    - "4318:4318"   # OTLP HTTP
+    - "4317:4317" # OTLP gRPC
+    - "4318:4318" # OTLP HTTP
     - "16686:16686" # UI
 ```
 
 ### Other backends
 
 Works with any OTLP-compatible backend:
+
 - **Honeycomb** — `https://api.honeycomb.io/v1/traces`
 - **New Relic** — `https://otlp.nr-data.net:4318`
 - **Datadog** — Use DD_TRACE AGENT
@@ -178,24 +173,22 @@ Works with any OTLP-compatible backend:
 ### Combining with your app's spans
 
 ```ts
-import { Effect, SpanStatus } from 'effect'
+import { Effect, SpanStatus } from "effect";
 
 const program = Effect.gen(function* () {
-  const span = yield* Effect.currentSpan
+  const span = yield* Effect.currentSpan;
 
-  span.addEvent('Starting Spotify search')
+  span.addEvent("Starting Spotify search");
 
-  const search = yield* Search
-  const results = yield* search.search('Radiohead', ['album'])
+  const search = yield* Search;
+  const results = yield* search.search("Radiohead", ["album"]);
 
-  span.addEvent('Search complete', {
-    'result.count': results.albums?.items.length ?? 0,
-  })
+  span.addEvent("Search complete", {
+    "result.count": results.albums?.items.length ?? 0,
+  });
 
-  return results
-}).pipe(
-  Effect.withSpan('search-for-albums'),
-)
+  return results;
+}).pipe(Effect.withSpan("search-for-albums"));
 ```
 
 ### Propagating context

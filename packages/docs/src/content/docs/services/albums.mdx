@@ -11,62 +11,59 @@ The `Albums` service fetches album information from Spotify's catalog.
 ### Get a single album
 
 ```ts
-import { Effect } from 'effect'
-import { Albums, makeSpotifyLayer } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Albums, makeSpotifyLayer } from "@spotify-effect/core";
 
 const program = Effect.gen(function* () {
-  const albums = yield* Albums
+  const albums = yield* Albums;
 
-  const album = yield* albums.getAlbum('4aawyAB9vmqN3uQ7FjRGTy', {
-    market: 'US',
-  })
+  const album = yield* albums.getAlbum("4aawyAB9vmqN3uQ7FjRGTy", {
+    market: "US",
+  });
 
-  console.log(`${album.name} by ${album.artists[0]?.name}`)
-  console.log(`Released: ${album.release_date}`)
-  console.log(`Tracks: ${album.total_tracks}`)
-})
+  console.log(`${album.name} by ${album.artists[0]?.name}`);
+  console.log(`Released: ${album.release_date}`);
+  console.log(`Tracks: ${album.total_tracks}`);
+});
 ```
 
 ### Get multiple albums
 
 ```ts
 const program = Effect.gen(function* () {
-  const albums = yield* Albums
+  const albums = yield* Albums;
 
-  const results = yield* albums.getAlbums([
-    '4aawyAB9vmqN3uQ7FjRGTy',
-    '6rqhFgbbKwnb9MLmUQDhG6',
-  ])
+  const results = yield* albums.getAlbums(["4aawyAB9vmqN3uQ7FjRGTy", "6rqhFgbbKwnb9MLmUQDhG6"]);
 
   for (const album of results) {
     if (album) {
-      console.log(album.name)
+      console.log(album.name);
     }
   }
-})
+});
 ```
 
 ### Get album tracks
 
 ```ts
 const program = Effect.gen(function* () {
-  const albums = yield* Albums
+  const albums = yield* Albums;
 
-  const tracks = yield* albums.getAlbumTracks('4aawyAB9vmqN3uQ7FjRGTy', {
-    market: 'US',
+  const tracks = yield* albums.getAlbumTracks("4aawyAB9vmqN3uQ7FjRGTy", {
+    market: "US",
     limit: 50,
-  })
+  });
 
   for (const track of tracks.items) {
-    console.log(`${track.track_number}. ${track.name}`)
+    console.log(`${track.track_number}. ${track.name}`);
   }
-})
+});
 ```
 
 ## Options
 
-| Option | Type | Description |
-|--------|------|-------------|
+| Option   | Type     | Description                               |
+| -------- | -------- | ----------------------------------------- |
 | `market` | `string` | ISO country code for content availability |
 
 ## Examples
@@ -76,19 +73,19 @@ const program = Effect.gen(function* () {
 ```ts
 const getAlbumWithTracks = (albumId: string) =>
   Effect.gen(function* () {
-    const albums = yield* Albums
+    const albums = yield* Albums;
 
-    const album = yield* albums.getAlbum(albumId, { market: 'US' })
+    const album = yield* albums.getAlbum(albumId, { market: "US" });
     const tracks = yield* albums.getAlbumTracks(albumId, {
-      market: 'US',
+      market: "US",
       limit: 50,
-    })
+    });
 
     return {
       ...album,
       trackList: tracks.items,
-    }
-  })
+    };
+  });
 ```
 
 ### Search albums and fetch details
@@ -96,52 +93,51 @@ const getAlbumWithTracks = (albumId: string) =>
 ```ts
 const searchAndGetAlbums = (query: string) =>
   Effect.gen(function* () {
-    const search = yield* Search
-    const albums = yield* Albums
+    const search = yield* Search;
+    const albums = yield* Albums;
 
-    const results = yield* search.search(query, ['album'], { limit: 10 })
+    const results = yield* search.search(query, ["album"], { limit: 10 });
 
-    const albumIds = results.albums?.items.map(a => a.id) ?? []
-    const fullAlbums = yield* albums.getAlbums(albumIds)
+    const albumIds = results.albums?.items.map((a) => a.id) ?? [];
+    const fullAlbums = yield* albums.getAlbums(albumIds);
 
-    return fullAlbums.filter((a): a is NonNullable<typeof a> => a !== null)
-  })
+    return fullAlbums.filter((a): a is NonNullable<typeof a> => a !== null);
+  });
 ```
 
 ### Get all tracks from a double album
 
 ```ts
-import { paginateAll } from '@spotify-effect/core'
+import { paginateAll } from "@spotify-effect/core";
 
 const getAllAlbumTracks = (albumId: string) =>
   Effect.gen(function* () {
-    const albums = yield* Albums
+    const albums = yield* Albums;
 
     return yield* paginateAll(
-      (offset, limit) =>
-        albums.getAlbumTracks(albumId, { offset, limit }),
+      (offset, limit) => albums.getAlbumTracks(albumId, { offset, limit }),
       50,
-    )
-  })
+    );
+  });
 ```
 
 ## Album Object
 
 ```ts
 interface Album {
-  id: string
-  name: string
-  album_type: 'album' | 'single' | 'compilation'
-  total_tracks: number
-  available_markets: string[]
-  release_date: string
-  release_date_precision: 'year' | 'month' | 'day'
-  artists: SimplifiedArtist[]
-  tracks: Paging<SimplifiedTrack>
-  genres: string[]
-  label: string
-  popularity: number
-  images: Image[]
+  id: string;
+  name: string;
+  album_type: "album" | "single" | "compilation";
+  total_tracks: number;
+  available_markets: string[];
+  release_date: string;
+  release_date_precision: "year" | "month" | "day";
+  artists: SimplifiedArtist[];
+  tracks: Paging<SimplifiedTrack>;
+  genres: string[];
+  label: string;
+  popularity: number;
+  images: Image[];
 }
 ```
 

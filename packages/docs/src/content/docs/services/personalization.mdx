@@ -11,30 +11,30 @@ The `Personalization` service retrieves a user's top artists and tracks based on
 ### Get user's top artists
 
 ```ts
-import { Effect } from 'effect'
-import { Personalization, makeSpotifyLayer } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Personalization, makeSpotifyLayer } from "@spotify-effect/core";
 
 const program = Effect.gen(function* () {
-  const personalization = yield* Personalization
+  const personalization = yield* Personalization;
 
   const topArtists = yield* personalization.getMyTopArtists({
     limit: 20,
-    time_range: 'medium_term',  // Last 6 months
-  })
+    time_range: "medium_term", // Last 6 months
+  });
 
   for (const artist of topArtists.items) {
-    console.log(`${artist.name} — ${artist.genres.slice(0, 2).join(', ')}`)
+    console.log(`${artist.name} — ${artist.genres.slice(0, 2).join(", ")}`);
   }
-})
+});
 ```
 
 ### Time ranges
 
-| Value | Description |
-|-------|-------------|
-| `'short_term'` | Last 4 weeks |
-| `'medium_term'` | Last 6 months |
-| `'long_term'` | Last several years |
+| Value           | Description        |
+| --------------- | ------------------ |
+| `'short_term'`  | Last 4 weeks       |
+| `'medium_term'` | Last 6 months      |
+| `'long_term'`   | Last several years |
 
 ## Top Tracks
 
@@ -42,17 +42,17 @@ const program = Effect.gen(function* () {
 
 ```ts
 const program = Effect.gen(function* () {
-  const personalization = yield* Personalization
+  const personalization = yield* Personalization;
 
   const topTracks = yield* personalization.getMyTopTracks({
     limit: 20,
-    time_range: 'medium_term',
-  })
+    time_range: "medium_term",
+  });
 
   for (const track of topTracks.items) {
-    console.log(`${track.name} — ${track.artists[0]?.name}`)
+    console.log(`${track.name} — ${track.artists[0]?.name}`);
   }
-})
+});
 ```
 
 ## Practical Examples
@@ -60,42 +60,39 @@ const program = Effect.gen(function* () {
 ### Generate a playlist from top tracks
 
 ```ts
-import { Effect } from 'effect'
-import { Personalization, Playlists, Users } from '@spotify-effect/core'
+import { Effect } from "effect";
+import { Personalization, Playlists, Users } from "@spotify-effect/core";
 
 const generateTopTracksPlaylist = (userId: string, name: string) =>
   Effect.gen(function* () {
-    const personalization = yield* Personalization
-    const playlists = yield* Playlists
+    const personalization = yield* Personalization;
+    const playlists = yield* Playlists;
 
     const [shortTerm, mediumTerm, longTerm] = yield* Effect.all([
-      personalization.getMyTopTracks({ limit: 10, time_range: 'short_term' }),
-      personalization.getMyTopTracks({ limit: 20, time_range: 'medium_term' }),
-      personalization.getMyTopTracks({ limit: 20, time_range: 'long_term' }),
-    ])
+      personalization.getMyTopTracks({ limit: 10, time_range: "short_term" }),
+      personalization.getMyTopTracks({ limit: 20, time_range: "medium_term" }),
+      personalization.getMyTopTracks({ limit: 20, time_range: "long_term" }),
+    ]);
 
-    const trackMap = new Map<string, Track>()
-    longTerm.items.forEach((t, i) => trackMap.set(t.id, t))
-    mediumTerm.items.forEach((t, i) => trackMap.set(t.id, t))
-    shortTerm.items.forEach((t, i) => trackMap.set(t.id, t))
+    const trackMap = new Map<string, Track>();
+    longTerm.items.forEach((t, i) => trackMap.set(t.id, t));
+    mediumTerm.items.forEach((t, i) => trackMap.set(t.id, t));
+    shortTerm.items.forEach((t, i) => trackMap.set(t.id, t));
 
-    const uniqueTracks = [...trackMap.values()].slice(0, 50)
+    const uniqueTracks = [...trackMap.values()].slice(0, 50);
 
     const playlist = yield* playlists.createPlaylist(userId, name, {
-      description: 'Your top tracks across all time',
+      description: "Your top tracks across all time",
       public: false,
-    })
+    });
 
-    const uris = uniqueTracks.map(t => t.uri)
+    const uris = uniqueTracks.map((t) => t.uri);
     for (let i = 0; i < uris.length; i += 100) {
-      yield* playlists.addItemsToPlaylist(
-        playlist.id,
-        uris.slice(i, i + 100)
-      )
+      yield* playlists.addItemsToPlaylist(playlist.id, uris.slice(i, i + 100));
     }
 
-    return playlist
-  })
+    return playlist;
+  });
 ```
 
 ### Compare listening across time periods
@@ -103,24 +100,24 @@ const generateTopTracksPlaylist = (userId: string, name: string) =>
 ```ts
 const compareTimePeriods = () =>
   Effect.gen(function* () {
-    const personalization = yield* Personalization
+    const personalization = yield* Personalization;
 
     const [short, medium, long] = yield* Effect.all([
-      personalization.getMyTopTracks({ limit: 10, time_range: 'short_term' }),
-      personalization.getMyTopTracks({ limit: 10, time_range: 'medium_term' }),
-      personalization.getMyTopTracks({ limit: 10, time_range: 'long_term' }),
-    ])
+      personalization.getMyTopTracks({ limit: 10, time_range: "short_term" }),
+      personalization.getMyTopTracks({ limit: 10, time_range: "medium_term" }),
+      personalization.getMyTopTracks({ limit: 10, time_range: "long_term" }),
+    ]);
 
-    const shortArtists = new Set(short.items.flatMap(t => t.artists.map(a => a.id)))
-    const mediumArtists = new Set(medium.items.flatMap(t => t.artists.map(a => a.id)))
-    const longArtists = new Set(long.items.flatMap(t => t.artists.map(a => a.id)))
+    const shortArtists = new Set(short.items.flatMap((t) => t.artists.map((a) => a.id)));
+    const mediumArtists = new Set(medium.items.flatMap((t) => t.artists.map((a) => a.id)));
+    const longArtists = new Set(long.items.flatMap((t) => t.artists.map((a) => a.id)));
 
     return {
-      recentDiscoveries: [...shortArtists].filter(id => !longArtists.has(id)),
-      timeless: [...longArtists].filter(id => shortArtists.has(id)),
-      alwaysListening: [...longArtists].filter(id => mediumArtists.has(id)),
-    }
-  })
+      recentDiscoveries: [...shortArtists].filter((id) => !longArtists.has(id)),
+      timeless: [...longArtists].filter((id) => shortArtists.has(id)),
+      alwaysListening: [...longArtists].filter((id) => mediumArtists.has(id)),
+    };
+  });
 ```
 
 ### Build genre analysis from top artists
@@ -128,87 +125,84 @@ const compareTimePeriods = () =>
 ```ts
 const analyzeTopGenres = () =>
   Effect.gen(function* () {
-    const personalization = yield* Personalization
+    const personalization = yield* Personalization;
 
     const topArtists = yield* personalization.getMyTopArtists({
       limit: 50,
-      time_range: 'medium_term',
-    })
+      time_range: "medium_term",
+    });
 
-    const genreCounts = new Map<string, number>()
-    const artistGenres = new Map<string, string[]>()
+    const genreCounts = new Map<string, number>();
+    const artistGenres = new Map<string, string[]>();
 
     for (const artist of topArtists.items) {
-      artistGenres.set(artist.id, artist.genres)
+      artistGenres.set(artist.id, artist.genres);
       for (const genre of artist.genres) {
-        genreCounts.set(genre, (genreCounts.get(genre) ?? 0) + 1)
+        genreCounts.set(genre, (genreCounts.get(genre) ?? 0) + 1);
       }
     }
 
-    const topGenres = [...genreCounts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
+    const topGenres = [...genreCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
 
     return {
       topGenres,
       artistGenres,
-    }
-  })
+    };
+  });
 ```
 
 ### Discover music similar to top artists
 
 ```ts
-import { Artists, Browse, Personalization } from '@spotify-effect/core'
+import { Artists, Browse, Personalization } from "@spotify-effect/core";
 
 const discoverFromTopArtists = () =>
   Effect.gen(function* () {
-    const personalization = yield* Personalization
-    const artists = yield* Artists
-    const browse = yield* Browse
+    const personalization = yield* Personalization;
+    const artists = yield* Artists;
+    const browse = yield* Browse;
 
     const topArtists = yield* personalization.getMyTopArtists({
       limit: 5,
-      time_range: 'medium_term',
-    })
+      time_range: "medium_term",
+    });
 
-    const artistIds = topArtists.items.map(a => a.id)
+    const artistIds = topArtists.items.map((a) => a.id);
 
     const recommendations = yield* browse.getRecommendations({
       seed_artists: artistIds.slice(0, 3),
       limit: 30,
-    })
+    });
 
     return {
-      basedOn: topArtists.items.map(a => a.name),
+      basedOn: topArtists.items.map((a) => a.name),
       recommendations: recommendations.tracks,
-    }
-  })
+    };
+  });
 ```
 
 ## Pagination
 
 ```ts
-import { paginateAll } from '@spotify-effect/core'
+import { paginateAll } from "@spotify-effect/core";
 
-const getAllTopArtists = (timeRange: 'short_term' | 'medium_term' | 'long_term') =>
+const getAllTopArtists = (timeRange: "short_term" | "medium_term" | "long_term") =>
   Effect.gen(function* () {
-    const personalization = yield* Personalization
+    const personalization = yield* Personalization;
 
     return yield* paginateAll(
-      (offset, limit) =>
-        personalization.getMyTopArtists({ offset, limit, time_range: timeRange }),
+      (offset, limit) => personalization.getMyTopArtists({ offset, limit, time_range: timeRange }),
       50,
-    )
-  })
+    );
+  });
 ```
 
 ## Scopes Required
 
-| Operation | Required Scope |
-|-----------|---------------|
+| Operation         | Required Scope  |
+| ----------------- | --------------- |
 | `getMyTopArtists` | `user-top-read` |
-| `getMyTopTracks` | `user-top-read` |
+| `getMyTopTracks`  | `user-top-read` |
 
 ## Next steps
 
