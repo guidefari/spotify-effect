@@ -176,7 +176,9 @@ export class Session {
   }
 
   async refreshTokens(): Promise<void> {
-    if (!this.tokens?.refreshToken) return;
+    if (!this.tokens?.refreshToken) {
+      throw new Error("No refresh token available");
+    }
     const pkceState = this.getPkceState();
 
     try {
@@ -200,6 +202,7 @@ export class Session {
       });
     } catch (err) {
       this.error = err instanceof Error ? err.message : String(err);
+      throw err;
     }
   }
 
