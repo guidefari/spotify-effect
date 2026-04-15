@@ -53,19 +53,15 @@ Features:
 - Configurable max tracks (number input or unlimited checkbox)
 - Cancel button aborts the stream mid-flight
 
-## Why not EventSource?
+## Related
 
-`EventSource` only supports GET requests. The access token is sent in the POST body to avoid leaking it in URL query params.
-
-## Empty page guard
-
-`fetchPageStream` and `fetchCursorPageStream` in `packages/spotify-effect/src/pagination/paginate.ts` guard against an edge case where Spotify returns `items: []` with `next !== null`. Without this guard, the offset never advances and the stream loops infinitely. The guard terminates the stream when items are empty regardless of the `next` field.
+- [Stream Pagination with SSE](/guides/stream-pagination/) — User-facing documentation in the docs site
 
 ## Files
 
 | File | Role |
 |------|------|
-| `packages/spotify-effect/src/pagination/paginate.ts` | Stream pagination with empty-page guard |
-| `packages/spotify-effect/src/pagination/paginate.test.ts` | Tests including empty-page edge case |
+| `packages/spotify-effect/src/pagination/paginate.ts` | Stream pagination utilities |
+| `packages/spotify-effect/src/pagination/paginate.test.ts` | Tests for pagination |
 | `examples/sveltekit/src/routes/api/stream-pagination/+server.ts` | SSE streaming endpoint |
 | `examples/sveltekit/src/routes/stream-pagination/+page.svelte` | Incremental UI with cancel support |

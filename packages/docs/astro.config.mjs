@@ -41,6 +41,7 @@ export default defineConfig({
             { label: "Browser (PKCE)", link: "/guides/browser/" },
             { label: "Error Handling", link: "/guides/error-handling/" },
             { label: "Pagination", link: "/guides/pagination/" },
+            { label: "Stream Pagination with SSE", link: "/guides/stream-pagination/" },
             { label: "Observability", link: "/guides/observability/" },
           ],
         },
