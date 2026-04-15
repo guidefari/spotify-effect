@@ -19,9 +19,14 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({ message: "Missing required field: accessToken" }, { status: 400 });
   }
 
-  const albumIds = Array.isArray(b.albumIds) ? b.albumIds.filter((id): id is string => typeof id === "string") : [];
+  const albumIds = Array.isArray(b.albumIds)
+    ? b.albumIds.filter((id): id is string => typeof id === "string")
+    : [];
   if (albumIds.length === 0) {
-    return json({ message: "Missing required field: albumIds (non-empty array of strings)" }, { status: 400 });
+    return json(
+      { message: "Missing required field: albumIds (non-empty array of strings)" },
+      { status: 400 },
+    );
   }
 
   try {

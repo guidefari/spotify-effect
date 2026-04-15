@@ -1,12 +1,19 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { Tracks } from "../services/Tracks";
-import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
+import {
+  SpotifyRequest,
+  type SpotifyRequestOptions,
+  type SpotifyRequestService,
+} from "../services/SpotifyRequest";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
 import type { AudioAnalysis, AudioFeatures, Track } from "../model/SpotifyObjects";
 import { TrackSchema } from "../model/SpotifyObjectSchemas";
 import type { MarketOptions } from "../model/SpotifyOptions";
-import type { GetAudioFeaturesForTracksResponse, GetTracksResponse } from "../model/SpotifyResponses";
+import type {
+  GetAudioFeaturesForTracksResponse,
+  GetTracksResponse,
+} from "../model/SpotifyResponses";
 import {
   AudioAnalysisResponseSchema,
   AudioFeaturesResponseSchema,
@@ -53,13 +60,19 @@ export class TracksApi {
   public getAudioAnalysisForTrack(
     trackId: string,
   ): Effect.Effect<AudioAnalysis, SpotifyRequestError> {
-    return this.request.getJsonWithSchema(`/audio-analysis/${trackId}`, AudioAnalysisResponseSchema);
+    return this.request.getJsonWithSchema(
+      `/audio-analysis/${trackId}`,
+      AudioAnalysisResponseSchema,
+    );
   }
 
   public getAudioFeaturesForTrack(
     trackId: string,
   ): Effect.Effect<AudioFeatures, SpotifyRequestError> {
-    return this.request.getJsonWithSchema(`/audio-features/${trackId}`, AudioFeaturesResponseSchema);
+    return this.request.getJsonWithSchema(
+      `/audio-features/${trackId}`,
+      AudioFeaturesResponseSchema,
+    );
   }
 
   public getAudioFeaturesForTracks(

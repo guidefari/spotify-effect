@@ -6,7 +6,11 @@ import type { SearchOptions } from "../model/SpotifyOptions";
 import type { SearchResponse } from "../model/SpotifyResponses";
 import { SearchResponseSchema } from "../model/SpotifyResponseSchemas";
 import { Search } from "../services/Search";
-import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
+import {
+  SpotifyRequest,
+  type SpotifyRequestOptions,
+  type SpotifyRequestService,
+} from "../services/SpotifyRequest";
 
 export class SearchApi {
   constructor(private readonly request: SpotifyRequestService) {}

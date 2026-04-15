@@ -23,7 +23,9 @@ export const POST: RequestHandler = async ({ request }) => {
   const accessToken = typeof body.accessToken === "string" ? body.accessToken : null;
   const limit = typeof body.limit === "number" ? body.limit : 10;
   const timeRange =
-    body.timeRange === "long_term" || body.timeRange === "medium_term" || body.timeRange === "short_term"
+    body.timeRange === "long_term" ||
+    body.timeRange === "medium_term" ||
+    body.timeRange === "short_term"
       ? body.timeRange
       : "medium_term";
 

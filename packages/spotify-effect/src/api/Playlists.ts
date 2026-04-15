@@ -25,7 +25,11 @@ import {
   SnapshotIdResponseSchema,
 } from "../model/SpotifyResponseSchemas";
 import { Playlists } from "../services/Playlists";
-import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
+import {
+  SpotifyRequest,
+  type SpotifyRequestOptions,
+  type SpotifyRequestService,
+} from "../services/SpotifyRequest";
 
 const buildQuery = (options?: Record<string, unknown>): SpotifyRequestOptions | undefined => {
   if (options === undefined) return undefined;
@@ -97,16 +101,12 @@ export class PlaylistsApi {
     name: string,
     options?: CreatePlaylistOptions,
   ): Effect.Effect<Playlist, SpotifyRequestError> {
-    return this.request.postJsonWithSchema(
-      `/users/${userId}/playlists`,
-      PlaylistSchema,
-      {
-        body: {
-          name,
-          ...options,
-        },
+    return this.request.postJsonWithSchema(`/users/${userId}/playlists`, PlaylistSchema, {
+      body: {
+        name,
+        ...options,
       },
-    );
+    });
   }
 
   public addItemsToPlaylist(
@@ -131,16 +131,12 @@ export class PlaylistsApi {
     uris: ReadonlyArray<string>,
     snapshotId?: string,
   ): Effect.Effect<SnapshotIdResponse, SpotifyRequestError> {
-    return this.request.deleteJson(
-      `/playlists/${playlistId}/tracks`,
-      SnapshotIdResponseSchema,
-      {
-        body: {
-          tracks: uris.map((uri) => ({ uri })),
-          ...(snapshotId !== undefined ? { snapshot_id: snapshotId } : null),
-        },
+    return this.request.deleteJson(`/playlists/${playlistId}/tracks`, SnapshotIdResponseSchema, {
+      body: {
+        tracks: uris.map((uri) => ({ uri })),
+        ...(snapshotId !== undefined ? { snapshot_id: snapshotId } : null),
       },
-    );
+    });
   }
 
   public changePlaylistDetails(

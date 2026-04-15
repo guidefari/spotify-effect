@@ -3,7 +3,10 @@ import * as Layer from "effect/Layer";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
 import type { Artist, CursorBasedPaging } from "../model/SpotifyObjects";
 import type { FollowPlaylistOptions, GetFollowedArtistsOptions } from "../model/SpotifyOptions";
-import { BooleanArraySchema, GetFollowedArtistsResponseSchema } from "../model/SpotifyResponseSchemas";
+import {
+  BooleanArraySchema,
+  GetFollowedArtistsResponseSchema,
+} from "../model/SpotifyResponseSchemas";
 import { Follow } from "../services/Follow";
 import { SpotifyRequest, type SpotifyRequestService } from "../services/SpotifyRequest";
 
@@ -28,9 +31,7 @@ export class FollowApi {
       .pipe(Effect.map((r) => r.artists));
   }
 
-  public followArtists(
-    artistIds: ReadonlyArray<string>,
-  ): Effect.Effect<void, SpotifyRequestError> {
+  public followArtists(artistIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson("/me/following", {
       query: { type: "artist", ids: artistIds.join(",") },
     });
@@ -44,17 +45,13 @@ export class FollowApi {
     });
   }
 
-  public followUsers(
-    userIds: ReadonlyArray<string>,
-  ): Effect.Effect<void, SpotifyRequestError> {
+  public followUsers(userIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson("/me/following", {
       query: { type: "user", ids: userIds.join(",") },
     });
   }
 
-  public unfollowUsers(
-    userIds: ReadonlyArray<string>,
-  ): Effect.Effect<void, SpotifyRequestError> {
+  public unfollowUsers(userIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError> {
     return this.request.deleteVoid("/me/following", {
       query: { type: "user", ids: userIds.join(",") },
     });
@@ -85,9 +82,7 @@ export class FollowApi {
     });
   }
 
-  public unfollowPlaylist(
-    playlistId: string,
-  ): Effect.Effect<void, SpotifyRequestError> {
+  public unfollowPlaylist(playlistId: string): Effect.Effect<void, SpotifyRequestError> {
     return this.request.deleteVoid(`/playlists/${playlistId}/followers`);
   }
 

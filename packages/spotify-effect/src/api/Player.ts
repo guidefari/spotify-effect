@@ -26,7 +26,11 @@ import {
   GetRecentlyPlayedTracksResponseSchema,
 } from "../model/SpotifyResponseSchemas";
 import { Player } from "../services/Player";
-import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
+import {
+  SpotifyRequest,
+  type SpotifyRequestOptions,
+  type SpotifyRequestService,
+} from "../services/SpotifyRequest";
 
 const buildQuery = (options?: Record<string, unknown>): SpotifyRequestOptions | undefined => {
   if (options === undefined) return undefined;
@@ -102,9 +106,7 @@ export class PlayerApi {
     });
   }
 
-  public play(
-    options?: PlayOptions,
-  ): Effect.Effect<void, SpotifyRequestError> {
+  public play(options?: PlayOptions): Effect.Effect<void, SpotifyRequestError> {
     if (options === undefined) {
       return this.request.putJson("/me/player/play");
     }
@@ -119,9 +121,7 @@ export class PlayerApi {
     });
   }
 
-  public pause(
-    options?: DeviceIdOptions,
-  ): Effect.Effect<void, SpotifyRequestError> {
+  public pause(options?: DeviceIdOptions): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson("/me/player/pause", buildQuery(options));
   }
 
@@ -161,15 +161,11 @@ export class PlayerApi {
     });
   }
 
-  public skipToNext(
-    options?: DeviceIdOptions,
-  ): Effect.Effect<void, SpotifyRequestError> {
+  public skipToNext(options?: DeviceIdOptions): Effect.Effect<void, SpotifyRequestError> {
     return this.request.postJson("/me/player/next", buildQuery(options));
   }
 
-  public skipToPrevious(
-    options?: DeviceIdOptions,
-  ): Effect.Effect<void, SpotifyRequestError> {
+  public skipToPrevious(options?: DeviceIdOptions): Effect.Effect<void, SpotifyRequestError> {
     return this.request.postJson("/me/player/previous", buildQuery(options));
   }
 

@@ -1,4 +1,9 @@
-export { cursorPaginateAll, cursorPaginateStream, paginateAll, paginateStream } from "./pagination/paginate";
+export {
+  cursorPaginateAll,
+  cursorPaginateStream,
+  paginateAll,
+  paginateStream,
+} from "./pagination/paginate";
 export { makeSpotifyLayer } from "./makeSpotifyLayer";
 export { Albums } from "./services/Albums";
 export { Artists } from "./services/Artists";

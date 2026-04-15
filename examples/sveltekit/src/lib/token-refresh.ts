@@ -20,10 +20,7 @@ const makeRefreshLoop = (session: Session) =>
       try: () => session.refreshTokens(),
       catch: () => new Error("Token refresh failed"),
     });
-  }).pipe(
-    Effect.ignore(),
-    Effect.repeat(Schedule.forever),
-  );
+  }).pipe(Effect.ignore(), Effect.repeat(Schedule.forever));
 
 export function startAutoRefresh(session: Session): void {
   stopAutoRefresh();

@@ -10,18 +10,18 @@
     "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@spotify-effect/otel-node": "workspace:*",
-    "effect": "4.0.0-beta.36",
     "@spotify-effect/browser": "workspace:*",
-    "@spotify-effect/core": "workspace:*"
+    "@spotify-effect/core": "workspace:*",
+    "@spotify-effect/otel-node": "workspace:*",
+    "effect": "4.0.0-beta.36"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.2.0",
-    "@sveltejs/kit": "^2.16.0",
+    "@sveltejs/kit": "2.57.1",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
-    "svelte": "^5.0.0",
-    "svelte-check": "^4.0.0",
+    "svelte": "5.55.3",
+    "svelte-check": "4.4.6",
     "typescript": "^5.9.3",
-    "vite": "^6.0.0"
+    "vite": "6.4.2"
   }
 }

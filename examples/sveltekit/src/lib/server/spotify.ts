@@ -1,8 +1,11 @@
 import * as Effect from "effect/Effect";
-import { makeSpotifyLayer, type SpotifyApiOptions, type SpotifyCredentials } from "@spotify-effect/core";
+import {
+  makeSpotifyLayer,
+  type SpotifyApiOptions,
+  type SpotifyCredentials,
+} from "@spotify-effect/core";
 
-export const makeAccessTokenLayer = (accessToken: string) =>
-  makeSpotifyLayer({}, { accessToken });
+export const makeAccessTokenLayer = (accessToken: string) => makeSpotifyLayer({}, { accessToken });
 
 export const makeConfiguredSpotifyLayer = (
   options: SpotifyApiOptions = {},

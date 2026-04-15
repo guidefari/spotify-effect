@@ -30,7 +30,11 @@ import {
   GetNewReleasesResponseSchema,
 } from "../model/SpotifyResponseSchemas";
 import { Browse } from "../services/Browse";
-import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
+import {
+  SpotifyRequest,
+  type SpotifyRequestOptions,
+  type SpotifyRequestService,
+} from "../services/SpotifyRequest";
 
 const buildQuery = (
   options: Record<string, string | number | undefined> | undefined,
@@ -48,10 +52,7 @@ export class BrowseApi {
 
   public getCategories(
     options?: GetCategoriesOptions,
-  ): Effect.Effect<
-    GetCategoriesResponse["categories"],
-    SpotifyRequestError
-  > {
+  ): Effect.Effect<GetCategoriesResponse["categories"], SpotifyRequestError> {
     return this.request
       .getJsonWithSchema("/browse/categories", GetCategoriesResponseSchema, buildQuery(options))
       .pipe(Effect.map((response) => response.categories));
@@ -71,10 +72,7 @@ export class BrowseApi {
   public getCategoryPlaylists(
     categoryId: string,
     options?: GetCategoryPlaylistsOptions,
-  ): Effect.Effect<
-    GetCategoryPlaylistsResponse["playlists"],
-    SpotifyRequestError
-  > {
+  ): Effect.Effect<GetCategoryPlaylistsResponse["playlists"], SpotifyRequestError> {
     return this.request
       .getJsonWithSchema(
         `/browse/categories/${categoryId}/playlists`,

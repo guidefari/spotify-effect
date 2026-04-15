@@ -28,7 +28,10 @@ export const POST: RequestHandler = async ({ request }) => {
   const position = typeof body.position === "number" ? body.position : undefined;
 
   if (!accessToken || playlistId.length === 0 || uris.length === 0) {
-    return json({ message: "Missing required fields: accessToken, playlistId, uris" }, { status: 400 });
+    return json(
+      { message: "Missing required fields: accessToken, playlistId, uris" },
+      { status: 400 },
+    );
   }
 
   try {

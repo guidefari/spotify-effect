@@ -8,20 +8,21 @@ const makePage = <T>(items: T[], offset: number, total: number, limit = 2): Pagi
   href: `https://api.spotify.com/v1/test?offset=${offset}&limit=${limit}`,
   items,
   limit,
-  next: offset + items.length < total
-    ? `https://api.spotify.com/v1/test?offset=${offset + items.length}&limit=${limit}`
-    : null,
+  next:
+    offset + items.length < total
+      ? `https://api.spotify.com/v1/test?offset=${offset + items.length}&limit=${limit}`
+      : null,
   offset,
-  previous: offset > 0
-    ? `https://api.spotify.com/v1/test?offset=${Math.max(0, offset - limit)}&limit=${limit}`
-    : null,
+  previous:
+    offset > 0
+      ? `https://api.spotify.com/v1/test?offset=${Math.max(0, offset - limit)}&limit=${limit}`
+      : null,
   total,
 });
 
 describe("paginateAll", () => {
   it("collects a single page when next is null", async () => {
-    const fetch = (_offset: number, _limit: number) =>
-      Effect.succeed(makePage(["a", "b"], 0, 2));
+    const fetch = (_offset: number, _limit: number) => Effect.succeed(makePage(["a", "b"], 0, 2));
 
     const result = await Effect.runPromise(paginateAll(fetch, 2));
     expect(result).toEqual(["a", "b"]);
@@ -44,8 +45,7 @@ describe("paginateAll", () => {
   });
 
   it("returns empty array for empty results", async () => {
-    const fetch = (_offset: number, _limit: number) =>
-      Effect.succeed(makePage([], 0, 0));
+    const fetch = (_offset: number, _limit: number) => Effect.succeed(makePage([], 0, 0));
 
     const result = await Effect.runPromise(paginateAll(fetch, 20));
     expect(result).toEqual([]);
@@ -55,10 +55,7 @@ describe("paginateAll", () => {
 describe("paginateStream", () => {
   it("streams items lazily across pages", async () => {
     let fetchCount = 0;
-    const pages: Paging<number>[] = [
-      makePage([1, 2], 0, 4),
-      makePage([3, 4], 2, 4),
-    ];
+    const pages: Paging<number>[] = [makePage([1, 2], 0, 4), makePage([3, 4], 2, 4)];
 
     const fetch = (offset: number, _limit: number) => {
       fetchCount++;
@@ -67,9 +64,7 @@ describe("paginateStream", () => {
     };
 
     const stream = paginateStream(fetch, 2);
-    const first = await Effect.runPromise(
-      Stream.runCollect(Stream.take(stream, 2)),
-    );
+    const first = await Effect.runPromise(Stream.runCollect(Stream.take(stream, 2)));
     expect(first).toEqual([1, 2]);
     expect(fetchCount).toBe(1);
 
@@ -79,22 +74,16 @@ describe("paginateStream", () => {
   });
 
   it("handles single page stream", async () => {
-    const fetch = (_offset: number, _limit: number) =>
-      Effect.succeed(makePage(["only"], 0, 1, 20));
+    const fetch = (_offset: number, _limit: number) => Effect.succeed(makePage(["only"], 0, 1, 20));
 
-    const result = await Effect.runPromise(
-      Stream.runCollect(paginateStream(fetch, 20)),
-    );
+    const result = await Effect.runPromise(Stream.runCollect(paginateStream(fetch, 20)));
     expect(result).toEqual(["only"]);
   });
 
   it("handles empty stream", async () => {
-    const fetch = (_offset: number, _limit: number) =>
-      Effect.succeed(makePage([], 0, 0));
+    const fetch = (_offset: number, _limit: number) => Effect.succeed(makePage([], 0, 0));
 
-    const result = await Effect.runPromise(
-      Stream.runCollect(paginateStream(fetch, 20)),
-    );
+    const result = await Effect.runPromise(Stream.runCollect(paginateStream(fetch, 20)));
     expect(result).toEqual([]);
   });
 });
@@ -159,9 +148,7 @@ describe("cursorPaginateStream", () => {
     };
 
     const stream = cursorPaginateStream(fetch, 2);
-    const first = await Effect.runPromise(
-      Stream.runCollect(Stream.take(stream, 2)),
-    );
+    const first = await Effect.runPromise(Stream.runCollect(Stream.take(stream, 2)));
     expect(first).toEqual([1, 2]);
     expect(fetchCount).toBe(1);
 
@@ -172,9 +159,7 @@ describe("cursorPaginateStream", () => {
 
   it("handles empty cursor stream", async () => {
     const fetch = () => Effect.succeed(makeCursorPage([], "none", false));
-    const result = await Effect.runPromise(
-      Stream.runCollect(cursorPaginateStream(fetch, 20)),
-    );
+    const result = await Effect.runPromise(Stream.runCollect(cursorPaginateStream(fetch, 20)));
     expect(result).toEqual([]);
   });
 });

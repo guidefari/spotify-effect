@@ -23,7 +23,6 @@ export const POST: RequestHandler = async ({ request }) => {
   const query = b.query;
   const types = b.types as ReadonlyArray<SearchType>;
 
-
   try {
     const results = await runTraced(
       Effect.gen(function* () {

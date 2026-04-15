@@ -65,149 +65,151 @@ const json = (body, init) =>
 const runEffect = async (effect) => {
   try {
     const traced = Effect.withSpan(effect, "spotify-effect.example.browser.request");
-    const result = telemetryRuntime !== undefined
-      ? await telemetryRuntime.runPromise(traced)
-      : await Effect.runPromise(traced);
+    const result =
+      telemetryRuntime !== undefined
+        ? await telemetryRuntime.runPromise(traced)
+        : await Effect.runPromise(traced);
     return json(result);
   } catch (error) {
     return json(error, { status: 500 });
   }
 };
 
-const startServer = (port) => Bun.serve({
-  hostname: "127.0.0.1",
-  port,
-  async fetch(request) {
-    const url = new URL(request.url);
+const startServer = (port) =>
+  Bun.serve({
+    hostname: "127.0.0.1",
+    port,
+    async fetch(request) {
+      const url = new URL(request.url);
 
-    if (url.pathname === "/") {
-      return new Response(Bun.file(htmlEntry), {
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
-    }
-
-    if (url.pathname === "/app.js") {
-      return new Response(await getClientBundle(), {
-        headers: { "content-type": "application/javascript; charset=utf-8" },
-      });
-    }
-
-    if (url.pathname === "/pkce") {
-      return new Response(Bun.file(pkceEntry), {
-        headers: { "content-type": "text/markdown; charset=utf-8" },
-      });
-    }
-
-    if (url.pathname === "/api/ping" && request.method === "GET") {
-      return runEffect(
-        Effect.succeed({
-          ok: true,
-          service: "spotify-effect-example-browser",
-          timestamp: new Date().toISOString(),
-        }),
-      );
-    }
-
-    if (url.pathname === "/api/pkce/exchange" && request.method === "POST") {
-      const body = await readJson(request);
-
-      if (
-        body === null ||
-        typeof body.clientId !== "string" ||
-        typeof body.redirectUri !== "string" ||
-        typeof body.code !== "string" ||
-        typeof body.codeVerifier !== "string"
-      ) {
-        return json({ message: "Invalid PKCE exchange request body" }, { status: 400 });
+      if (url.pathname === "/") {
+        return new Response(Bun.file(htmlEntry), {
+          headers: { "content-type": "text/html; charset=utf-8" },
+        });
       }
 
-      return runEffect(
-        Effect.gen(function* () {
-          const auth = yield* SpotifyAuth;
+      if (url.pathname === "/app.js") {
+        return new Response(await getClientBundle(), {
+          headers: { "content-type": "application/javascript; charset=utf-8" },
+        });
+      }
 
-          return yield* auth.getRefreshableUserTokensWithPkce({
-            clientId: body.clientId,
-            code: body.code,
-            codeVerifier: body.codeVerifier,
-          });
-        }).pipe(
-          Effect.provide(
-            makeSpotifyLayer({
+      if (url.pathname === "/pkce") {
+        return new Response(Bun.file(pkceEntry), {
+          headers: { "content-type": "text/markdown; charset=utf-8" },
+        });
+      }
+
+      if (url.pathname === "/api/ping" && request.method === "GET") {
+        return runEffect(
+          Effect.succeed({
+            ok: true,
+            service: "spotify-effect-example-browser",
+            timestamp: new Date().toISOString(),
+          }),
+        );
+      }
+
+      if (url.pathname === "/api/pkce/exchange" && request.method === "POST") {
+        const body = await readJson(request);
+
+        if (
+          body === null ||
+          typeof body.clientId !== "string" ||
+          typeof body.redirectUri !== "string" ||
+          typeof body.code !== "string" ||
+          typeof body.codeVerifier !== "string"
+        ) {
+          return json({ message: "Invalid PKCE exchange request body" }, { status: 400 });
+        }
+
+        return runEffect(
+          Effect.gen(function* () {
+            const auth = yield* SpotifyAuth;
+
+            return yield* auth.getRefreshableUserTokensWithPkce({
               clientId: body.clientId,
-              redirectUri: body.redirectUri,
-            }),
+              code: body.code,
+              codeVerifier: body.codeVerifier,
+            });
+          }).pipe(
+            Effect.provide(
+              makeSpotifyLayer({
+                clientId: body.clientId,
+                redirectUri: body.redirectUri,
+              }),
+            ),
           ),
-        ),
-      );
-    }
-
-    if (url.pathname === "/api/profile" && request.method === "POST") {
-      const body = await readJson(request);
-
-      if (
-        body === null ||
-        typeof body.clientId !== "string" ||
-        typeof body.redirectUri !== "string" ||
-        typeof body.accessToken !== "string" ||
-        typeof body.refreshToken !== "string" ||
-        typeof body.accessTokenExpiresAt !== "number"
-      ) {
-        return json({ message: "Invalid profile request body" }, { status: 400 });
+        );
       }
 
-      const spotifyLayer = makeSpotifyLayer(
-        {
-          clientId: body.clientId,
-          redirectUri: body.redirectUri,
-        },
-        {
-          accessToken: body.accessToken,
-          accessTokenExpiresAt: body.accessTokenExpiresAt,
-          refreshToken: body.refreshToken,
-        },
-      );
+      if (url.pathname === "/api/profile" && request.method === "POST") {
+        const body = await readJson(request);
 
-      return runEffect(
-        Effect.gen(function* () {
-          const users = yield* Users;
-          const session = yield* SpotifySession;
-          const profile = yield* users.getCurrentUserProfile();
+        if (
+          body === null ||
+          typeof body.clientId !== "string" ||
+          typeof body.redirectUri !== "string" ||
+          typeof body.accessToken !== "string" ||
+          typeof body.refreshToken !== "string" ||
+          typeof body.accessTokenExpiresAt !== "number"
+        ) {
+          return json({ message: "Invalid profile request body" }, { status: 400 });
+        }
 
-          return {
-            profile,
-            credentials: {
-              accessToken: session.getStoredAccessToken(),
-              accessTokenExpiresAt: session.getStoredAccessTokenExpiresAt(),
-              refreshToken: session.getStoredRefreshToken(),
-            },
-          };
-        }).pipe(Effect.provide(spotifyLayer)),
-      );
-    }
+        const spotifyLayer = makeSpotifyLayer(
+          {
+            clientId: body.clientId,
+            redirectUri: body.redirectUri,
+          },
+          {
+            accessToken: body.accessToken,
+            accessTokenExpiresAt: body.accessTokenExpiresAt,
+            refreshToken: body.refreshToken,
+          },
+        );
 
-    if (url.pathname === "/api/track" && request.method === "POST") {
-      const body = await readJson(request);
+        return runEffect(
+          Effect.gen(function* () {
+            const users = yield* Users;
+            const session = yield* SpotifySession;
+            const profile = yield* users.getCurrentUserProfile();
 
-      if (
-        body === null ||
-        typeof body.accessToken !== "string" ||
-        typeof body.trackId !== "string"
-      ) {
-        return json({ message: "Invalid track request body" }, { status: 400 });
+            return {
+              profile,
+              credentials: {
+                accessToken: session.getStoredAccessToken(),
+                accessTokenExpiresAt: session.getStoredAccessTokenExpiresAt(),
+                refreshToken: session.getStoredRefreshToken(),
+              },
+            };
+          }).pipe(Effect.provide(spotifyLayer)),
+        );
       }
 
-      return runEffect(
-        Effect.gen(function* () {
-          const tracks = yield* Tracks;
+      if (url.pathname === "/api/track" && request.method === "POST") {
+        const body = await readJson(request);
 
-          return yield* tracks.getTrack(body.trackId);
-        }).pipe(Effect.provide(makeSpotifyLayer({}, { accessToken: body.accessToken }))),
-      );
-    }
+        if (
+          body === null ||
+          typeof body.accessToken !== "string" ||
+          typeof body.trackId !== "string"
+        ) {
+          return json({ message: "Invalid track request body" }, { status: 400 });
+        }
 
-    return new Response("Not found", { status: 404 });
-  },
-});
+        return runEffect(
+          Effect.gen(function* () {
+            const tracks = yield* Tracks;
+
+            return yield* tracks.getTrack(body.trackId);
+          }).pipe(Effect.provide(makeSpotifyLayer({}, { accessToken: body.accessToken }))),
+        );
+      }
+
+      return new Response("Not found", { status: 404 });
+    },
+  });
 
 let server;
 

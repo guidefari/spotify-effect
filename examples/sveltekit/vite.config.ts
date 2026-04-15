@@ -6,4 +6,7 @@ export default defineConfig({
   server: {
     port: 5174,
   },
+  ssr: {
+    external: ["@spotify-effect/otel-node"],
+  },
 });

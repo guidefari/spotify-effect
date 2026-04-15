@@ -143,10 +143,13 @@ describe("SpotifyAuth", () => {
   it("maps token endpoint failures to SpotifyHttpError", async () => {
     const { layer } = makeTestHttpClient(
       () =>
-        new Response(JSON.stringify({ error: "invalid_client", error_description: "Invalid client" }), {
-          status: 401,
-          headers: { "content-type": "application/json" },
-        }),
+        new Response(
+          JSON.stringify({ error: "invalid_client", error_description: "Invalid client" }),
+          {
+            status: 401,
+            headers: { "content-type": "application/json" },
+          },
+        ),
     );
 
     const error = await Effect.runPromise(

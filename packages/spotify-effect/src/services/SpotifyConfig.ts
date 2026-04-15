@@ -32,14 +32,17 @@ export interface SpotifyConfigValue {
   readonly retry: SpotifyRetryConfig | undefined;
 }
 
-export const SpotifyConfig = ServiceMap.Reference<SpotifyConfigValue>("spotify-effect/SpotifyConfig", {
-  defaultValue: () => ({
-    clientId: "",
-    clientSecret: "",
-    redirectUri: "",
-    retry: undefined,
-  }),
-});
+export const SpotifyConfig = ServiceMap.Reference<SpotifyConfigValue>(
+  "spotify-effect/SpotifyConfig",
+  {
+    defaultValue: () => ({
+      clientId: "",
+      clientSecret: "",
+      redirectUri: "",
+      retry: undefined,
+    }),
+  },
+);
 
 export const SpotifySessionConfig = ServiceMap.Reference<SpotifyCredentials>(
   "spotify-effect/SpotifySessionConfig",
@@ -48,9 +51,7 @@ export const SpotifySessionConfig = ServiceMap.Reference<SpotifyCredentials>(
   },
 );
 
-export const makeSpotifyConfigLayer = (
-  options: SpotifyApiOptions = {},
-) =>
+export const makeSpotifyConfigLayer = (options: SpotifyApiOptions = {}) =>
   Layer.succeed(SpotifyConfig, {
     clientId: options.clientId ?? "",
     clientSecret: options.clientSecret ?? "",
@@ -58,6 +59,5 @@ export const makeSpotifyConfigLayer = (
     retry: options.retry,
   });
 
-export const makeSpotifySessionConfigLayer = (
-  credentials: SpotifyCredentials = {},
-) => Layer.succeed(SpotifySessionConfig, credentials);
+export const makeSpotifySessionConfigLayer = (credentials: SpotifyCredentials = {}) =>
+  Layer.succeed(SpotifySessionConfig, credentials);

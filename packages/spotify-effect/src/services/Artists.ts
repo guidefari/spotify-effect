@@ -9,20 +9,23 @@ import type {
   GetRelatedArtistsResponse,
 } from "../model/SpotifyResponses";
 
-export class Artists extends ServiceMap.Service<Artists, {
-  readonly getArtist: (artistId: string) => Effect.Effect<Artist, SpotifyRequestError>;
-  readonly getArtists: (
-    artistIds: ReadonlyArray<string>,
-  ) => Effect.Effect<GetArtistsResponse["artists"], SpotifyRequestError>;
-  readonly getArtistAlbums: (
-    artistId: string,
-    options?: GetArtistAlbumsOptions,
-  ) => Effect.Effect<Paging<SimplifiedAlbum>, SpotifyRequestError>;
-  readonly getArtistTopTracks: (
-    artistId: string,
-    country: string,
-  ) => Effect.Effect<GetArtistTopTracksResponse["tracks"], SpotifyRequestError>;
-  readonly getRelatedArtists: (
-    artistId: string,
-  ) => Effect.Effect<GetRelatedArtistsResponse["artists"], SpotifyRequestError>;
-}>()("spotify-effect/Artists") {}
+export class Artists extends ServiceMap.Service<
+  Artists,
+  {
+    readonly getArtist: (artistId: string) => Effect.Effect<Artist, SpotifyRequestError>;
+    readonly getArtists: (
+      artistIds: ReadonlyArray<string>,
+    ) => Effect.Effect<GetArtistsResponse["artists"], SpotifyRequestError>;
+    readonly getArtistAlbums: (
+      artistId: string,
+      options?: GetArtistAlbumsOptions,
+    ) => Effect.Effect<Paging<SimplifiedAlbum>, SpotifyRequestError>;
+    readonly getArtistTopTracks: (
+      artistId: string,
+      country: string,
+    ) => Effect.Effect<GetArtistTopTracksResponse["tracks"], SpotifyRequestError>;
+    readonly getRelatedArtists: (
+      artistId: string,
+    ) => Effect.Effect<GetRelatedArtistsResponse["artists"], SpotifyRequestError>;
+  }
+>()("spotify-effect/Artists") {}

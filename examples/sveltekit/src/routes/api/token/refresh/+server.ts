@@ -29,7 +29,6 @@ export const POST: RequestHandler = async ({ request }) => {
   const redirectUri = b.redirectUri;
   const refreshToken = b.refreshToken;
 
-
   try {
     const tokens = await runTraced(
       Effect.gen(function* () {

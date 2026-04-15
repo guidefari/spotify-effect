@@ -1,7 +1,11 @@
 import * as NodeSdk from "@effect/opentelemetry/NodeSdk";
 import type * as Resource from "@effect/opentelemetry/Resource";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { BatchSpanProcessor, ConsoleSpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
+import {
+  BatchSpanProcessor,
+  ConsoleSpanExporter,
+  SimpleSpanProcessor,
+} from "@opentelemetry/sdk-trace-base";
 import type * as Layer from "effect/Layer";
 
 export interface NodeTelemetryOptions {

@@ -65,32 +65,39 @@ export interface SpotifyBrowserOptions {
   };
 }
 
-export class SpotifyBrowser extends ServiceMap.Service<SpotifyBrowser, {
-  readonly auth: {
-    readonly startPkceLogin: (opts: {
-      readonly scopes: ReadonlyArray<AuthorizationScope>;
-      readonly redirectUri?: string;
-    }) => Effect.Effect<string>;
-    readonly exchangeCode: (code: string) => Effect.Effect<BrowserRefreshableTokens, SpotifyRequestError>;
-    readonly refreshToken: (refreshToken: string) => Effect.Effect<BrowserRefreshableTokens, SpotifyRequestError>;
-    readonly getTokens: () => BrowserRefreshableTokens | undefined;
-    readonly setTokens: (tokens: BrowserRefreshableTokens) => void;
-    readonly logout: () => void;
-    readonly getSession: () => SpotifyBrowserSession;
-  };
-  readonly albums: AlbumsService;
-  readonly artists: ArtistsService;
-  readonly browse: BrowseService;
-  readonly follow: FollowService;
-  readonly library: LibraryService;
-  readonly markets: MarketsService;
-  readonly personalization: PersonalizationService;
-  readonly player: PlayerService;
-  readonly playlists: PlaylistsService;
-  readonly search: SearchService;
-  readonly tracks: TracksService;
-  readonly users: UsersService;
-}>()("spotify-effect/SpotifyBrowser") {
+export class SpotifyBrowser extends ServiceMap.Service<
+  SpotifyBrowser,
+  {
+    readonly auth: {
+      readonly startPkceLogin: (opts: {
+        readonly scopes: ReadonlyArray<AuthorizationScope>;
+        readonly redirectUri?: string;
+      }) => Effect.Effect<string>;
+      readonly exchangeCode: (
+        code: string,
+      ) => Effect.Effect<BrowserRefreshableTokens, SpotifyRequestError>;
+      readonly refreshToken: (
+        refreshToken: string,
+      ) => Effect.Effect<BrowserRefreshableTokens, SpotifyRequestError>;
+      readonly getTokens: () => BrowserRefreshableTokens | undefined;
+      readonly setTokens: (tokens: BrowserRefreshableTokens) => void;
+      readonly logout: () => void;
+      readonly getSession: () => SpotifyBrowserSession;
+    };
+    readonly albums: AlbumsService;
+    readonly artists: ArtistsService;
+    readonly browse: BrowseService;
+    readonly follow: FollowService;
+    readonly library: LibraryService;
+    readonly markets: MarketsService;
+    readonly personalization: PersonalizationService;
+    readonly player: PlayerService;
+    readonly playlists: PlaylistsService;
+    readonly search: SearchService;
+    readonly tracks: TracksService;
+    readonly users: UsersService;
+  }
+>()("spotify-effect/SpotifyBrowser") {
   static layer(options: SpotifyBrowserOptions) {
     const session = makeSpotifyBrowserSession(options.session);
     let currentToken: string | undefined = session.getTokens()?.accessToken;
@@ -121,7 +128,8 @@ export class SpotifyBrowser extends ServiceMap.Service<SpotifyBrowser, {
             readonly redirectUri?: string;
           }): Effect.Effect<string> =>
             Effect.gen(function* () {
-              const redirectUri = opts.redirectUri ?? options.redirectUri ?? `${window.location.origin}/`;
+              const redirectUri =
+                opts.redirectUri ?? options.redirectUri ?? `${window.location.origin}/`;
               const verifier = yield* createPkceCodeVerifier();
               const challenge = yield* createPkceCodeChallenge(verifier);
 
@@ -140,7 +148,9 @@ export class SpotifyBrowser extends ServiceMap.Service<SpotifyBrowser, {
               return url;
             }),
 
-          exchangeCode: (code: string): Effect.Effect<BrowserRefreshableTokens, SpotifyRequestError> =>
+          exchangeCode: (
+            code: string,
+          ): Effect.Effect<BrowserRefreshableTokens, SpotifyRequestError> =>
             Effect.gen(function* () {
               const pkceState = session.getPkceState();
               if (!pkceState) {
@@ -168,7 +178,9 @@ export class SpotifyBrowser extends ServiceMap.Service<SpotifyBrowser, {
               return tokens;
             }),
 
-          refreshToken: (refreshToken: string): Effect.Effect<BrowserRefreshableTokens, SpotifyRequestError> =>
+          refreshToken: (
+            refreshToken: string,
+          ): Effect.Effect<BrowserRefreshableTokens, SpotifyRequestError> =>
             Effect.gen(function* () {
               const result = yield* auth.getRefreshedAccessToken(refreshToken);
 

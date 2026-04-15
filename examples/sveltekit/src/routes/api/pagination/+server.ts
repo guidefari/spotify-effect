@@ -30,7 +30,10 @@ export const POST: RequestHandler = async ({ request }) => {
     runTracedResult(
       Effect.gen(function* () {
         const playlists = yield* Playlists;
-        return yield* paginateAll((offset, limit) => playlists.getMyPlaylists({ offset, limit }), 10);
+        return yield* paginateAll(
+          (offset, limit) => playlists.getMyPlaylists({ offset, limit }),
+          10,
+        );
       }).pipe(Effect.provide(layer)),
       "sveltekit.api.pagination.playlists",
     ),

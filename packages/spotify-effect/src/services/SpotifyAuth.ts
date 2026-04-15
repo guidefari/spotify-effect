@@ -117,7 +117,9 @@ const requestToken = <A>(options: {
 
       const response = yield* HttpClient.post(TOKEN_URL, {
         headers: {
-          ...(options.authorization === undefined ? null : { Authorization: options.authorization }),
+          ...(options.authorization === undefined
+            ? null
+            : { Authorization: options.authorization }),
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: HttpClientRequest.bodyUrlParams(options.body)(HttpClientRequest.empty).body,
@@ -236,35 +238,40 @@ const createSpotifyAuth = (config: {
     }),
 });
 
-export class SpotifyAuth extends ServiceMap.Service<SpotifyAuth, {
-  readonly getRefreshableUserTokens: (
-    code: string,
-  ) => Effect.Effect<GetRefreshableUserTokensResponse, SpotifyRequestError>;
-  readonly getRefreshableUserTokensWithPkce: (options: {
-    readonly clientId: string;
-    readonly code: string;
-    readonly codeVerifier: string;
-  }) => Effect.Effect<GetRefreshableUserTokensResponse, SpotifyRequestError>;
-  readonly getRefreshedAccessToken: (
-    refreshToken: string,
-  ) => Effect.Effect<GetRefreshedAccessTokenResponse, SpotifyRequestError>;
-  readonly getTemporaryAppTokens: () => Effect.Effect<
-    GetTemporaryAppTokensResponse,
-    SpotifyRequestError
-  >;
-}>()("spotify-effect/SpotifyAuth", {
+export class SpotifyAuth extends ServiceMap.Service<
+  SpotifyAuth,
+  {
+    readonly getRefreshableUserTokens: (
+      code: string,
+    ) => Effect.Effect<GetRefreshableUserTokensResponse, SpotifyRequestError>;
+    readonly getRefreshableUserTokensWithPkce: (options: {
+      readonly clientId: string;
+      readonly code: string;
+      readonly codeVerifier: string;
+    }) => Effect.Effect<GetRefreshableUserTokensResponse, SpotifyRequestError>;
+    readonly getRefreshedAccessToken: (
+      refreshToken: string,
+    ) => Effect.Effect<GetRefreshedAccessTokenResponse, SpotifyRequestError>;
+    readonly getTemporaryAppTokens: () => Effect.Effect<
+      GetTemporaryAppTokensResponse,
+      SpotifyRequestError
+    >;
+  }
+>()("spotify-effect/SpotifyAuth", {
   make: Effect.gen(function* () {
     const client = yield* HttpClient.HttpClient;
     const config = yield* SpotifyConfig;
     const auth = createSpotifyAuth(config);
-    const provideClient = <A>(effect: Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>) =>
-      Effect.provideService(effect, HttpClient.HttpClient, client);
+    const provideClient = <A>(
+      effect: Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>,
+    ) => Effect.provideService(effect, HttpClient.HttpClient, client);
 
     return {
       getRefreshableUserTokens: (code) => provideClient(auth.getRefreshableUserTokens(code)),
       getRefreshableUserTokensWithPkce: (options) =>
         provideClient(auth.getRefreshableUserTokensWithPkce(options)),
-      getRefreshedAccessToken: (refreshToken) => provideClient(auth.getRefreshedAccessToken(refreshToken)),
+      getRefreshedAccessToken: (refreshToken) =>
+        provideClient(auth.getRefreshedAccessToken(refreshToken)),
       getTemporaryAppTokens: () => provideClient(auth.getTemporaryAppTokens()),
     };
   }),

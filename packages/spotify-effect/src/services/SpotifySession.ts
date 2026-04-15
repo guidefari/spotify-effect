@@ -35,7 +35,8 @@ const initialState = (credentials: SpotifyCredentials): SpotifySessionState => (
 const hasUnexpiredToken = (now: number, expiresAt: number | undefined, token: string): boolean =>
   token.length > 0 && (expiresAt === undefined || now < expiresAt);
 
-const expiresAtFromNow = (now: number, expiresInSeconds: number): number => now + expiresInSeconds * 1000;
+const expiresAtFromNow = (now: number, expiresInSeconds: number): number =>
+  now + expiresInSeconds * 1000;
 
 const getCurrentTimeMillis = (): Effect.Effect<number> =>
   Clock.clockWith((clock) => Effect.sync(() => clock.currentTimeMillisUnsafe()));
@@ -50,7 +51,9 @@ const createSpotifySession = (credentials: SpotifyCredentials = {}) => {
         ...state,
         accessToken,
         ...(state.refreshToken === undefined ? null : { refreshToken: state.refreshToken }),
-        ...(state.temporaryAppTokens === undefined ? null : { temporaryAppTokens: state.temporaryAppTokens }),
+        ...(state.temporaryAppTokens === undefined
+          ? null
+          : { temporaryAppTokens: state.temporaryAppTokens }),
         ...(state.temporaryAppTokenExpiresAt === undefined
           ? null
           : { temporaryAppTokenExpiresAt: state.temporaryAppTokenExpiresAt }),
@@ -62,7 +65,9 @@ const createSpotifySession = (credentials: SpotifyCredentials = {}) => {
       undefined,
       {
         ...(state.refreshToken === undefined ? null : { refreshToken: state.refreshToken }),
-        ...(state.temporaryAppTokens === undefined ? null : { temporaryAppTokens: state.temporaryAppTokens }),
+        ...(state.temporaryAppTokens === undefined
+          ? null
+          : { temporaryAppTokens: state.temporaryAppTokens }),
         ...(state.temporaryAppTokenExpiresAt === undefined
           ? null
           : { temporaryAppTokenExpiresAt: state.temporaryAppTokenExpiresAt }),
@@ -71,7 +76,13 @@ const createSpotifySession = (credentials: SpotifyCredentials = {}) => {
     ]);
 
   return {
-    getAccessToken: ({ auth, canUseClientCredentials }: { readonly auth: SpotifyAuthService; readonly canUseClientCredentials: boolean }) =>
+    getAccessToken: ({
+      auth,
+      canUseClientCredentials,
+    }: {
+      readonly auth: SpotifyAuthService;
+      readonly canUseClientCredentials: boolean;
+    }) =>
       SynchronizedRef.modifyEffect(stateRef, (state) =>
         Effect.gen(function* () {
           const now = yield* getCurrentTimeMillis();
@@ -168,27 +179,30 @@ const createSpotifySession = (credentials: SpotifyCredentials = {}) => {
   };
 };
 
-export class SpotifySession extends ServiceMap.Service<SpotifySession, {
-  readonly getAccessToken: (options: {
-    readonly auth: SpotifyAuthService;
-    readonly canUseClientCredentials: boolean;
-  }) => Effect.Effect<string, SpotifyRequestError>;
-  readonly getTemporaryAppTokens: (
-    auth: SpotifyAuthService,
-  ) => Effect.Effect<GetTemporaryAppTokensResponse, SpotifyRequestError>;
-  readonly setAccessToken: (accessToken: string) => Effect.Effect<void>;
-  readonly invalidateAccessToken: () => Effect.Effect<void>;
-  readonly setRefreshableUserTokens: (
-    tokens: GetRefreshableUserTokensResponse,
-  ) => Effect.Effect<void>;
-  readonly updateRefreshedAccessToken: (
-    refreshToken: string,
-    tokens: GetRefreshedAccessTokenResponse,
-  ) => Effect.Effect<void>;
-  readonly getStoredAccessToken: () => string;
-  readonly getStoredAccessTokenExpiresAt: () => number | undefined;
-  readonly getStoredRefreshToken: () => string | undefined;
-}>()("spotify-effect/SpotifySession", {
+export class SpotifySession extends ServiceMap.Service<
+  SpotifySession,
+  {
+    readonly getAccessToken: (options: {
+      readonly auth: SpotifyAuthService;
+      readonly canUseClientCredentials: boolean;
+    }) => Effect.Effect<string, SpotifyRequestError>;
+    readonly getTemporaryAppTokens: (
+      auth: SpotifyAuthService,
+    ) => Effect.Effect<GetTemporaryAppTokensResponse, SpotifyRequestError>;
+    readonly setAccessToken: (accessToken: string) => Effect.Effect<void>;
+    readonly invalidateAccessToken: () => Effect.Effect<void>;
+    readonly setRefreshableUserTokens: (
+      tokens: GetRefreshableUserTokensResponse,
+    ) => Effect.Effect<void>;
+    readonly updateRefreshedAccessToken: (
+      refreshToken: string,
+      tokens: GetRefreshedAccessTokenResponse,
+    ) => Effect.Effect<void>;
+    readonly getStoredAccessToken: () => string;
+    readonly getStoredAccessTokenExpiresAt: () => number | undefined;
+    readonly getStoredRefreshToken: () => string | undefined;
+  }
+>()("spotify-effect/SpotifySession", {
   make: Effect.gen(function* () {
     const credentials = yield* SpotifySessionConfig;
 

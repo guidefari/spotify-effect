@@ -264,10 +264,14 @@ const ResumePointSchema = Schema.Struct({
 
 const SimplifiedShowSchema = Schema.Struct({
   available_markets: Schema.mutable(Schema.Array(Schema.String)),
-  copyrights: Schema.mutable(Schema.Array(Schema.Struct({
-    text: Schema.String,
-    type: Schema.Union([Schema.Literal("C"), Schema.Literal("P")]),
-  }))),
+  copyrights: Schema.mutable(
+    Schema.Array(
+      Schema.Struct({
+        text: Schema.String,
+        type: Schema.Union([Schema.Literal("C"), Schema.Literal("P")]),
+      }),
+    ),
+  ),
   description: Schema.String,
   explicit: Schema.Boolean,
   external_urls: ExternalURLSchema,
