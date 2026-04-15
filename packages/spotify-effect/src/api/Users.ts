@@ -9,16 +9,11 @@ import { SpotifyRequest, type SpotifyRequestService } from "../services/SpotifyR
 export class UsersApi {
   constructor(private readonly request: SpotifyRequestService) {}
 
-  public getCurrentUserProfile(): Effect.Effect<
-    PrivateUser,
-    SpotifyRequestError
-  > {
+  public getCurrentUserProfile(): Effect.Effect<PrivateUser, SpotifyRequestError> {
     return this.request.getJsonWithSchema("/me", PrivateUserSchema);
   }
 
-  public getUser(
-    userId: string,
-  ): Effect.Effect<PublicUser, SpotifyRequestError> {
+  public getUser(userId: string): Effect.Effect<PublicUser, SpotifyRequestError> {
     return this.request.getJsonWithSchema(`/users/${userId}`, PublicUserSchema);
   }
 }

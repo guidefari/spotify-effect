@@ -21,7 +21,6 @@ export const POST: RequestHandler = async ({ request }) => {
   const accessToken = b.accessToken;
   const playlistId = b.playlistId;
 
-
   try {
     const result = await runTraced(
       Effect.gen(function* () {

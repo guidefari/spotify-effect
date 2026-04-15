@@ -20,7 +20,6 @@ export const POST: RequestHandler = async ({ request }) => {
   const accessToken = b.accessToken;
   const userId = b.userId;
 
-
   try {
     const user = await Effect.runPromise(
       Effect.gen(function* () {

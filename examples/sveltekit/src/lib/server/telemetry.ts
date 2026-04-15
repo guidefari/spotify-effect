@@ -22,7 +22,11 @@ const getErrorMessage = (error: unknown): string => {
       parts.push(error._tag);
     }
 
-    if ("description" in error && typeof error.description === "string" && error.description.length > 0) {
+    if (
+      "description" in error &&
+      typeof error.description === "string" &&
+      error.description.length > 0
+    ) {
       parts.push(error.description);
     }
 
@@ -77,9 +81,10 @@ export const logServerError = (label: string, error: unknown): void => {
 
 export const runTraced = <A, E>(effect: Effect.Effect<A, E>, spanName: string): Promise<A> => {
   const traced = Effect.withSpan(effect, spanName);
-  const promise = telemetryRuntime !== undefined
-    ? telemetryRuntime.runPromise(traced)
-    : Effect.runPromise(traced);
+  const promise =
+    telemetryRuntime !== undefined
+      ? telemetryRuntime.runPromise(traced)
+      : Effect.runPromise(traced);
   return promise.catch((error) => {
     logServerError(spanName, error);
     throw error;

@@ -1,0 +1,19 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro'
+
+export const prerender = true
+---
+
+<StarlightPage
+  frontmatter={{
+    title: '404',
+    description: 'Page not found.',
+    editUrl: false,
+    head: [],
+    template: 'splash',
+  }}
+  hasSidebar={false}
+>
+  <p>Page not found.</p>
+  <p><a href="/">Back home</a></p>
+</StarlightPage>

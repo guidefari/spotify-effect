@@ -7,9 +7,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@spotify-effect/otel-node": "workspace:*",
-    "effect": "4.0.0-beta.36",
     "@spotify-effect/browser": "workspace:*",
-    "@spotify-effect/core": "workspace:*"
+    "@spotify-effect/core": "workspace:*",
+    "@spotify-effect/otel-node": "workspace:*",
+    "effect": "4.0.0-beta.36"
   }
 }

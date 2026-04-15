@@ -51,7 +51,10 @@ export const POST: RequestHandler = async ({ request }) => {
       const targetType = body.targetType;
       const ids = getStringArray(body.ids);
 
-      if ((targetType !== "artist" && targetType !== "user" && targetType !== "playlist") || ids.length === 0) {
+      if (
+        (targetType !== "artist" && targetType !== "user" && targetType !== "playlist") ||
+        ids.length === 0
+      ) {
         return json({ message: "Missing required fields: targetType, ids" }, { status: 400 });
       }
 
@@ -111,7 +114,9 @@ export const POST: RequestHandler = async ({ request }) => {
         await runTraced(
           Effect.gen(function* () {
             const follow = yield* Follow;
-            return yield* (mode === "follow" ? follow.followArtists(ids) : follow.unfollowArtists(ids));
+            return yield* mode === "follow"
+              ? follow.followArtists(ids)
+              : follow.unfollowArtists(ids);
           }).pipe(Effect.provide(layer)),
           `sveltekit.api.follow.${mode}_artists`,
         );
@@ -122,7 +127,7 @@ export const POST: RequestHandler = async ({ request }) => {
         await runTraced(
           Effect.gen(function* () {
             const follow = yield* Follow;
-            return yield* (mode === "follow" ? follow.followUsers(ids) : follow.unfollowUsers(ids));
+            return yield* mode === "follow" ? follow.followUsers(ids) : follow.unfollowUsers(ids);
           }).pipe(Effect.provide(layer)),
           `sveltekit.api.follow.${mode}_users`,
         );
@@ -132,9 +137,9 @@ export const POST: RequestHandler = async ({ request }) => {
       await runTraced(
         Effect.gen(function* () {
           const follow = yield* Follow;
-          return yield* (mode === "follow"
+          return yield* mode === "follow"
             ? follow.followPlaylist(ids[0], { public: body.public === true })
-            : follow.unfollowPlaylist(ids[0]));
+            : follow.unfollowPlaylist(ids[0]);
         }).pipe(Effect.provide(layer)),
         `sveltekit.api.follow.${mode}_playlist`,
       );

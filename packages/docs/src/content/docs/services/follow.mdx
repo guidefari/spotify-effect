@@ -1,0 +1,214 @@
+---
+title: Follow
+description: Follow and unfollow artists, users, and playlists.
+head: []
+---
+
+The `Follow` service manages relationships with artists, users, and playlists.
+
+## Following Artists
+
+### Follow artists
+
+```ts
+import { Effect } from "effect";
+import { Follow, makeSpotifyLayer } from "@spotify-effect/core";
+
+const program = Effect.gen(function* () {
+  const follow = yield* Follow;
+
+  yield* follow.followArtists(["0YC192cP3KPCRWx8zr8MfZ", "2YZyLoL8N0Wb9xBt1NhZWg"]);
+});
+```
+
+### Unfollow artists
+
+```ts
+yield * follow.unfollowArtists(["0YC192cP3KPCRWx8zr8MfZ"]);
+```
+
+### Check if following artists
+
+```ts
+const program = Effect.gen(function* () {
+  const follow = yield* Follow;
+
+  const results = yield* follow.isFollowingArtists([
+    "0YC192cP3KPCRWx8zr8MfZ",
+    "2YZyLoL8N0Wb9xBt1NhZWg",
+  ]);
+
+  results.forEach((isFollowing, i) => {
+    console.log(`Artist ${i}: ${isFollowing ? "Following" : "Not following"}`);
+  });
+});
+```
+
+## Following Users
+
+### Follow users
+
+```ts
+yield * follow.followUsers(["user123", "user456"]);
+```
+
+### Unfollow users
+
+```ts
+yield * follow.unfollowUsers(["user123"]);
+```
+
+### Check if following users
+
+```ts
+const results = yield * follow.isFollowingUsers(["user123", "user456"]);
+```
+
+## Following Playlists
+
+### Follow a playlist
+
+```ts
+const program = Effect.gen(function* () {
+  const follow = yield* Follow;
+
+  yield* follow.followPlaylist("37i9dQZF1DXcBWIGoYBM5M", {
+    public: true, // Make public
+  });
+});
+```
+
+### Unfollow a playlist
+
+```ts
+yield * follow.unfollowPlaylist("37i9dQZF1DXcBWIGoYBM5M");
+```
+
+### Check if following a playlist
+
+```ts
+const program = Effect.gen(function* () {
+  const follow = yield* Follow;
+
+  const results = yield* follow.areFollowingPlaylist("37i9dQZF1DXcBWIGoYBM5M", [
+    "user123",
+    "user456",
+  ]);
+
+  results.forEach((isFollowing, i) => {
+    console.log(`User ${i}: ${isFollowing ? "Following" : "Not following"}`);
+  });
+});
+```
+
+## Getting Followed Artists
+
+### Get followed artists
+
+```ts
+const program = Effect.gen(function* () {
+  const follow = yield* Follow;
+
+  const artists = yield* follow.getFollowedArtists({
+    limit: 50,
+    after: "0YC192cP3KPCRWx8zr8MfZ", // Cursor for pagination
+  });
+
+  for (const artist of artists.items) {
+    console.log(`${artist.name} (${artist.followers.total} followers)`);
+  }
+});
+```
+
+### Get all followed artists
+
+```ts
+import { cursorPaginateAll } from "@spotify-effect/core";
+
+const getAllFollowedArtists = () =>
+  Effect.gen(function* () {
+    const follow = yield* Follow;
+
+    return yield* cursorPaginateAll((options) => follow.getFollowedArtists(options), 50);
+  });
+```
+
+## Practical Examples
+
+### Sync followed artists to a playlist
+
+```ts
+import { Effect } from "effect";
+import { Follow, Artists, Playlists, Users, cursorPaginateAll } from "@spotify-effect/core";
+
+const syncFollowedArtists = (playlistName: string) =>
+  Effect.gen(function* () {
+    const follow = yield* Follow;
+    const artists = yield* Artists;
+    const playlists = yield* Playlists;
+    const users = yield* Users;
+
+    const me = yield* users.getCurrentUserProfile();
+
+    const followedArtists = yield* cursorPaginateAll(
+      (options) => follow.getFollowedArtists(options),
+      50,
+    );
+
+    const artistIds = followedArtists.map((a) => a.id);
+    const topTracks = yield* Effect.all(
+      artistIds.map((id) => artists.getArtistTopTracks(id, "US")),
+      { concurrency: 5 },
+    );
+
+    const tracks = topTracks.flatMap((t) => t.slice(0, 2));
+    const trackUris = tracks.map((t) => t.uri);
+
+    const playlist = yield* playlists.createPlaylist(me.id, playlistName, {
+      description: "Your followed artists top tracks",
+      public: false,
+    });
+
+    for (let i = 0; i < trackUris.length; i += 100) {
+      yield* playlists.addItemsToPlaylist(playlist.id, trackUris.slice(i, i + 100));
+    }
+
+    return playlist;
+  });
+```
+
+### Find mutual followers
+
+```ts
+const getMutualFollowers = (targetUserId: string) =>
+  Effect.gen(function* () {
+    const follow = yield* Follow;
+    const users = yield* Users;
+
+    const me = yield* users.getCurrentUserProfile();
+    const target = yield* users.getUser(targetUserId);
+
+    return {
+      mutual: `Check ${target.display_name}'s followers for ${me.id}`,
+    };
+  });
+```
+
+## Scopes Required
+
+| Operation                           | Required Scope                                        |
+| ----------------------------------- | ----------------------------------------------------- |
+| `getFollowedArtists`                | `user-follow-read`                                    |
+| `followArtists` / `unfollowArtists` | `user-follow-modify`                                  |
+| `followUsers` / `unfollowUsers`     | `user-follow-modify`                                  |
+| `followPlaylist`                    | `playlist-modify-public` or `playlist-modify-private` |
+| `unfollowPlaylist`                  | `playlist-modify-public` or `playlist-modify-private` |
+| `isFollowingArtists`                | `user-follow-read`                                    |
+| `isFollowingUsers`                  | `user-follow-read`                                    |
+| `areFollowingPlaylist`              | `playlist-read-private`                               |
+
+## Next steps
+
+- [Personalization](/services/personalization) — user's top artists/tracks
+- [Playlists](/services/playlists) — manage playlists
+- [Users](/services/users) — user profiles

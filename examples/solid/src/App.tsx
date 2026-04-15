@@ -153,7 +153,10 @@ function SessionView() {
       <div>
         <div class="section-header">session</div>
         <div class="card stack">
-          <div class="row" style={{ "justify-content": "space-between", "flex-wrap": "wrap", gap: "8px" }}>
+          <div
+            class="row"
+            style={{ "justify-content": "space-between", "flex-wrap": "wrap", gap: "8px" }}
+          >
             <span class="badge green">
               <span class="dot green" />
               authenticated
@@ -203,7 +206,12 @@ function SessionView() {
         fallback={
           <div
             class="card"
-            style={{ color: "var(--muted)", "font-size": "12px", "text-align": "center", padding: "24px" }}
+            style={{
+              color: "var(--muted)",
+              "font-size": "12px",
+              "text-align": "center",
+              padding: "24px",
+            }}
           >
             click ↻ refresh profile to load user data
           </div>
@@ -247,7 +255,12 @@ function SessionView() {
 
               <details>
                 <summary
-                  style={{ cursor: "pointer", color: "var(--muted)", "font-size": "11px", "user-select": "none" }}
+                  style={{
+                    cursor: "pointer",
+                    color: "var(--muted)",
+                    "font-size": "11px",
+                    "user-select": "none",
+                  }}
                 >
                   raw json
                 </summary>
@@ -265,7 +278,10 @@ function SessionView() {
 
 function AlbumCard(props: { item: SavedAlbum }) {
   const album = () => props.item.album;
-  const artists = () => album().artists.map((a) => a.name).join(", ");
+  const artists = () =>
+    album()
+      .artists.map((a) => a.name)
+      .join(", ");
   const imageUrl = () => album().images[0]?.url;
 
   return (
@@ -326,7 +342,10 @@ function AlbumCard(props: { item: SavedAlbum }) {
 
 function TrackRow(props: { item: SavedTrack }) {
   const track = () => props.item.track;
-  const artists = () => track().artists.map((a) => a.name).join(", ");
+  const artists = () =>
+    track()
+      .artists.map((a) => a.name)
+      .join(", ");
   const duration = () => {
     const ms = track().duration_ms;
     const m = Math.floor(ms / 60_000);
@@ -387,13 +406,9 @@ function LibraryView() {
             Fetches saved albums and tracks directly from the Spotify API using{" "}
             <code style={{ color: "var(--text)" }}>Effect.runPromise</code> — no server required.
           </p>
-          <button
-            onClick={() => void fetchLibrary()}
-            disabled={isLoadingLibrary()}
-          >
+          <button onClick={() => void fetchLibrary()} disabled={isLoadingLibrary()}>
             <Show when={isLoadingLibrary()} fallback="load saved items">
-              <span class="spinner" />
-              {" "}loading…
+              <span class="spinner" /> loading…
             </Show>
           </button>
           <Show when={libraryError()}>
@@ -430,9 +445,7 @@ function LibraryView() {
                           gap: "16px",
                         }}
                       >
-                        <For each={albums().items}>
-                          {(item) => <AlbumCard item={item} />}
-                        </For>
+                        <For each={albums().items}>{(item) => <AlbumCard item={item} />}</For>
                       </div>
                     </Show>
                   </div>
@@ -567,9 +580,7 @@ export default function App() {
           padding: "0 32px 72px",
         }}
       >
-        <Show
-          when={isExchanging()}
-        >
+        <Show when={isExchanging()}>
           <div class="card stack" style={{ "align-items": "center", padding: "40px" }}>
             <div class="spinner" />
             <span style={{ color: "var(--muted)" }}>exchanging authorization code…</span>
@@ -577,10 +588,7 @@ export default function App() {
         </Show>
 
         <Show when={!isExchanging()}>
-          <Show
-            when={isLoggedIn()}
-            fallback={<LoginView />}
-          >
+          <Show when={isLoggedIn()} fallback={<LoginView />}>
             <div class="stack" style={{ gap: "40px" }}>
               <SessionView />
               <LibraryView />

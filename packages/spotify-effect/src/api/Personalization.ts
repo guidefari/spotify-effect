@@ -8,7 +8,11 @@ import {
   GetMyTopTracksResponseSchema,
 } from "../model/SpotifyResponseSchemas";
 import { Personalization } from "../services/Personalization";
-import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
+import {
+  SpotifyRequest,
+  type SpotifyRequestOptions,
+  type SpotifyRequestService,
+} from "../services/SpotifyRequest";
 
 const buildQuery = (options?: Record<string, unknown>): SpotifyRequestOptions | undefined => {
   if (options === undefined) return undefined;

@@ -31,7 +31,6 @@ export const POST: RequestHandler = async ({ request }) => {
   const code = b.code;
   const codeVerifier = b.codeVerifier;
 
-
   try {
     const tokens = await runTraced(
       Effect.gen(function* () {

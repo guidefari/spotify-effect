@@ -34,9 +34,10 @@ export const paginateAll = <T, E, R>(
 ): Effect.Effect<T[], E, R> =>
   Stream.runCollect(paginateStream(fetch, pageSize)) as Effect.Effect<T[], E, R>;
 
-export type CursorPaginatedFetch<T, E, R> = (
-  options?: { limit?: number; after?: string },
-) => Effect.Effect<CursorBasedPaging<T>, E, R>;
+export type CursorPaginatedFetch<T, E, R> = (options?: {
+  limit?: number;
+  after?: string;
+}) => Effect.Effect<CursorBasedPaging<T>, E, R>;
 
 const fetchCursorPageStream = <T, E, R>(
   fetch: CursorPaginatedFetch<T, E, R>,
@@ -49,7 +50,9 @@ const fetchCursorPageStream = <T, E, R>(
       if (page.next === null) return items;
       return Stream.concat(
         items,
-        Stream.suspend(() => fetchCursorPageStream(fetch, page.cursors.after ?? undefined, pageSize)),
+        Stream.suspend(() =>
+          fetchCursorPageStream(fetch, page.cursors.after ?? undefined, pageSize),
+        ),
       );
     }),
   );

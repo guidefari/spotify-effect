@@ -13,7 +13,11 @@ import {
   GetSavedTracksResponseSchema,
 } from "../model/SpotifyResponseSchemas";
 import { Library } from "../services/Library";
-import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
+import {
+  SpotifyRequest,
+  type SpotifyRequestOptions,
+  type SpotifyRequestService,
+} from "../services/SpotifyRequest";
 
 const buildQuery = (options?: Record<string, unknown>): SpotifyRequestOptions | undefined => {
   if (options === undefined) return undefined;
@@ -36,13 +40,21 @@ export class LibraryApi {
   public getSavedAlbums(
     options?: GetSavedAlbumsOptions,
   ): Effect.Effect<Paging<SavedAlbum>, SpotifyRequestError> {
-    return this.request.getJsonWithSchema("/me/albums", GetSavedAlbumsResponseSchema, buildQuery(options));
+    return this.request.getJsonWithSchema(
+      "/me/albums",
+      GetSavedAlbumsResponseSchema,
+      buildQuery(options),
+    );
   }
 
   public getSavedTracks(
     options?: GetSavedTracksOptions,
   ): Effect.Effect<Paging<SavedTrack>, SpotifyRequestError> {
-    return this.request.getJsonWithSchema("/me/tracks", GetSavedTracksResponseSchema, buildQuery(options));
+    return this.request.getJsonWithSchema(
+      "/me/tracks",
+      GetSavedTracksResponseSchema,
+      buildQuery(options),
+    );
   }
 
   public areAlbumsSaved(
@@ -61,15 +73,11 @@ export class LibraryApi {
     });
   }
 
-  public saveAlbums(
-    albumIds: ReadonlyArray<string>,
-  ): Effect.Effect<void, SpotifyRequestError> {
+  public saveAlbums(albumIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson("/me/albums", { query: { ids: albumIds.join(",") } });
   }
 
-  public saveTracks(
-    trackIds: ReadonlyArray<string>,
-  ): Effect.Effect<void, SpotifyRequestError> {
+  public saveTracks(trackIds: ReadonlyArray<string>): Effect.Effect<void, SpotifyRequestError> {
     return this.request.putJson("/me/tracks", { query: { ids: trackIds.join(",") } });
   }
 

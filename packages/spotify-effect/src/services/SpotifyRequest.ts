@@ -138,11 +138,12 @@ const sendRequest = (
     }).pipe(Effect.mapError(mapHttpClientError));
   }
 
-  const makeReq = method === "POST"
-    ? HttpClientRequest.post
-    : method === "PUT"
-    ? HttpClientRequest.put
-    : HttpClientRequest.delete;
+  const makeReq =
+    method === "POST"
+      ? HttpClientRequest.post
+      : method === "PUT"
+        ? HttpClientRequest.put
+        : HttpClientRequest.delete;
 
   let request = makeReq(buildUrl(path)).pipe(
     HttpClientRequest.acceptJson,
@@ -283,7 +284,10 @@ const makeRequestWithAuthRetry = <A>(
     if (result._tag === "Error") {
       if (result.error._tag === "SpotifyHttpError" && result.error.status === 401) {
         yield* Effect.annotateCurrentSpan({ "spotify.auth.retry_on_unauthorized": true });
-        yield* Effect.withSpan(accessTokenResolver.invalidateAccessToken(), "spotify.auth.invalidate");
+        yield* Effect.withSpan(
+          accessTokenResolver.invalidateAccessToken(),
+          "spotify.auth.invalidate",
+        );
 
         const freshToken = yield* accessTokenResolver.getAccessToken();
         return yield* tryWithToken(freshToken);
@@ -391,11 +395,7 @@ const createSpotifyRequest = (
         `spotify.request PUT ${path}`,
         withSpanAttrs(path, "PUT", options),
       ),
-    deleteJson: <A>(
-      path: string,
-      schema: DecodableSchema<A>,
-      options?: SpotifyRequestOptions,
-    ) =>
+    deleteJson: <A>(path: string, schema: DecodableSchema<A>, options?: SpotifyRequestOptions) =>
       Effect.withSpan(
         makeRequestWithAuthRetry(
           accessTokenResolver,
@@ -424,47 +424,51 @@ const createSpotifyRequest = (
   };
 };
 
-export class SpotifyRequest extends ServiceMap.Service<SpotifyRequest, {
-  readonly getJson: <A>(
-    path: string,
-    options?: SpotifyRequestOptions,
-  ) => Effect.Effect<A, SpotifyRequestError>;
-  readonly getJsonWithSchema: <A>(
-    path: string,
-    schema: DecodableSchema<A>,
-    options?: SpotifyRequestOptions,
-  ) => Effect.Effect<A, SpotifyRequestError>;
-  readonly postJsonWithSchema: <A>(
-    path: string,
-    schema: DecodableSchema<A>,
-    options?: SpotifyRequestOptions,
-  ) => Effect.Effect<A, SpotifyRequestError>;
-  readonly postJson: (
-    path: string,
-    options?: SpotifyRequestOptions,
-  ) => Effect.Effect<void, SpotifyRequestError>;
-  readonly putJson: (
-    path: string,
-    options?: SpotifyRequestOptions,
-  ) => Effect.Effect<void, SpotifyRequestError>;
-  readonly deleteJson: <A>(
-    path: string,
-    schema: DecodableSchema<A>,
-    options?: SpotifyRequestOptions,
-  ) => Effect.Effect<A, SpotifyRequestError>;
-  readonly deleteVoid: (
-    path: string,
-    options?: SpotifyRequestOptions,
-  ) => Effect.Effect<void, SpotifyRequestError>;
-}>()("spotify-effect/SpotifyRequest", {
+export class SpotifyRequest extends ServiceMap.Service<
+  SpotifyRequest,
+  {
+    readonly getJson: <A>(
+      path: string,
+      options?: SpotifyRequestOptions,
+    ) => Effect.Effect<A, SpotifyRequestError>;
+    readonly getJsonWithSchema: <A>(
+      path: string,
+      schema: DecodableSchema<A>,
+      options?: SpotifyRequestOptions,
+    ) => Effect.Effect<A, SpotifyRequestError>;
+    readonly postJsonWithSchema: <A>(
+      path: string,
+      schema: DecodableSchema<A>,
+      options?: SpotifyRequestOptions,
+    ) => Effect.Effect<A, SpotifyRequestError>;
+    readonly postJson: (
+      path: string,
+      options?: SpotifyRequestOptions,
+    ) => Effect.Effect<void, SpotifyRequestError>;
+    readonly putJson: (
+      path: string,
+      options?: SpotifyRequestOptions,
+    ) => Effect.Effect<void, SpotifyRequestError>;
+    readonly deleteJson: <A>(
+      path: string,
+      schema: DecodableSchema<A>,
+      options?: SpotifyRequestOptions,
+    ) => Effect.Effect<A, SpotifyRequestError>;
+    readonly deleteVoid: (
+      path: string,
+      options?: SpotifyRequestOptions,
+    ) => Effect.Effect<void, SpotifyRequestError>;
+  }
+>()("spotify-effect/SpotifyRequest", {
   make: Effect.gen(function* () {
     const auth = yield* SpotifyAuth;
     const client = yield* HttpClient.HttpClient;
     const config = yield* SpotifyConfig;
     const session = yield* SpotifySession;
     const canUseClientCredentials = config.clientId.length > 0 && config.clientSecret.length > 0;
-    const provideClient = <A>(effect: Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>) =>
-      Effect.provideService(effect, HttpClient.HttpClient, client);
+    const provideClient = <A>(
+      effect: Effect.Effect<A, SpotifyRequestError, HttpClient.HttpClient>,
+    ) => Effect.provideService(effect, HttpClient.HttpClient, client);
     const request = createSpotifyRequest(
       {
         getAccessToken: () =>

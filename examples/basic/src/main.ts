@@ -243,6 +243,8 @@ const program = resolveInputs(process.argv.slice(2)).pipe(
   }),
 );
 
-const telemetryRuntime = ManagedRuntime.make(makeNodeTelemetryLayer("spotify-effect-example-basic"));
+const telemetryRuntime = ManagedRuntime.make(
+  makeNodeTelemetryLayer("spotify-effect-example-basic"),
+);
 const traced = Effect.withSpan(program, "spotify-effect.example.basic");
 telemetryRuntime.runPromise(traced);

@@ -1,0 +1,212 @@
+---
+title: Browse
+description: Featured playlists, categories, new releases, and recommendations.
+head: []
+---
+
+The `Browse` service accesses Spotify's editorial content — featured playlists, categories, new releases, and recommendations.
+
+## Featured Content
+
+### Featured playlists
+
+```ts
+import { Effect } from "effect";
+import { Browse, makeSpotifyLayer } from "@spotify-effect/core";
+
+const program = Effect.gen(function* () {
+  const browse = yield* Browse;
+
+  const featured = yield* browse.getFeaturedPlaylists({
+    limit: 20,
+    country: "US",
+  });
+
+  console.log(`Featured: ${featured.message}`);
+  for (const playlist of featured.playlists.items) {
+    console.log(`  ${playlist.name}`);
+  }
+});
+```
+
+### Browse categories
+
+```ts
+const program = Effect.gen(function* () {
+  const browse = yield* Browse;
+
+  const categories = yield* browse.getCategories({
+    country: "US",
+    locale: "en_US",
+    limit: 50,
+  });
+
+  for (const category of categories.items) {
+    console.log(`${category.name} (${category.id})`);
+  }
+});
+```
+
+### Get category playlists
+
+```ts
+const program = Effect.gen(function* () {
+  const browse = yield* Browse;
+
+  const playlists = yield* browse.getCategoryPlaylists("pop", {
+    country: "US",
+    limit: 20,
+  });
+
+  for (const playlist of playlists.items) {
+    console.log(playlist.name);
+  }
+});
+```
+
+## New Releases
+
+### Get new album releases
+
+```ts
+const program = Effect.gen(function* () {
+  const browse = yield* Browse;
+
+  const releases = yield* browse.getNewReleases({
+    country: "US",
+    limit: 20,
+  });
+
+  for (const album of releases.items) {
+    console.log(`${album.name} by ${album.artists[0]?.name}`);
+  }
+});
+```
+
+## Genre Seeds
+
+### Get available genre seeds
+
+```ts
+const program = Effect.gen(function* () {
+  const browse = yield* Browse;
+
+  const genres = yield* browse.getAvailableGenreSeeds();
+
+  console.log("Available genres:", genres.slice(0, 10).join(", "));
+});
+```
+
+## Recommendations
+
+### Get track recommendations
+
+```ts
+const program = Effect.gen(function* () {
+  const browse = yield* Browse;
+
+  const recommendations = yield* browse.getRecommendations({
+    seed_artists: ["0YC192cP3KPCRWx8zr8MfZ"],
+    seed_genres: ["rock", "alternative"],
+    seed_tracks: ["4cOdK2wGLETKBW3PvgPWqT"],
+    limit: 20,
+    target_energy: 0.8,
+    min_tempo: 120,
+  });
+
+  for (const track of recommendations.tracks) {
+    console.log(`${track.name} — ${track.artists[0]?.name}`);
+  }
+});
+```
+
+### Recommendation parameters
+
+| Parameter                               | Type       | Description                 |
+| --------------------------------------- | ---------- | --------------------------- |
+| `seed_artists`                          | `string[]` | Artist IDs (max 5)          |
+| `seed_genres`                           | `string[]` | Genre seeds (max 5)         |
+| `seed_tracks`                           | `string[]` | Track IDs (max 5)           |
+| `limit`                                 | `number`   | Results (1-100, default 20) |
+| `min_tempo` / `max_tempo`               | `number`   | BPM filter                  |
+| `min_energy` / `max_energy`             | `number`   | Energy (0-1)                |
+| `target_energy`                         | `number`   | Target energy               |
+| `min_danceability` / `max_danceability` | `number`   | Danceability (0-1)          |
+| `target_instrumentalness`               | `number`   | Target instrumentalness     |
+| `min_popularity` / `max_popularity`     | `number`   | Popularity (0-100)          |
+
+## Examples
+
+### Build a discover feed
+
+```ts
+const buildDiscoverFeed = (mood: "focus" | "workout" | "chill") => {
+  const genreMap = {
+    focus: ["study", "classical", "ambient"],
+    workout: ["work-out", "electronic", "hip-hop"],
+    chill: ["chill", "indie", "sleep"],
+  };
+
+  return Effect.gen(function* () {
+    const browse = yield* Browse;
+
+    const genres = genreMap[mood] ?? ["pop"];
+
+    return yield* browse.getRecommendations({
+      seed_genres: genres.slice(0, 2),
+      limit: 30,
+    });
+  });
+};
+```
+
+### Get trending playlists
+
+```ts
+const getTrendingPlaylists = () =>
+  Effect.gen(function* () {
+    const browse = yield* Browse;
+
+    const [featured, popCategory] = yield* Effect.all([
+      browse.getFeaturedPlaylists({ limit: 10 }),
+      browse.getCategoryPlaylists("pop", { limit: 10 }),
+    ]);
+
+    return {
+      featured: featured.playlists.items,
+      trending: popCategory.items,
+    };
+  });
+```
+
+### Create playlist from recommendations
+
+```ts
+const createMoodPlaylist = (userId: string, genre: string, name: string) =>
+  Effect.gen(function* () {
+    const browse = yield* Browse;
+    const playlists = yield* Playlists;
+
+    const recs = yield* browse.getRecommendations({
+      seed_genres: [genre],
+      limit: 50,
+      target_energy: 0.6,
+    });
+
+    const playlist = yield* playlists.createPlaylist(userId, name, {
+      description: `A ${genre} playlist generated for you`,
+      public: false,
+    });
+
+    const uris = recs.tracks.map((t) => t.uri);
+    yield* playlists.addItemsToPlaylist(playlist.id, uris);
+
+    return playlist;
+  });
+```
+
+## Next steps
+
+- [Playlists](/services/playlists) — work with playlists
+- [Search](/services/search) — search the catalog
+- [Personalization](/services/personalization) — user's top artists/tracks

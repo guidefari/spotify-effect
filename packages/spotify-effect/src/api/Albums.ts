@@ -10,7 +10,11 @@ import {
   GetAlbumsResponseSchema,
 } from "../model/SpotifyResponseSchemas";
 import { Albums } from "../services/Albums";
-import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
+import {
+  SpotifyRequest,
+  type SpotifyRequestOptions,
+  type SpotifyRequestService,
+} from "../services/SpotifyRequest";
 
 const withMarketQuery = (options?: MarketOptions): SpotifyRequestOptions | undefined =>
   options?.market === undefined ? undefined : { query: { market: options.market } };

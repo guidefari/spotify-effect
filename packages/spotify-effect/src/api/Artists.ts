@@ -17,7 +17,11 @@ import {
   GetRelatedArtistsResponseSchema,
 } from "../model/SpotifyResponseSchemas";
 import { Artists } from "../services/Artists";
-import { SpotifyRequest, type SpotifyRequestOptions, type SpotifyRequestService } from "../services/SpotifyRequest";
+import {
+  SpotifyRequest,
+  type SpotifyRequestOptions,
+  type SpotifyRequestService,
+} from "../services/SpotifyRequest";
 
 const withArtistAlbumsQuery = (
   options?: GetArtistAlbumsOptions,
@@ -34,9 +38,7 @@ const withArtistAlbumsQuery = (
 export class ArtistsApi {
   constructor(private readonly request: SpotifyRequestService) {}
 
-  public getArtist(
-    artistId: string,
-  ): Effect.Effect<Artist, SpotifyRequestError> {
+  public getArtist(artistId: string): Effect.Effect<Artist, SpotifyRequestError> {
     return this.request.getJsonWithSchema(`/artists/${artistId}`, ArtistSchema);
   }
 
@@ -64,10 +66,7 @@ export class ArtistsApi {
   public getArtistTopTracks(
     artistId: string,
     country: string,
-  ): Effect.Effect<
-    GetArtistTopTracksResponse["tracks"],
-    SpotifyRequestError
-  > {
+  ): Effect.Effect<GetArtistTopTracksResponse["tracks"], SpotifyRequestError> {
     return this.request
       .getJsonWithSchema(`/artists/${artistId}/top-tracks`, GetArtistTopTracksResponseSchema, {
         query: { market: country },
@@ -77,10 +76,7 @@ export class ArtistsApi {
 
   public getRelatedArtists(
     artistId: string,
-  ): Effect.Effect<
-    GetRelatedArtistsResponse["artists"],
-    SpotifyRequestError
-  > {
+  ): Effect.Effect<GetRelatedArtistsResponse["artists"], SpotifyRequestError> {
     return this.request
       .getJsonWithSchema(`/artists/${artistId}/related-artists`, GetRelatedArtistsResponseSchema)
       .pipe(Effect.map((response) => response.artists));

@@ -3,7 +3,10 @@ import type * as Effect from "effect/Effect";
 import type { SpotifyRequestError } from "../errors/SpotifyError";
 import type { PrivateUser, PublicUser } from "../model/SpotifyObjects";
 
-export class Users extends ServiceMap.Service<Users, {
-  readonly getCurrentUserProfile: () => Effect.Effect<PrivateUser, SpotifyRequestError>;
-  readonly getUser: (userId: string) => Effect.Effect<PublicUser, SpotifyRequestError>;
-}>()("spotify-effect/Users") {}
+export class Users extends ServiceMap.Service<
+  Users,
+  {
+    readonly getCurrentUserProfile: () => Effect.Effect<PrivateUser, SpotifyRequestError>;
+    readonly getUser: (userId: string) => Effect.Effect<PublicUser, SpotifyRequestError>;
+  }
+>()("spotify-effect/Users") {}

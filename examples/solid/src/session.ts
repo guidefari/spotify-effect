@@ -190,14 +190,8 @@ export async function fetchLibrary(limit = 12, offset = 0): Promise<void> {
   setLibraryData({
     albums: albumsResult.status === "fulfilled" ? albumsResult.value : null,
     tracks: tracksResult.status === "fulfilled" ? tracksResult.value : null,
-    albumsError:
-      albumsResult.status === "rejected"
-        ? String(albumsResult.reason)
-        : null,
-    tracksError:
-      tracksResult.status === "rejected"
-        ? String(tracksResult.reason)
-        : null,
+    albumsError: albumsResult.status === "rejected" ? String(albumsResult.reason) : null,
+    tracksError: tracksResult.status === "rejected" ? String(tracksResult.reason) : null,
   });
 
   setIsLoadingLibrary(false);

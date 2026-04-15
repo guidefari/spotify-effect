@@ -21,7 +21,6 @@ export const POST: RequestHandler = async ({ request }) => {
   const accessToken = b.accessToken;
   const trackId = b.trackId;
 
-
   try {
     const track = await runTraced(
       Effect.gen(function* () {

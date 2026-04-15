@@ -8,10 +8,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "effect": "4.0.0-beta.36",
-    "solid-js": "^1.9.3",
     "@spotify-effect/browser": "workspace:*",
-    "@spotify-effect/core": "workspace:*"
+    "@spotify-effect/core": "workspace:*",
+    "effect": "4.0.0-beta.36",
+    "solid-js": "^1.9.3"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
