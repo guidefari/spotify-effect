@@ -86,6 +86,22 @@ describe("paginateStream", () => {
     const result = await Effect.runPromise(Stream.runCollect(paginateStream(fetch, 20)));
     expect(result).toEqual([]);
   });
+
+  it("stops when items are empty even if next is set", async () => {
+    let fetchCount = 0;
+    const fetch = (offset: number, _limit: number) => {
+      fetchCount++;
+      if (offset === 0) return Effect.succeed(makePage(["a", "b"], 0, 10));
+      return Effect.succeed({
+        ...makePage([], offset, 10),
+        next: "https://api.spotify.com/v1/test?offset=999",
+      });
+    };
+
+    const result = await Effect.runPromise(Stream.runCollect(paginateStream(fetch, 2)));
+    expect(result).toEqual(["a", "b"]);
+    expect(fetchCount).toBe(2);
+  });
 });
 
 const makeCursorPage = <T>(
@@ -161,5 +177,27 @@ describe("cursorPaginateStream", () => {
     const fetch = () => Effect.succeed(makeCursorPage([], "none", false));
     const result = await Effect.runPromise(Stream.runCollect(cursorPaginateStream(fetch, 20)));
     expect(result).toEqual([]);
+  });
+
+  it("stops when items are empty even if next is set", async () => {
+    let fetchCount = 0;
+    const pages: Record<string, CursorBasedPaging<string>> = {
+      initial: makeCursorPage(["a", "b"], "c1", true),
+    };
+
+    const fetch = (opts?: { limit?: number; after?: string }) => {
+      fetchCount++;
+      const key = opts?.after ?? "initial";
+      const page = pages[key];
+      if (page) return Effect.succeed(page);
+      return Effect.succeed({
+        ...makeCursorPage([], "c2", false),
+        next: "https://api.spotify.com/v1/test?after=shouldnot",
+      });
+    };
+
+    const result = await Effect.runPromise(Stream.runCollect(cursorPaginateStream(fetch, 2)));
+    expect(result).toEqual(["a", "b"]);
+    expect(fetchCount).toBe(2);
   });
 });

@@ -19,6 +19,7 @@
 		| '/library'
 		| '/follow'
 		| '/pagination'
+		| '/stream-pagination'
 		| '/top'
 		| '/search'
 		| '/player'
@@ -61,7 +62,8 @@
 			label: 'Explore + Paging',
 			links: [
 				{ href: '/search', label: 'search', hint: 'multi-type queries' },
-				{ href: '/pagination', label: 'pagination', hint: 'offset + cursor helpers' }
+				{ href: '/pagination', label: 'pagination', hint: 'offset + cursor helpers' },
+				{ href: '/stream-pagination', label: 'stream pagination', hint: 'lazy streams + fold' }
 			]
 		},
 		{

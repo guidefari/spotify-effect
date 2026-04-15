@@ -15,7 +15,7 @@ const fetchPageStream = <T, E, R>(
   Stream.fromEffect(fetch(offset, pageSize)).pipe(
     Stream.flatMap((page) => {
       const items = Stream.make(...page.items);
-      if (page.next === null) return items;
+      if (page.next === null || page.items.length === 0) return items;
       return Stream.concat(
         items,
         Stream.suspend(() => fetchPageStream(fetch, offset + page.items.length, pageSize)),
@@ -47,7 +47,7 @@ const fetchCursorPageStream = <T, E, R>(
   Stream.fromEffect(fetch({ limit: pageSize, ...(after !== undefined ? { after } : null) })).pipe(
     Stream.flatMap((page) => {
       const items = Stream.make(...page.items);
-      if (page.next === null) return items;
+      if (page.next === null || page.items.length === 0) return items;
       return Stream.concat(
         items,
         Stream.suspend(() =>
