@@ -1,9 +1,9 @@
 ## Planning/initial prompt
-- the next step is making sure there's no need for the make spotifyLayer or makeBrowser layer. 
+
+- the next step is making sure there's no need for the make spotifyLayer or makeBrowser layer.
 - let's try find a way to improve the api to not need this
 - basically, the consumer shouldn't need to have effect to make use of this library on the browser
 - startPkceLogin feels like it belongs to `SpotifyAuth`
-
 
 # `@spotify-effect/browser` — Design Notes
 
@@ -50,6 +50,7 @@ The fix: `@spotify-effect/browser` builds its HTTP client layer with `HttpClient
 ### API ergonomics
 
 Before this work, browser consumers had to:
+
 1. Import `makeSpotifyLayer`, `createPkceCodeVerifier`, `createPkceCodeChallenge`, `getAuthorizationUrl`, `makeSpotifyBrowserSession` separately
 2. Wire `Effect.provide(makeSpotifyLayer(...))` on every single API call
 3. Know about `httpClientLayer` and `TracerPropagationEnabled` to fix CORS
@@ -75,13 +76,13 @@ The `auth` namespace is custom — it wraps `SpotifyAuth.getRefreshableUserToken
 
 ### Key files
 
-| File | Role |
-|---|---|
-| `packages/browser/src/index.ts` | `SpotifyBrowser` service, `makeSpotifyBrowserLayer`, browser HTTP client layer |
-| `packages/browser/src/SpotifyBrowserSession.ts` | PKCE state + token storage (sessionStorage/localStorage) |
-| `packages/spotify-effect/src/makeSpotifyLayer.ts` | Core layer composition (environment-agnostic) |
-| `packages/browser/package.json` | dedicated browser package metadata + build config |
-| `examples/solid/src/session.ts` | Reference consumer using `SpotifyBrowser` |
+| File                                              | Role                                                                           |
+| ------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `packages/browser/src/index.ts`                   | `SpotifyBrowser` service, `makeSpotifyBrowserLayer`, browser HTTP client layer |
+| `packages/browser/src/SpotifyBrowserSession.ts`   | PKCE state + token storage (sessionStorage/localStorage)                       |
+| `packages/spotify-effect/src/makeSpotifyLayer.ts` | Core layer composition (environment-agnostic)                                  |
+| `packages/browser/package.json`                   | dedicated browser package metadata + build config                              |
+| `examples/solid/src/session.ts`                   | Reference consumer using `SpotifyBrowser`                                      |
 
 ### Package exports
 
@@ -101,6 +102,7 @@ Built with `tsup src/index.ts --format cjs,esm --dts`.
 `SpotifyBrowser.layer()` captures a mutable `currentToken` variable. When `auth.exchangeCode()` or `auth.setTokens()` is called, it updates this variable so subsequent API calls use the new token.
 
 This breaks Effect's purity philosophy — the service has hidden mutable state. We accepted this because:
+
 - Browser auth flows are inherently stateful (tokens arrive via redirect, stored in localStorage)
 - The alternative (rebuilding the layer after every token change) would be impractical for consumers
 - The state is scoped to the layer instance, not global
@@ -114,6 +116,7 @@ Power users who want the layer-based approach (e.g., composing with custom layer
 ### All 71 methods exposed
 
 Every domain service method is available on `SpotifyBrowser`. We chose full parity over a curated subset because:
+
 - The domain services are resolved directly from the layer — no manual delegation code to maintain
 - Consumers discover the API via autocomplete on the namespace objects
 

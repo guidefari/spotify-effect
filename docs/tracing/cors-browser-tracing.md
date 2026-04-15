@@ -80,10 +80,9 @@ export const browserHttpClientLayer = Layer.mergeAll(
 In `makeSpotifyLayer`, default to disabling tracer propagation when no custom `httpClientLayer` is provided and `FetchHttpClient.layer` is used (implying browser):
 
 ```ts
-const defaultLayer = options.httpClientLayer ?? Layer.mergeAll(
-  FetchHttpClient.layer,
-  Layer.succeed(HttpClient.TracerPropagationEnabled, false),
-);
+const defaultLayer =
+  options.httpClientLayer ??
+  Layer.mergeAll(FetchHttpClient.layer, Layer.succeed(HttpClient.TracerPropagationEnabled, false));
 ```
 
 **Pros:** Zero-config for browser consumers — just works.
@@ -96,4 +95,5 @@ const defaultLayer = options.httpClientLayer ?? Layer.mergeAll(
 If Option 1 doesn't work cleanly with Effect's service provision model, **Option 2** (exported browser layer) is the pragmatic fallback.
 
 ## Some reading material I found
+
 - [http.dev](https://http.dev/)'s [X-B3-TraceId](https://http.dev/x-b3-traceid). Sidenote, what a cool domain name!

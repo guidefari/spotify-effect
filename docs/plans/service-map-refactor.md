@@ -16,12 +16,12 @@ This refactor moves the package from constructor-wired API classes to `ServiceMa
 const layer = makeSpotifyLayer(
   { clientId, clientSecret, redirectUri },
   { accessToken, refreshToken, accessTokenExpiresAt },
-)
+);
 
 const program = Effect.gen(function* () {
-  const tracks = yield* Tracks
-  return yield* tracks.getTrack(trackId)
-}).pipe(Effect.provide(layer))
+  const tracks = yield* Tracks;
+  return yield* tracks.getTrack(trackId);
+}).pipe(Effect.provide(layer));
 ```
 
 ## Service Graph
