@@ -6,6 +6,8 @@ import { HttpClient, HttpClientRequest } from "effect/unstable/http";
 import { TOKEN_URL } from "../constants";
 import {
   SpotifyConfigurationError,
+  SpotifyParseError,
+  SpotifyRateLimitError,
   makeSpotifyHttpError,
   mapHttpClientError,
   type SpotifyRequestError,
@@ -55,6 +57,15 @@ const parseJson = (value: string): unknown => {
   } catch {
     return undefined;
   }
+};
+
+const parseRetryAfterSeconds = (retryAfter: string | undefined): number => {
+  if (retryAfter === undefined) {
+    return 0;
+  }
+
+  const seconds = Number.parseInt(retryAfter, 10);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
 };
 
 const getRequiredConfig = (options: { readonly clientId: string; readonly clientSecret: string }) =>
@@ -127,10 +138,22 @@ const requestToken = <A>(options: {
 
       yield* Effect.annotateCurrentSpan({
         "spotify.http.status_code": response.status,
+        "spotify.http.method": response.request.method,
         "spotify.http.url": response.request.url,
+        ...(response.status === 429 && response.headers["retry-after"] !== undefined
+          ? { "spotify.http.retry_after": response.headers["retry-after"] }
+          : null),
       });
 
       if (response.status < 200 || response.status >= 300) {
+        if (response.status === 429) {
+          return yield* new SpotifyRateLimitError({
+            method: response.request.method,
+            url: response.request.url,
+            retryAfterSeconds: parseRetryAfterSeconds(response.headers["retry-after"]),
+          });
+        }
+
         const text = yield* response.text.pipe(Effect.mapError(mapHttpClientError));
         const body = parseJson(text);
         const decodedError = decodeSpotifyAccountsErrorBody(body);
@@ -150,8 +173,11 @@ const requestToken = <A>(options: {
           Effect.try({
             try: () => Schema.decodeUnknownSync(options.schema)(body),
             catch: (cause) =>
-              new SpotifyConfigurationError({
-                message: cause instanceof Error ? cause.message : "Failed to decode token response",
+              new SpotifyParseError({
+                cause,
+                method: response.request.method,
+                url: response.request.url,
+                description: "Failed to decode Spotify token response",
               }),
           }),
         ),

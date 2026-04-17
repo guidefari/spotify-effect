@@ -1,6 +1,7 @@
 import * as Effect from "effect/Effect";
 import { describe, expect, it } from "vitest";
 import { makeSpotifyLayer } from "../makeSpotifyLayer";
+import { SpotifyRateLimitError } from "../errors/SpotifyError";
 import { makeTestHttpClient } from "../test/TestHttpClient";
 import { SpotifyRequest, type SpotifyRequestService } from "./SpotifyRequest";
 
@@ -28,7 +29,7 @@ describe("SpotifyRequest", () => {
     const error = await Effect.runPromise(
       Effect.flip(
         requestEffect(
-          (request) => request.getJson<unknown>("/tracks/missing"),
+          (request) => request.getJson("/tracks/missing"),
           {},
           { accessToken: "token" },
           layer,
@@ -77,11 +78,11 @@ describe("SpotifyRequest", () => {
     });
 
     const response = await Effect.runPromise(
-      requestEffect(
-        (request) => request.getJson<{ ok: boolean }>("/tracks/retry"),
-        { clientId: "client-id", clientSecret: "client-secret" },
-        { accessToken: "stale-token", refreshToken: "refresh-token" },
-        layer,
+        requestEffect(
+          (request) => request.getJson("/tracks/retry"),
+          { clientId: "client-id", clientSecret: "client-secret" },
+          { accessToken: "stale-token", refreshToken: "refresh-token" },
+          layer,
       ),
     );
 
@@ -109,16 +110,45 @@ describe("SpotifyRequest", () => {
     });
 
     const response = await Effect.runPromise(
-      requestEffect(
-        (request) => request.getJson<{ ok: boolean }>("/tracks/ratelimit"),
-        { retry: { maxRetries: 3, baseDelayMs: 1 } },
-        { accessToken: "token" },
-        layer,
+        requestEffect(
+          (request) => request.getJson("/tracks/ratelimit"),
+          { retry: { maxRetries: 3, baseDelayMs: 1 } },
+          { accessToken: "token" },
+          layer,
       ),
     );
 
     expect(response).toEqual({ ok: true });
     expect(requests).toHaveLength(3);
+  });
+
+  it("returns SpotifyRateLimitError with retry-after when retries are exhausted", async () => {
+    const { layer } = makeTestHttpClient(
+      () =>
+        new Response(JSON.stringify({ error: { status: 429, message: "Rate limited" } }), {
+          status: 429,
+          headers: { "content-type": "application/json", "retry-after": "1" },
+        }),
+    );
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        requestEffect(
+          (request) => request.getJson("/tracks/ratelimit"),
+          { retry: { maxRetries: 0, baseDelayMs: 1 } },
+          { accessToken: "token" },
+          layer,
+        ),
+      ),
+    );
+
+    expect(error).toEqual(
+      new SpotifyRateLimitError({
+        method: "GET",
+        url: "https://api.spotify.com/v1/tracks/ratelimit",
+        retryAfterSeconds: 1,
+      }),
+    );
   });
 
   it("retries 500 errors with exponential backoff and eventually succeeds", async () => {
@@ -140,11 +170,11 @@ describe("SpotifyRequest", () => {
     });
 
     const response = await Effect.runPromise(
-      requestEffect(
-        (request) => request.getJson<{ ok: boolean }>("/tracks/servererror"),
-        { retry: { maxRetries: 3, baseDelayMs: 1 } },
-        { accessToken: "token" },
-        layer,
+        requestEffect(
+          (request) => request.getJson("/tracks/servererror"),
+          { retry: { maxRetries: 3, baseDelayMs: 1 } },
+          { accessToken: "token" },
+          layer,
       ),
     );
 

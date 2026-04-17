@@ -1,7 +1,12 @@
 import * as Effect from "effect/Effect";
 import { describe, expect, it } from "vitest";
 import { makeSpotifyLayer } from "../makeSpotifyLayer";
-import { SpotifyConfigurationError, makeSpotifyHttpError } from "../errors/SpotifyError";
+import {
+  SpotifyConfigurationError,
+  SpotifyParseError,
+  SpotifyRateLimitError,
+  makeSpotifyHttpError,
+} from "../errors/SpotifyError";
 import { makeTestHttpClient } from "../test/TestHttpClient";
 import { SpotifyAuth, type SpotifyAuthService } from "./SpotifyAuth";
 
@@ -171,6 +176,64 @@ describe("SpotifyAuth", () => {
         body: { error: "invalid_client", error_description: "Invalid client" },
       }),
     );
+  });
+
+  it("maps token endpoint rate limits to SpotifyRateLimitError", async () => {
+    const { layer } = makeTestHttpClient(
+      () =>
+        new Response(JSON.stringify({ error: "rate_limited" }), {
+          status: 429,
+          headers: { "content-type": "application/json", "retry-after": "5" },
+        }),
+    );
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        authEffect(
+          (auth) => auth.getTemporaryAppTokens(),
+          { clientId: "client-id", clientSecret: "client-secret" },
+          layer,
+        ),
+      ),
+    );
+
+    expect(error).toEqual(
+      new SpotifyRateLimitError({
+        method: "POST",
+        url: "https://accounts.spotify.com/api/token",
+        retryAfterSeconds: 5,
+      }),
+    );
+  });
+
+  it("maps token response decode failures to SpotifyParseError", async () => {
+    const { layer } = makeTestHttpClient(
+      () =>
+        new Response(
+          JSON.stringify({
+            access_token: "user-token",
+            token_type: "Bearer",
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    );
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        authEffect(
+          (auth) => auth.getTemporaryAppTokens(),
+          { clientId: "client-id", clientSecret: "client-secret" },
+          layer,
+        ),
+      ),
+    );
+
+    expect(error).toMatchObject({
+      _tag: "SpotifyParseError",
+      method: "POST",
+      url: "https://accounts.spotify.com/api/token",
+      description: "Failed to decode Spotify token response",
+    } satisfies Partial<SpotifyParseError>);
   });
 
   it("requires redirectUri for authorization code exchange", async () => {

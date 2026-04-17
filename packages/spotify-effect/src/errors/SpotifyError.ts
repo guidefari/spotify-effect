@@ -45,6 +45,9 @@ export const isRetryableError = (error: SpotifyRequestError): boolean => {
   if (error._tag === "SpotifyTransportError") {
     return true;
   }
+  if (error._tag === "SpotifyRateLimitError") {
+    return true;
+  }
   if (error._tag === "SpotifyHttpError") {
     return error.status === 429 || error.status >= 500;
   }

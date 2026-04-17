@@ -5,6 +5,7 @@ import * as Schema from "effect/Schema";
 import { ServiceMap } from "effect";
 import { HttpClient, HttpClientRequest, type HttpClientResponse } from "effect/unstable/http";
 import {
+  SpotifyConfigurationError,
   SpotifyHttpError,
   SpotifyParseError,
   SpotifyRateLimitError,
@@ -60,14 +61,23 @@ const decodeVoidResponse = (
   _response: HttpClientResponse.HttpClientResponse,
 ): Effect.Effect<void, SpotifyRequestError> => Effect.void;
 
-const decodeSuccessResponse = <A>(
+const decodeSuccessResponse = (
   response: HttpClientResponse.HttpClientResponse,
-): Effect.Effect<A, SpotifyRequestError> =>
+): Effect.Effect<unknown, SpotifyRequestError> =>
   Effect.gen(function* () {
     const body = yield* response.json.pipe(Effect.mapError(mapHttpClientError));
 
-    return body as A;
+    return body;
   });
+
+const parseRetryAfterSeconds = (retryAfter: string | undefined): number => {
+  if (retryAfter === undefined) {
+    return 0;
+  }
+
+  const seconds = Number.parseInt(retryAfter, 10);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+};
 
 const decodeSuccessResponseWithSchema = <A>(
   response: HttpClientResponse.HttpClientResponse,
@@ -191,16 +201,16 @@ const executeRequest = <A>(
     }
 
     if (response.status === 429) {
-      const retryAfter = response.headers["retry-after"];
-      const retryAfterSeconds = retryAfter !== undefined ? Number.parseInt(retryAfter, 10) : 0;
+      const retryAfterSeconds = parseRetryAfterSeconds(response.headers["retry-after"]);
 
-      yield* Effect.sleep(`${retryAfterSeconds} seconds`);
+      if (retryAfterSeconds > 0) {
+        yield* Effect.sleep(`${retryAfterSeconds} seconds`);
+      }
 
-      return yield* new SpotifyHttpError({
-        status: response.status,
+      return yield* new SpotifyRateLimitError({
         method: response.request.method,
         url: response.request.url,
-        description: "Rate limit exceeded",
+        retryAfterSeconds,
       });
     }
 
@@ -247,15 +257,13 @@ const withRetry = <A, R>(
 
     yield* Effect.annotateCurrentSpan({ "spotify.retry.exhausted": true });
 
-    if (lastError?._tag === "SpotifyHttpError" && lastError.status === 429) {
-      return yield* new SpotifyRateLimitError({
-        method: lastError.method,
-        url: lastError.url,
-        retryAfterSeconds: 0,
-      });
+    if (lastError !== undefined) {
+      return yield* lastError;
     }
 
-    return yield* lastError!;
+    return yield* new SpotifyConfigurationError({
+      message: "Retry exhausted before a request error was captured",
+    });
   });
 
 const makeRequestWithAuthRetry = <A>(
@@ -322,12 +330,12 @@ const createSpotifyRequest = (
   });
 
   return {
-    getJson: <A>(path: string, options?: SpotifyRequestOptions) =>
+    getJson: (path: string, options?: SpotifyRequestOptions) =>
       Effect.withSpan(
         makeRequestWithAuthRetry(
           accessTokenResolver,
           path,
-          decodeSuccessResponse<A>,
+          decodeSuccessResponse,
           retryConfig,
           "GET",
           options,
@@ -427,10 +435,10 @@ const createSpotifyRequest = (
 export class SpotifyRequest extends ServiceMap.Service<
   SpotifyRequest,
   {
-    readonly getJson: <A>(
+    readonly getJson: (
       path: string,
       options?: SpotifyRequestOptions,
-    ) => Effect.Effect<A, SpotifyRequestError>;
+    ) => Effect.Effect<unknown, SpotifyRequestError>;
     readonly getJsonWithSchema: <A>(
       path: string,
       schema: DecodableSchema<A>,
