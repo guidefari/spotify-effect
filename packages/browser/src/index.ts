@@ -16,11 +16,12 @@ import {
   Search,
   SpotifyAuth,
   SpotifyConfigurationError,
+  SpotifySession,
   Tracks,
   Users,
   type AuthorizationScope,
-  type SpotifyApiOptions,
   type SpotifyCredentials,
+  type SpotifyLayerOptions,
   type SpotifyRequestError,
 } from "@spotify-effect/core";
 import { getAuthorizationUrl } from "@spotify-effect/core";
@@ -38,9 +39,32 @@ const browserHttpClientLayer = Layer.mergeAll(
 );
 
 export const makeSpotifyBrowserLayer = (
-  options: SpotifyApiOptions = {},
+  options: SpotifyLayerOptions = {},
   credentials: SpotifyCredentials = {},
-) => makeSpotifyLayer({ ...options, httpClientLayer: browserHttpClientLayer }, credentials);
+) =>
+  makeSpotifyLayer(
+    {
+      ...options,
+      httpClientLayer: options.httpClientLayer ?? browserHttpClientLayer,
+    },
+    credentials,
+  );
+
+const tokensToRefreshableResponse = (
+  tokens: BrowserRefreshableTokens,
+): {
+  readonly access_token: string;
+  readonly token_type: "Bearer";
+  readonly expires_in: number;
+  readonly scope: string;
+  readonly refresh_token: string;
+} => ({
+  access_token: tokens.accessToken,
+  token_type: "Bearer",
+  expires_in: Math.max(0, Math.ceil((tokens.accessTokenExpiresAt - Date.now()) / 1000)),
+  scope: "",
+  refresh_token: tokens.refreshToken,
+});
 
 type AlbumsService = ServiceMap.Service.Shape<typeof Albums>;
 type ArtistsService = ServiceMap.Service.Shape<typeof Artists>;
@@ -58,6 +82,7 @@ type UsersService = ServiceMap.Service.Shape<typeof Users>;
 export interface SpotifyBrowserOptions {
   readonly clientId: string;
   readonly redirectUri?: string;
+  readonly httpClientLayer?: SpotifyLayerOptions["httpClientLayer"];
   readonly session: {
     readonly sessionStorage: Storage;
     readonly localStorage: Storage;
@@ -100,14 +125,23 @@ export class SpotifyBrowser extends ServiceMap.Service<
 >()("spotify-effect/SpotifyBrowser") {
   static layer(options: SpotifyBrowserOptions) {
     const session = makeSpotifyBrowserSession(options.session);
-    let currentToken: string | undefined = session.getTokens()?.accessToken;
+    const getCredentials = (): SpotifyCredentials => {
+      const tokens = session.getTokens();
 
-    const getCredentials = (): SpotifyCredentials => ({
-      ...(currentToken !== undefined ? { accessToken: currentToken } : null),
-    });
+      if (tokens === undefined) {
+        return {};
+      }
+
+      return {
+        accessToken: tokens.accessToken,
+        accessTokenExpiresAt: tokens.accessTokenExpiresAt,
+        refreshToken: tokens.refreshToken,
+      };
+    };
 
     const make = Effect.gen(function* () {
       const auth = yield* SpotifyAuth;
+      const spotifySession = yield* SpotifySession;
       const albums = yield* Albums;
       const artists = yield* Artists;
       const browse = yield* Browse;
@@ -171,7 +205,7 @@ export class SpotifyBrowser extends ServiceMap.Service<
                 accessTokenExpiresAt: Date.now() + result.expires_in * 1000,
               };
 
-              currentToken = tokens.accessToken;
+              yield* spotifySession.setRefreshableUserTokens(result);
               session.setTokens(tokens);
               session.clearCallbackParams(new URL(window.location.href));
 
@@ -191,7 +225,7 @@ export class SpotifyBrowser extends ServiceMap.Service<
                 accessTokenExpiresAt: Date.now() + result.expires_in * 1000,
               };
 
-              currentToken = tokens.accessToken;
+              yield* spotifySession.updateRefreshedAccessToken(tokens.refreshToken, result);
               session.setTokens(tokens);
 
               return tokens;
@@ -200,12 +234,21 @@ export class SpotifyBrowser extends ServiceMap.Service<
           getTokens: (): BrowserRefreshableTokens | undefined => session.getTokens(),
 
           setTokens: (tokens: BrowserRefreshableTokens): void => {
-            currentToken = tokens.accessToken;
+            Effect.runSync(spotifySession.setRefreshableUserTokens(tokensToRefreshableResponse(tokens)));
             session.setTokens(tokens);
           },
 
           logout: (): void => {
-            currentToken = undefined;
+            Effect.runSync(
+              spotifySession.setRefreshableUserTokens({
+                access_token: "",
+                token_type: "Bearer",
+                expires_in: 0,
+                scope: "",
+                refresh_token: "",
+              }),
+            );
+            options.session.sessionStorage.removeItem("spotify-effect:tokens");
             options.session.localStorage.removeItem("spotify-effect:tokens");
           },
 
@@ -227,7 +270,13 @@ export class SpotifyBrowser extends ServiceMap.Service<
     });
 
     const spotifyLayer = makeSpotifyBrowserLayer(
-      { clientId: options.clientId, redirectUri: options.redirectUri ?? "" },
+      {
+        clientId: options.clientId,
+        redirectUri: options.redirectUri ?? "",
+        ...(options.httpClientLayer === undefined
+          ? null
+          : { httpClientLayer: options.httpClientLayer }),
+      },
       getCredentials(),
     );
 
