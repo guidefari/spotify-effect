@@ -54,15 +54,13 @@ The layer handles token refresh automatically. You never manage access tokens ma
    import { Effect } from "effect";
    import { Search, makeSpotifyLayer } from "@spotify-effect/core";
 
-   const program = Effect.gen(function* () {
-     const search = yield* Search;
-     const results = yield* search.searchForItem({
-       q: "Tame Impala",
-       type: ["track"],
-       limit: 5,
-     });
-     return results.tracks?.items ?? [];
-   });
+    const program = Effect.gen(function* () {
+      const search = yield* Search;
+      const results = yield* search.search("Tame Impala", ["track"], {
+        limit: 5,
+      });
+      return results.tracks?.items ?? [];
+    });
    ```
 
 3. **Provide the layer and run**
@@ -94,9 +92,7 @@ const SpotifyLayer = makeSpotifyLayer({
 
 const program = Effect.gen(function* () {
   const search = yield* Search;
-  const results = yield* search.searchForItem({
-    q: "Tame Impala",
-    type: ["track"],
+  const results = yield* search.search("Tame Impala", ["track"], {
     limit: 5,
   });
   const tracks = results.tracks?.items ?? [];
@@ -106,6 +102,42 @@ const program = Effect.gen(function* () {
 });
 
 program.pipe(Effect.provide(SpotifyLayer), NodeRuntime.runMain);
+```
+
+## Configure retries
+
+`makeSpotifyLayer` accepts a `retry` option so you can tune retry behavior per client instance.
+
+```ts
+import { makeSpotifyLayer } from "@spotify-effect/core";
+
+const SpotifyLayer = makeSpotifyLayer({
+  clientId: process.env.SPOTIFY_CLIENT_ID!,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
+  retry: {
+    maxRetries: 5,
+    baseDelayMs: 250,
+    maxDelayMs: 5_000,
+  },
+});
+```
+
+Available retry options:
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `maxRetries` | `number` | Maximum number of retry attempts for retryable failures |
+| `baseDelayMs` | `number` | Initial backoff delay before exponential growth |
+| `maxDelayMs` | `number` | Upper bound for the backoff delay |
+
+To disable retries entirely, set `maxRetries` to `0`:
+
+```ts
+const SpotifyLayer = makeSpotifyLayer({
+  clientId: process.env.SPOTIFY_CLIENT_ID!,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
+  retry: { maxRetries: 0 },
+});
 ```
 
 ## Next steps

@@ -12,7 +12,7 @@ import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 ### SpotifyHttpError
 
-HTTP-level errors from the Spotify API (4xx responses).
+HTTP-level errors from the Spotify API when the failure is not classified more specifically.
 
 ```ts
 import { SpotifyHttpError } from "@spotify-effect/core";
@@ -31,7 +31,6 @@ Common causes:
 - `401` — Unauthorized (expired or invalid token)
 - `403` — Forbidden (insufficient scopes)
 - `404` — Not found (invalid resource ID)
-- `429` — Rate limited (see `SpotifyRateLimitError`)
 
 ### SpotifyRateLimitError
 
@@ -169,8 +168,26 @@ if (isRetryableError(error)) {
 `isRetryableError` returns `true` for:
 
 - `SpotifyTransportError` (network failures)
-- `SpotifyHttpError` with status 429 or 5xx
 - `SpotifyRateLimitError`
+- `SpotifyHttpError` with status 429 or 5xx
+
+You can also configure the shared request layer's built-in retry behavior when constructing the Spotify layer:
+
+```ts
+import { makeSpotifyLayer } from "@spotify-effect/core";
+
+const SpotifyLayer = makeSpotifyLayer({
+  clientId: process.env.SPOTIFY_CLIENT_ID!,
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
+  retry: {
+    maxRetries: 5,
+    baseDelayMs: 250,
+    maxDelayMs: 5_000,
+  },
+});
+```
+
+Set `maxRetries: 0` to disable built-in retries and handle retry policy entirely in application code.
 
 ### Implementing retry with backoff
 
