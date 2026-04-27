@@ -10,6 +10,7 @@
     "fmt:check": "oxfmt --check .",
     "lint": "oxlint -c oxlintrc.json --jest-plugin",
     "docs": "bun run --filter @spotify-effect/docs dev",
+    "frontpage": "turbo run dev --filter=@opensound/frontpage",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:watch": "bun run --filter @spotify-effect/core test:watch",

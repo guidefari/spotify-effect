@@ -78,11 +78,11 @@ describe("SpotifyRequest", () => {
     });
 
     const response = await Effect.runPromise(
-        requestEffect(
-          (request) => request.getJson("/tracks/retry"),
-          { clientId: "client-id", clientSecret: "client-secret" },
-          { accessToken: "stale-token", refreshToken: "refresh-token" },
-          layer,
+      requestEffect(
+        (request) => request.getJson("/tracks/retry"),
+        { clientId: "client-id", clientSecret: "client-secret" },
+        { accessToken: "stale-token", refreshToken: "refresh-token" },
+        layer,
       ),
     );
 
@@ -110,11 +110,11 @@ describe("SpotifyRequest", () => {
     });
 
     const response = await Effect.runPromise(
-        requestEffect(
-          (request) => request.getJson("/tracks/ratelimit"),
-          { retry: { maxRetries: 3, baseDelayMs: 1 } },
-          { accessToken: "token" },
-          layer,
+      requestEffect(
+        (request) => request.getJson("/tracks/ratelimit"),
+        { retry: { maxRetries: 3, baseDelayMs: 1 } },
+        { accessToken: "token" },
+        layer,
       ),
     );
 
@@ -170,11 +170,11 @@ describe("SpotifyRequest", () => {
     });
 
     const response = await Effect.runPromise(
-        requestEffect(
-          (request) => request.getJson("/tracks/servererror"),
-          { retry: { maxRetries: 3, baseDelayMs: 1 } },
-          { accessToken: "token" },
-          layer,
+      requestEffect(
+        (request) => request.getJson("/tracks/servererror"),
+        { retry: { maxRetries: 3, baseDelayMs: 1 } },
+        { accessToken: "token" },
+        layer,
       ),
     );
 
