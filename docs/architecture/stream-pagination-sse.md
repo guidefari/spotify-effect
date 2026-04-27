@@ -21,7 +21,7 @@ The endpoint accepts:
 ```json
 {
   "accessToken": "...",
-  "maxTracks": 200       // number or "unlimited"
+  "maxTracks": 200 // number or "unlimited"
 }
 ```
 
@@ -48,6 +48,7 @@ Each Spotify API page produces one `tracks` event and one `stats` event. `done` 
 Uses `fetch` with a `ReadableStream` reader (not `EventSource`, since we need POST). SSE events are parsed from the response body and state is updated incrementally via Svelte 5 runes.
 
 Features:
+
 - Tracks render as each page arrives
 - Top artist stats update live after each page
 - Configurable max tracks (number input or unlimited checkbox)
@@ -59,9 +60,9 @@ Features:
 
 ## Files
 
-| File | Role |
-|------|------|
-| `packages/spotify-effect/src/pagination/paginate.ts` | Stream pagination utilities |
-| `packages/spotify-effect/src/pagination/paginate.test.ts` | Tests for pagination |
-| `examples/sveltekit/src/routes/api/stream-pagination/+server.ts` | SSE streaming endpoint |
-| `examples/sveltekit/src/routes/stream-pagination/+page.svelte` | Incremental UI with cancel support |
+| File                                                             | Role                               |
+| ---------------------------------------------------------------- | ---------------------------------- |
+| `packages/spotify-effect/src/pagination/paginate.ts`             | Stream pagination utilities        |
+| `packages/spotify-effect/src/pagination/paginate.test.ts`        | Tests for pagination               |
+| `examples/sveltekit/src/routes/api/stream-pagination/+server.ts` | SSE streaming endpoint             |
+| `examples/sveltekit/src/routes/stream-pagination/+page.svelte`   | Incremental UI with cancel support |

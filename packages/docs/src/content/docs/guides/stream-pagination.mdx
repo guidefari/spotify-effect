@@ -126,7 +126,7 @@ export const POST: RequestHandler = async ({ request }) => {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
+      Connection: "keep-alive",
     },
   });
 };
@@ -211,13 +211,13 @@ Each Spotify API page produces a `tracks` event with the batch data and a `stats
 
 ## Key Operators Used
 
-| Operator | Purpose |
-|----------|---------|
-| `paginateStream` | Lazily fetch paginated Spotify data |
-| `Stream.take` | Cap total items (e.g., limit to 200 tracks) |
-| `Stream.grouped` | Re-chunk items into page-sized batches |
-| `Stream.mapAccum` | Carry running state while emitting transformed output |
-| `Stream.runForEach` | Side-effect each emission (e.g., enqueue SSE) |
+| Operator            | Purpose                                               |
+| ------------------- | ----------------------------------------------------- |
+| `paginateStream`    | Lazily fetch paginated Spotify data                   |
+| `Stream.take`       | Cap total items (e.g., limit to 200 tracks)           |
+| `Stream.grouped`    | Re-chunk items into page-sized batches                |
+| `Stream.mapAccum`   | Carry running state while emitting transformed output |
+| `Stream.runForEach` | Side-effect each emission (e.g., enqueue SSE)         |
 
 ## Practical Example
 

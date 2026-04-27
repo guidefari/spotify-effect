@@ -54,13 +54,13 @@ The layer handles token refresh automatically. You never manage access tokens ma
    import { Effect } from "effect";
    import { Search, makeSpotifyLayer } from "@spotify-effect/core";
 
-    const program = Effect.gen(function* () {
-      const search = yield* Search;
-      const results = yield* search.search("Tame Impala", ["track"], {
-        limit: 5,
-      });
-      return results.tracks?.items ?? [];
-    });
+   const program = Effect.gen(function* () {
+     const search = yield* Search;
+     const results = yield* search.search("Tame Impala", ["track"], {
+       limit: 5,
+     });
+     return results.tracks?.items ?? [];
+   });
    ```
 
 3. **Provide the layer and run**
@@ -124,11 +124,11 @@ const SpotifyLayer = makeSpotifyLayer({
 
 Available retry options:
 
-| Option | Type | Description |
-| ------ | ---- | ----------- |
-| `maxRetries` | `number` | Maximum number of retry attempts for retryable failures |
-| `baseDelayMs` | `number` | Initial backoff delay before exponential growth |
-| `maxDelayMs` | `number` | Upper bound for the backoff delay |
+| Option        | Type     | Description                                             |
+| ------------- | -------- | ------------------------------------------------------- |
+| `maxRetries`  | `number` | Maximum number of retry attempts for retryable failures |
+| `baseDelayMs` | `number` | Initial backoff delay before exponential growth         |
+| `maxDelayMs`  | `number` | Upper bound for the backoff delay                       |
 
 To disable retries entirely, set `maxRetries` to `0`:
 

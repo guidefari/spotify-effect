@@ -123,10 +123,23 @@ describe("SpotifyBrowser", () => {
         );
       }
 
-      return new Response(JSON.stringify({ albums: { href: "", items: [], limit: 0, next: null, offset: 0, previous: null, total: 0 } }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          albums: {
+            href: "",
+            items: [],
+            limit: 0,
+            next: null,
+            offset: 0,
+            previous: null,
+            total: 0,
+          },
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      );
     });
 
     const program = Effect.gen(function* () {
@@ -153,7 +166,17 @@ describe("SpotifyBrowser", () => {
     const { layer, requests } = makeTestHttpClient(
       () =>
         new Response(
-          JSON.stringify({ albums: { href: "", items: [], limit: 0, next: null, offset: 0, previous: null, total: 0 } }),
+          JSON.stringify({
+            albums: {
+              href: "",
+              items: [],
+              limit: 0,
+              next: null,
+              offset: 0,
+              previous: null,
+              total: 0,
+            },
+          }),
           {
             status: 200,
             headers: { "content-type": "application/json" },

@@ -234,7 +234,9 @@ export class SpotifyBrowser extends ServiceMap.Service<
           getTokens: (): BrowserRefreshableTokens | undefined => session.getTokens(),
 
           setTokens: (tokens: BrowserRefreshableTokens): void => {
-            Effect.runSync(spotifySession.setRefreshableUserTokens(tokensToRefreshableResponse(tokens)));
+            Effect.runSync(
+              spotifySession.setRefreshableUserTokens(tokensToRefreshableResponse(tokens)),
+            );
             session.setTokens(tokens);
           },
 
